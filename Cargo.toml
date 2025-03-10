@@ -1,0 +1,95 @@
+[workspace]
+# members = ["crates/*", "xtask/codegen", "editors/zed"]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+authors = ["Posit Software, PBC"]
+categories = ["development-tools"]
+edition = "2021"
+homepage = "https://github.com/posit-dev/quarto-markdown-syntax"
+keywords = ["parser"]
+license = "MIT"
+repository = "https://github.com/posit-dev/quarto-markdown-syntax"
+rust-version = "1.83"
+
+[workspace.dependencies]
+quarto_markdown_syntax  = { path = "./crates/quarto_markdown_syntax" }
+quarto_markdown_parser  = { path = "./crates/quarto_markdown_parser" }
+quarto_markdown_factory = { path = "./crates/quarto_markdown_factory" }
+biome_console           = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_diagnostics       = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_formatter         = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_lsp_converters    = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_parser            = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_rowan             = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_string_case       = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_text_size         = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+biome_unicode_table     = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+tracing                 = { version = "0.1.40", default-features = false, features = ["std"] }
+tree-sitter             = "0.23.0"
+insta                   = "1.40.0"
+serde                   = "1.0.215"
+serde_json              = "1.0.132"
+
+# lifted entirely from posit-dev/air
+[workspace.lints.clippy]
+# pedantic
+assigning_clones = "warn"
+checked_conversions = "warn"
+cloned_instead_of_copied = "warn"
+copy_iterator = "warn"
+dbg_macro = "warn"
+empty_enum = "warn"
+expl_impl_clone_on_copy = "warn"
+explicit_into_iter_loop = "warn"
+filter_map_next = "warn"
+flat_map_option = "warn"
+fn_params_excessive_bools = "warn"
+from_iter_instead_of_collect = "warn"
+implicit_clone = "warn"
+implicit_hasher = "warn"
+index_refutable_slice = "warn"
+inefficient_to_string = "warn"
+invalid_upcast_comparisons = "warn"
+iter_filter_is_ok = "warn"
+iter_not_returning_iterator = "warn"
+large_stack_arrays = "warn"
+large_types_passed_by_value = "warn"
+macro_use_imports = "warn"
+manual_is_variant_and = "warn"
+manual_ok_or = "warn"
+manual_string_new = "warn"
+map_flatten = "warn"
+map_unwrap_or = "warn"
+mismatching_type_param_order = "warn"
+mut_mut = "warn"
+naive_bytecount = "warn"
+needless_bitwise_bool = "warn"
+needless_continue = "warn"
+needless_for_each = "warn"
+no_effect_underscore_binding = "warn"
+option_as_ref_cloned = "warn"
+ref_binding_to_reference = "warn"
+ref_option_ref = "warn"
+single_char_pattern = "warn"
+stable_sort_primitive = "warn"
+str_split_at_newline = "warn"
+unnecessary_box_returns = "warn"
+unnecessary_join = "warn"
+unnested_or_patterns = "warn"
+unreadable_literal = "warn"
+verbose_bit_mask = "warn"
+
+# restriction
+cfg_not_test = "warn"
+empty_drop = "warn"
+empty_enum_variants_with_brackets = "warn"
+float_cmp_const = "warn"
+get_unwrap = "warn"
+lossy_float_literal = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+string_lit_chars_any = "warn"
+verbose_file_reads = "warn"
