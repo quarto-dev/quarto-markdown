@@ -1,0 +1,43 @@
+[package]
+authors.workspace      = true
+categories.workspace   = true
+description            = "Quarto Markdown grammar for tree-sitter"
+edition.workspace      = true
+homepage.workspace     = true
+keywords.workspace     = true
+license.workspace      = true
+name                   = "tree-sitter-qmd"
+publish                = false
+repository.workspace   = true
+rust-version.workspace = true
+version                = "0.0.0"
+
+build = "bindings/rust/build.rs"
+include = [
+  "bindings/rust/*",
+  "tree-sitter-markdown/src/*",
+  "tree-sitter-markdown-inline/src/*",
+  "tree-sitter-markdown/grammar.js",
+  "tree-sitter-markdown-inline/grammar.js",
+  "tree-sitter-markdown/queries/*",
+  "tree-sitter-markdown-inline/queries/*",
+  "common/grammar.js",
+  "common/html_entities.json",
+]
+
+[lib]
+path = "bindings/rust/lib.rs"
+
+[dependencies]
+tree-sitter = { workspace = true }
+tree-sitter-language = "0.1"
+
+[build-dependencies]
+cc = "1.1.22"
+
+[[bin]]
+name = "benchmark"
+path = "bindings/rust/benchmark.rs"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]

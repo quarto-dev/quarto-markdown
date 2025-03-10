@@ -27,7 +27,7 @@ biome_string_case       = { git = "https://github.com/biomejs/biome", rev = "264
 biome_text_size         = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
 biome_unicode_table     = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
 tracing                 = { version = "0.1.40", default-features = false, features = ["std"] }
-tree-sitter             = "0.23.0"
+tree-sitter             = { version = "0.25.3" }
 insta                   = "1.40.0"
 serde                   = "1.0.215"
 serde_json              = "1.0.132"

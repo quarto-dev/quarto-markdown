@@ -1,0 +1,8 @@
+{
+  "main": "../bindings/node/index.js",
+  "private": true,
+  "scripts": {
+    "build": "tree-sitter generate",
+    "test": "tree-sitter test"
+  }
+}

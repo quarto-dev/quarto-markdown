@@ -1,0 +1,61 @@
+================================================================================
+Code blocks with language specifier
+================================================================================
+
+```{python}
+print(1)
+```
+
+--------------------------------------------------------------------------------
+
+(document
+  (section
+    (fenced_code_block
+      (fenced_code_block_delimiter)
+      (language_attribute
+        (language))
+      (block_continuation)
+      (code_fence_content
+        (block_continuation))
+      (fenced_code_block_delimiter))))
+
+================================================================================
+Code blocks with id, class and key-value pairs
+================================================================================
+
+```{#id .class key=value}
+print(1)
+```
+
+--------------------------------------------------------------------------------
+
+(document
+  (section
+    (fenced_code_block
+      (fenced_code_block_delimiter)
+      (commonmark_attribute
+        (id_specifier)
+        (class_specifier)
+        (key_value_specifier))
+      (block_continuation)
+      (code_fence_content
+        (block_continuation))
+      (fenced_code_block_delimiter))))
+
+================================================================================
+Fenced divs
+================================================================================
+
+::: {}
+
+Hello, world
+
+:::
+
+--------------------------------------------------------------------------------
+
+(document
+  (section
+    (fenced_div_block
+      (paragraph
+        (inline)))))
