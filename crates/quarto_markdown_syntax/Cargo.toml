@@ -9,7 +9,6 @@ license.workspace      = true
 name                   = "quarto_markdown_syntax"
 publish                = false
 repository.workspace   = true
-rust-version.workspace = true
 version                = "0.0.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

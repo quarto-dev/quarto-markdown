@@ -126,15 +126,15 @@ impl LanguageKind {
     }
 
     pub fn formatter_crate_name(&self) -> String {
-        format!("air_{self}_formatter")
+        format!("quarto_{self}_formatter")
     }
 
     pub fn syntax_crate_name(&self) -> String {
-        format!("air_{self}_syntax")
+        format!("quarto_{self}_syntax")
     }
 
     pub fn factory_crate_name(&self) -> String {
-        format!("air_{self}_factory")
+        format!("quarto_{self}_factory")
     }
 
     pub fn kinds(&self) -> KindsSrc {

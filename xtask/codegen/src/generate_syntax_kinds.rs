@@ -1,5 +1,5 @@
-use crate::kind_src::KindsSrc;
 use crate::language_kind::LanguageKind;
+use crate::{generate_nodes::should_token_be_quoted, kind_src::KindsSrc};
 use crate::Result;
 use biome_string_case::Case;
 use proc_macro2::{Literal, Punct, Spacing};
@@ -15,7 +15,7 @@ pub fn generate_syntax_kinds(grammar: KindsSrc, language_kind: LanguageKind) -> 
         if "{}[]()`".contains(token) {
             let c = token.chars().next().unwrap();
             quote! { #c }
-        } else if matches!(*token, "$=" | "$_" | "[[" | "]]" | "\\") {
+        } else if should_token_be_quoted(token) {
             let token = Literal::string(token);
             quote! { #token }
         } else {

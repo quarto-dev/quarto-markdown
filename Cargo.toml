@@ -6,18 +6,17 @@ resolver = "2"
 [workspace.package]
 authors = ["Posit Software, PBC"]
 categories = ["development-tools"]
-edition = "2021"
+edition = "2024"
 homepage = "https://github.com/posit-dev/quarto-markdown-syntax"
 keywords = ["parser"]
 license = "MIT"
 repository = "https://github.com/posit-dev/quarto-markdown-syntax"
-rust-version = "1.83"
 
 [workspace.dependencies]
 quarto_markdown_syntax  = { path = "./crates/quarto_markdown_syntax" }
 quarto_markdown_parser  = { path = "./crates/quarto_markdown_parser" }
 quarto_markdown_factory = { path = "./crates/quarto_markdown_factory" }
-biome_ungrammar         = { path = "./crates/biome_ungrammar" }
+biome_ungrammar         = { version = "0.3.1", path = "./crates/biome_ungrammar" }
 
 biome_console           = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
 biome_diagnostics       = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
@@ -34,7 +33,8 @@ insta                   = "1.40.0"
 serde                   = "1.0.215"
 serde_json              = "1.0.132"
 anyhow                  = "1.0.89"
-proc-macro2             = "1.0.86"
+proc-macro-error2       = { version = "2.0.1", default-features = false }
+proc-macro2             = "1.0.94"
 schemars                = "0.8.21"
 
 # lifted entirely from posit-dev/air

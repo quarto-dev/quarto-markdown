@@ -1140,3 +1140,13 @@ pub(crate) fn group_fields_for_ordering(node: &AstNodeSrc) -> Vec<Vec<&Field>> {
     groups.push(current_group);
     groups
 }
+
+/// Whether or not a token should be surrounded by quotes when being printed in the generated code.
+///
+/// Some tokens need to be quoted in the `T![]` macro because they conflict with Rust syntax.
+pub fn should_token_be_quoted(token: &str) -> bool {
+    matches!(
+        token,
+        "$=" | "$_" | "U+" | "<![CDATA[" | "]]>" | "   " | "_"
+    )
+}

@@ -9,7 +9,6 @@ license.workspace      = true
 name                   = "tree-sitter-qmd"
 publish                = false
 repository.workspace   = true
-rust-version.workspace = true
 version                = "0.0.0"
 
 build = "bindings/rust/build.rs"
