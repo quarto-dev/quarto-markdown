@@ -5,6 +5,7 @@ use crate::graphql_kind_src::GRAPHQL_KINDS_SRC;
 use crate::grit_kinds_src::GRIT_KINDS_SRC;
 use crate::html_kinds_src::HTML_KINDS_SRC;
 use crate::js_kinds_src::JS_KINDS_SRC;
+use crate::sexpr_kinds_src::SEXPR_KINDS_SRC;
 use crate::json_kinds_src::JSON_KINDS_SRC;
 use crate::kind_src::KindsSrc;
 use crate::markdown_kinds_src::MARKDOWN_KINDS_SRC;
@@ -38,6 +39,7 @@ pub enum LanguageKind {
     Yaml,
     Markdown,
     R,
+    Sexpr,
 }
 
 impl std::fmt::Display for LanguageKind {
@@ -52,11 +54,12 @@ impl std::fmt::Display for LanguageKind {
             LanguageKind::Yaml => write!(f, "yaml"),
             LanguageKind::Markdown => write!(f, "markdown"),
             LanguageKind::R => write!(f, "r"),
+            LanguageKind::Sexpr => write!(f, "sexpr"),
         }
     }
 }
 
-pub const ALL_LANGUAGE_KIND: [LanguageKind; 9] = [
+pub const ALL_LANGUAGE_KIND: [LanguageKind; 10] = [
     LanguageKind::Js,
     LanguageKind::Css,
     LanguageKind::Json,
@@ -66,6 +69,7 @@ pub const ALL_LANGUAGE_KIND: [LanguageKind; 9] = [
     LanguageKind::Yaml,
     LanguageKind::Markdown,
     LanguageKind::R,
+    LanguageKind::Sexpr
 ];
 
 impl FromStr for LanguageKind {
@@ -81,6 +85,7 @@ impl FromStr for LanguageKind {
             "html" => Ok(LanguageKind::Html),
             "yaml" => Ok(LanguageKind::Yaml),
             "markdown" => Ok(LanguageKind::Markdown),
+            "sexpr" => Ok(LanguageKind::Sexpr),
             "r" => Ok(LanguageKind::R),
             _ => Err(format!(
                 "Language {kind} not supported, please use: `js`, `css`, `json`, `grit`, `graphql`, `html`, `yaml`, `markdown`, or `r`."
@@ -119,7 +124,7 @@ macro_rules! define_language_kind_functions {
 }
 
 impl LanguageKind {
-    define_language_kind_functions!([Js, Css, Json, Graphql, Grit, Html, Yaml, Markdown, R]);
+    define_language_kind_functions!([Js, Css, Json, Graphql, Grit, Html, Yaml, Markdown, R, Sexpr]);
 
     pub(crate) fn syntax_crate_ident(&self) -> Ident {
         Ident::new(self.syntax_crate_name().as_str(), Span::call_site())
@@ -148,6 +153,7 @@ impl LanguageKind {
             LanguageKind::Yaml => YAML_KINDS_SRC,
             LanguageKind::Markdown => MARKDOWN_KINDS_SRC,
             LanguageKind::R => R_KINDS_SRC,
+            LanguageKind::Sexpr => SEXPR_KINDS_SRC,
         }
     }
 
@@ -162,6 +168,7 @@ impl LanguageKind {
             LanguageKind::Yaml => include_str!("../yaml.ungram"),
             LanguageKind::Markdown => include_str!("../markdown.ungram"),
             LanguageKind::R => include_str!("../r.ungram"),
+            LanguageKind::Sexpr => include_str!("../sexpr.ungram"),
         }
     }
 }

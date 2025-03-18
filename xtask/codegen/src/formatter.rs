@@ -833,6 +833,9 @@ fn get_node_concept(
 
             // TODO: implement formatter
             LanguageKind::R => NodeConcept::Auxiliary,
+
+            // TODO: implement formatter
+            LanguageKind::Sexpr => NodeConcept::Auxiliary,
         }
     }
 }
@@ -900,6 +903,7 @@ impl LanguageKind {
             LanguageKind::Yaml => "YamlFormatter",
             LanguageKind::Markdown => "DemoFormatter",
             LanguageKind::R => "RFormatter",
+            LanguageKind::Sexpr => "SexprFormatter",
         };
 
         Ident::new(name, Span::call_site())
@@ -916,6 +920,7 @@ impl LanguageKind {
             LanguageKind::Yaml => "YamlFormatContext",
             LanguageKind::Markdown => "DemoFormatterContext",
             LanguageKind::R => "RFormatContext",
+            LanguageKind::Sexpr => "SexprFormatContext",
         };
 
         Ident::new(name, Span::call_site())

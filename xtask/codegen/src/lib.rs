@@ -14,6 +14,7 @@ mod grit_kinds_src;
 mod js_kinds_src;
 mod json_kinds_src;
 mod markdown_kinds_src;
+mod sexpr_kinds_src;
 mod r_json_schema;
 mod r_kinds_src;
 mod yaml_kinds_src;

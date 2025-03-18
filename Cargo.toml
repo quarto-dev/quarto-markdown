@@ -16,6 +16,13 @@ repository = "https://github.com/posit-dev/quarto-markdown-syntax"
 quarto_markdown_syntax  = { path = "./crates/quarto_markdown_syntax" }
 quarto_markdown_parser  = { path = "./crates/quarto_markdown_parser" }
 quarto_markdown_factory = { path = "./crates/quarto_markdown_factory" }
+quarto_sexpr_syntax     = { path = "./crates/quarto_sexpr_syntax" }
+quarto_sexpr_parser     = { path = "./crates/quarto_sexpr_parser" }
+quarto_sexpr_factory    = { path = "./crates/quarto_sexpr_factory" }
+tree-sitter-sexpr       = { path = "./crates/tree-sitter-sexpr" }
+settings = { path = "./crates/settings" }
+line_ending = { path = "./crates/line_ending" }
+tests_macros = { path = "./crates/tests_macros" }
 biome_ungrammar         = { version = "0.3.1", path = "./crates/biome_ungrammar" }
 
 biome_console           = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
@@ -36,6 +43,9 @@ anyhow                  = "1.0.89"
 proc-macro-error2       = { version = "2.0.1", default-features = false }
 proc-macro2             = "1.0.94"
 schemars                = "0.8.21"
+memchr = "2.7.4"
+toml = "0.8.19"
+
 
 # lifted entirely from posit-dev/air
 [workspace.lints.clippy]

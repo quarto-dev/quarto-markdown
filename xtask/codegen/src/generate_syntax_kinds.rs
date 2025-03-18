@@ -95,6 +95,18 @@ pub fn generate_syntax_kinds(grammar: KindsSrc, language_kind: LanguageKind) -> 
         .collect::<Vec<_>>();
 
     let syntax_kind_impl = match language_kind {
+        LanguageKind::Sexpr => {
+            quote! {
+                pub const fn to_string(&self) -> Option<&'static str> {
+                    let tok = match self {
+                        #(#punctuation => #punctuation_strings,)*
+                        SEXPR_SYMBOL_LITERAL => "symbol literal",
+                        _ => return None,
+                    };
+                    Some(tok)
+                }
+            }
+        }
         LanguageKind::Js => {
             quote! {
                 pub const fn to_string(&self) -> Option<&'static str> {

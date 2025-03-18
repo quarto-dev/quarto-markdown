@@ -1,0 +1,38 @@
+[package]
+authors.workspace = true
+categories.workspace = true
+description = "Quarto sexpr parser"
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "quarto_sexpr_parser"
+publish = false
+repository.workspace = true
+version = "0.0.0"
+
+[dependencies]
+quarto_sexpr_factory = { workspace = true }
+quarto_sexpr_syntax = { workspace = true }
+biome_diagnostics = { workspace = true }
+biome_parser = { workspace = true }
+biome_rowan = { workspace = true }
+biome_unicode_table = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-sexpr = { workspace = true }
+
+[dev-dependencies]
+biome_console = { workspace = true }
+biome_diagnostics = { workspace = true }
+insta = { workspace = true }
+line_ending = { workspace = true }
+tests_macros = { workspace = true }
+
+# cargo-workspaces metadata
+[package.metadata.workspaces]
+independent = true
+
+[lints]
+workspace = true
