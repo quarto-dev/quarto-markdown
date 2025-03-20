@@ -36,6 +36,10 @@ macro_rules! map_syntax_node {
                     let $pattern = unsafe { $crate::SexprSymbolValue::new_unchecked(node) };
                     $body
                 }
+                $crate::SexprSyntaxKind::SEXPR_BOGUS => {
+                    let $pattern = unsafe { $crate::SexprBogus::new_unchecked(node) };
+                    $body
+                }
                 $crate::SexprSyntaxKind::SEXPR_BOGUS_VALUE => {
                     let $pattern = unsafe { $crate::SexprBogusValue::new_unchecked(node) };
                     $body

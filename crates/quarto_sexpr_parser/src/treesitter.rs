@@ -1,4 +1,4 @@
-use air_sexpr_syntax::SexprSyntaxKind;
+use quarto_sexpr_syntax::SexprSyntaxKind;
 use tree_sitter::{Node, TreeCursor};
 
 /// `WalkEvent` describes tree walking process.
@@ -86,7 +86,7 @@ impl<'tree> Iterator for Preorder<'tree> {
     }
 }
 
-fn node_syntax_kind(x: &Node) -> RSyntaxKind {
+fn node_syntax_kind(x: &Node) -> SexprSyntaxKind {
     match x.kind() {
         "(" => SexprSyntaxKind::L_PAREN,
         ")" => SexprSyntaxKind::R_PAREN,
@@ -197,12 +197,12 @@ fn node_syntax_kind(x: &Node) -> RSyntaxKind {
 }
 
 pub trait NodeTypeExt: Sized {
-    fn syntax_kind(&self) -> RSyntaxKind;
+    fn syntax_kind(&self) -> SexprSyntaxKind;
     fn preorder(&self) -> Preorder;
 }
 
 impl NodeTypeExt for Node<'_> {
-    fn syntax_kind(&self) -> RSyntaxKind {
+    fn syntax_kind(&self) -> SexprSyntaxKind {
         node_syntax_kind(self)
     }
 

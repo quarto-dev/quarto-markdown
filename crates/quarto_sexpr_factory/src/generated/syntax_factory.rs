@@ -14,7 +14,9 @@ impl SyntaxFactory for SexprSyntaxFactory {
         children: ParsedChildren<Self::Kind>,
     ) -> RawSyntaxNode<Self::Kind> {
         match kind {
-            SEXPR_BOGUS_VALUE => RawSyntaxNode::new(kind, children.into_iter().map(Some)),
+            SEXPR_BOGUS | SEXPR_BOGUS_VALUE => {
+                RawSyntaxNode::new(kind, children.into_iter().map(Some))
+            }
             SEXPR_LIST => {
                 let mut elements = (&children).into_iter();
                 let mut slots: RawNodeSlots<1usize> = RawNodeSlots::default();

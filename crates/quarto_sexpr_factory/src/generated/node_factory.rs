@@ -60,6 +60,16 @@ where
             .map(|item| Some(item.into_syntax().into())),
     ))
 }
+pub fn sexpr_bogus<I>(slots: I) -> SexprBogus
+where
+    I: IntoIterator<Item = Option<SyntaxElement>>,
+    I::IntoIter: ExactSizeIterator,
+{
+    SexprBogus::unwrap_cast(SyntaxNode::new_detached(
+        SexprSyntaxKind::SEXPR_BOGUS,
+        slots,
+    ))
+}
 pub fn sexpr_bogus_value<I>(slots: I) -> SexprBogusValue
 where
     I: IntoIterator<Item = Option<SyntaxElement>>,

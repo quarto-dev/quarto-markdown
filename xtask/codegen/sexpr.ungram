@@ -28,6 +28,7 @@
 
 SyntaxElement = SyntaxElement
 
+SexprBogus = SyntaxElement*
 SexprBogusValue = SyntaxElement*
 
 SexprRoot =

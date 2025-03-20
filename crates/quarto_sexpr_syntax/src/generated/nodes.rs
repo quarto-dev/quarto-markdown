@@ -543,6 +543,62 @@ impl std::fmt::Display for SexprSymbolValue {
     }
 }
 #[derive(Clone, PartialEq, Eq, Hash, Serialize)]
+pub struct SexprBogus {
+    syntax: SyntaxNode,
+}
+impl SexprBogus {
+    #[doc = r" Create an AstNode from a SyntaxNode without checking its kind"]
+    #[doc = r""]
+    #[doc = r" # Safety"]
+    #[doc = r" This function must be guarded with a call to [AstNode::can_cast]"]
+    #[doc = r" or a match on [SyntaxNode::kind]"]
+    #[inline]
+    pub const unsafe fn new_unchecked(syntax: SyntaxNode) -> Self {
+        Self { syntax }
+    }
+    pub fn items(&self) -> SyntaxElementChildren {
+        support::elements(&self.syntax)
+    }
+}
+impl AstNode for SexprBogus {
+    type Language = Language;
+    const KIND_SET: SyntaxKindSet<Language> =
+        SyntaxKindSet::from_raw(RawSyntaxKind(SEXPR_BOGUS as u16));
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == SEXPR_BOGUS
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+    fn into_syntax(self) -> SyntaxNode {
+        self.syntax
+    }
+}
+impl std::fmt::Debug for SexprBogus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SexprBogus")
+            .field("items", &DebugSyntaxElementChildren(self.items()))
+            .finish()
+    }
+}
+impl From<SexprBogus> for SyntaxNode {
+    fn from(n: SexprBogus) -> SyntaxNode {
+        n.syntax
+    }
+}
+impl From<SexprBogus> for SyntaxElement {
+    fn from(n: SexprBogus) -> SyntaxElement {
+        n.syntax.into()
+    }
+}
+#[derive(Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct SexprBogusValue {
     syntax: SyntaxNode,
 }
