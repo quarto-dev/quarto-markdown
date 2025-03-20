@@ -135,6 +135,7 @@ pub fn parse_sexpr_with_cache(
         let _diagnostics = vec![];
 
         let mut tree_sink = SexprLosslessTreeSink::with_cache(text, &tokens, cache);
+        println!("Events: {:?}", events);
         biome_parser::event::process(&mut tree_sink, events, _diagnostics);
         let (green, _diagnostics) = tree_sink.finish();
 
@@ -262,8 +263,14 @@ impl<'src> SexprWalk<'src> {
         match kind {
             SexprSyntaxKind::SEXPR_ROOT => self.handle_root_enter(),
             SexprSyntaxKind::SEXPR_SYMBOL_VALUE => self.handle_value_enter(kind),
+            SexprSyntaxKind::SEXPR_LIST_VALUE => self.handle_list_enter(node, iter),
+
+            // Tokens are no-ops on `Enter`, handled on `Leave`
+            SexprSyntaxKind::L_PAREN | SexprSyntaxKind::R_PAREN => {},
             // SexprSyntaxKind::SEXPR_LIST => self
-            _ => {}
+            _ => {
+                panic!("Unhandled node kind: {:?}", kind);
+            }
         }
     }
 
@@ -273,9 +280,53 @@ impl<'src> SexprWalk<'src> {
             SexprSyntaxKind::SEXPR_ROOT => self.handle_root_leave(node),
             SexprSyntaxKind::SEXPR_SYMBOL_VALUE => 
                 self.handle_value_leave(node, kind, SexprSyntaxKind::SEXPR_SYMBOL_LITERAL),
-            // SexprSyntaxKind::SEXPR_LIST
-            _ => {}
+            SexprSyntaxKind::SEXPR_LIST_VALUE => 
+                self.handle_list_leave(),
+                // SexprSyntaxKind::SEXPR_LIST
+            SexprSyntaxKind::L_PAREN | SexprSyntaxKind::R_PAREN => {
+                self.handle_token(node, kind);
+            },
+            _ => {
+                panic!("Unhandled node kind: {:?}", kind);
+            }
         }
+    }
+
+    fn handle_list_enter(&mut self, node: tree_sitter::Node, iter: &mut Preorder) {
+        self.handle_node_enter(SexprSyntaxKind::SEXPR_LIST_VALUE);
+        println!("Handling List Enter");
+
+        while let Some(event) = iter.peek() {
+            match event {
+                WalkEvent::Enter(next) => match next.syntax_kind() {
+                    SexprSyntaxKind::L_PAREN => {
+                        self.walk_next(iter);
+                        self.handle_node_enter(SexprSyntaxKind::SEXPR_LIST);
+                    }
+                    SexprSyntaxKind::R_PAREN => {
+                        self.handle_node_leave(SexprSyntaxKind::SEXPR_LIST);
+                        self.walk_next(iter);
+                    }
+                    SexprSyntaxKind::SEXPR_SYMBOL_VALUE => {
+                        self.walk_next(iter);
+                    }
+                    // SexprSyntaxKind::R_PARAMETER | SexprSyntaxKind::COMMA | SexprSyntaxKind::COMMENT => {
+                    //     self.walk_next(iter)
+                    // }
+                    kind => unreachable!("{kind:?}"),
+                },
+                WalkEvent::Leave(next) => {
+                    if node != *next {
+                        panic!("Expected next `Leave` event to be for `node`.");
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    fn handle_list_leave(&mut self) {
+        self.handle_node_leave(SexprSyntaxKind::SEXPR_LIST);
     }
 
     fn handle_root_enter(&mut self) {
@@ -360,6 +411,7 @@ impl SexprParse {
     }
 
     fn start(&mut self, kind: SexprSyntaxKind) {
+        println!("pushing Start event {:?}", kind);
         self.push_event(Event::Start {
             kind,
             forward_parent: None,
@@ -375,6 +427,7 @@ impl SexprParse {
     }
 
     fn finish(&mut self) {
+        println!("pushing Finish event");
         self.push_event(Event::Finish);
     }
 
