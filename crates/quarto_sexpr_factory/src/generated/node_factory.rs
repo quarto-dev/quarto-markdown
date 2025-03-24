@@ -7,18 +7,6 @@ use quarto_sexpr_syntax::{
     SexprSyntaxElement as SyntaxElement, SexprSyntaxNode as SyntaxNode,
     SexprSyntaxToken as SyntaxToken, *,
 };
-pub fn sexpr_list(items: SexprItemList) -> SexprList {
-    SexprList::unwrap_cast(SyntaxNode::new_detached(
-        SexprSyntaxKind::SEXPR_LIST,
-        [Some(SyntaxElement::Node(items.into_syntax()))],
-    ))
-}
-pub fn sexpr_list_item(item: AnySexprValue) -> SexprListItem {
-    SexprListItem::unwrap_cast(SyntaxNode::new_detached(
-        SexprSyntaxKind::SEXPR_LIST_ITEM,
-        [Some(SyntaxElement::Node(item.into_syntax()))],
-    ))
-}
 pub fn sexpr_list_value(
     l_paren_token: SyntaxToken,
     sexpr_list: SexprList,
@@ -48,13 +36,13 @@ pub fn sexpr_symbol_value(value_token: SyntaxToken) -> SexprSymbolValue {
         [Some(SyntaxElement::Token(value_token))],
     ))
 }
-pub fn sexpr_item_list<I>(items: I) -> SexprItemList
+pub fn sexpr_list<I>(items: I) -> SexprList
 where
-    I: IntoIterator<Item = SexprListItem>,
+    I: IntoIterator<Item = AnySexprValue>,
     I::IntoIter: ExactSizeIterator,
 {
-    SexprItemList::unwrap_cast(SyntaxNode::new_detached(
-        SexprSyntaxKind::SEXPR_ITEM_LIST,
+    SexprList::unwrap_cast(SyntaxNode::new_detached(
+        SexprSyntaxKind::SEXPR_LIST,
         items
             .into_iter()
             .map(|item| Some(item.into_syntax().into())),

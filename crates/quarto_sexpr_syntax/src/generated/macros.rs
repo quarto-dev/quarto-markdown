@@ -16,14 +16,6 @@ macro_rules! map_syntax_node {
     ($ node : expr , $ pattern : pat => $ body : expr) => {
         match $node {
             node => match $crate::SexprSyntaxNode::kind(&node) {
-                $crate::SexprSyntaxKind::SEXPR_LIST => {
-                    let $pattern = unsafe { $crate::SexprList::new_unchecked(node) };
-                    $body
-                }
-                $crate::SexprSyntaxKind::SEXPR_LIST_ITEM => {
-                    let $pattern = unsafe { $crate::SexprListItem::new_unchecked(node) };
-                    $body
-                }
                 $crate::SexprSyntaxKind::SEXPR_LIST_VALUE => {
                     let $pattern = unsafe { $crate::SexprListValue::new_unchecked(node) };
                     $body
@@ -44,8 +36,8 @@ macro_rules! map_syntax_node {
                     let $pattern = unsafe { $crate::SexprBogusValue::new_unchecked(node) };
                     $body
                 }
-                $crate::SexprSyntaxKind::SEXPR_ITEM_LIST => {
-                    let $pattern = unsafe { $crate::SexprItemList::new_unchecked(node) };
+                $crate::SexprSyntaxKind::SEXPR_LIST => {
+                    let $pattern = unsafe { $crate::SexprList::new_unchecked(node) };
                     $body
                 }
                 _ => unreachable!(),

@@ -42,21 +42,6 @@ AnySexprValue =
 
 SexprListValue = '(' SexprList ')'
 
-SexprList =
-    items: SexprItemList
-
-SexprListItem =
-    item: AnySexprValue
-
-SexprItemList = SexprListItem*
+SexprList = AnySexprValue*
 
 SexprSymbolValue = value: 'sexpr_symbol_literal'
-
-// YamlArray =
-// 	items: YamlArrayItemList
-// 
-// YamlArrayItem =
-// 	'-'
-// 	item: AnyYamlValue
-// 
-// YamlArrayItemList = YamlArrayItem*

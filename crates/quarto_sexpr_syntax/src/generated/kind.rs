@@ -27,7 +27,6 @@ pub enum SexprSyntaxKind {
     SEXPR_SYMBOL_VALUE,
     SEXPR_ITEM_LIST,
     SEXPR_LIST,
-    SEXPR_LIST_ITEM,
     SEXPR_BOGUS,
     SEXPR_BOGUS_VALUE,
     #[doc(hidden)]

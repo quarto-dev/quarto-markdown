@@ -21,7 +21,6 @@ pub const SEXPR_KINDS_SRC: KindsSrc = KindsSrc {
         "SEXPR_SYMBOL_VALUE",
         "SEXPR_ITEM_LIST",
         "SEXPR_LIST",
-        "SEXPR_LIST_ITEM",
         // bogus nodes?
         "SEXPR_BOGUS",
         "SEXPR_BOGUS_VALUE",        

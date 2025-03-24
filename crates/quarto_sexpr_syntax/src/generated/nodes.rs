@@ -23,74 +23,6 @@ use std::fmt::{Debug, Formatter};
 #[allow(dead_code)]
 pub(crate) const SLOT_MAP_EMPTY_VALUE: u8 = u8::MAX;
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct SexprList {
-    pub(crate) syntax: SyntaxNode,
-}
-impl SexprList {
-    #[doc = r" Create an AstNode from a SyntaxNode without checking its kind"]
-    #[doc = r""]
-    #[doc = r" # Safety"]
-    #[doc = r" This function must be guarded with a call to [AstNode::can_cast]"]
-    #[doc = r" or a match on [SyntaxNode::kind]"]
-    #[inline]
-    pub const unsafe fn new_unchecked(syntax: SyntaxNode) -> Self {
-        Self { syntax }
-    }
-    pub fn as_fields(&self) -> SexprListFields {
-        SexprListFields {
-            items: self.items(),
-        }
-    }
-    pub fn items(&self) -> SexprItemList {
-        support::list(&self.syntax, 0usize)
-    }
-}
-impl Serialize for SexprList {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.as_fields().serialize(serializer)
-    }
-}
-#[derive(Serialize)]
-pub struct SexprListFields {
-    pub items: SexprItemList,
-}
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct SexprListItem {
-    pub(crate) syntax: SyntaxNode,
-}
-impl SexprListItem {
-    #[doc = r" Create an AstNode from a SyntaxNode without checking its kind"]
-    #[doc = r""]
-    #[doc = r" # Safety"]
-    #[doc = r" This function must be guarded with a call to [AstNode::can_cast]"]
-    #[doc = r" or a match on [SyntaxNode::kind]"]
-    #[inline]
-    pub const unsafe fn new_unchecked(syntax: SyntaxNode) -> Self {
-        Self { syntax }
-    }
-    pub fn as_fields(&self) -> SexprListItemFields {
-        SexprListItemFields { item: self.item() }
-    }
-    pub fn item(&self) -> SyntaxResult<AnySexprValue> {
-        support::required_node(&self.syntax, 0usize)
-    }
-}
-impl Serialize for SexprListItem {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.as_fields().serialize(serializer)
-    }
-}
-#[derive(Serialize)]
-pub struct SexprListItemFields {
-    pub item: SyntaxResult<AnySexprValue>,
-}
-#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SexprListValue {
     pub(crate) syntax: SyntaxNode,
 }
@@ -114,8 +46,8 @@ impl SexprListValue {
     pub fn l_paren_token(&self) -> SyntaxResult<SyntaxToken> {
         support::required_token(&self.syntax, 0usize)
     }
-    pub fn sexpr_list(&self) -> SyntaxResult<SexprList> {
-        support::required_node(&self.syntax, 1usize)
+    pub fn sexpr_list(&self) -> SexprList {
+        support::list(&self.syntax, 1usize)
     }
     pub fn r_paren_token(&self) -> SyntaxResult<SyntaxToken> {
         support::required_token(&self.syntax, 2usize)
@@ -132,7 +64,7 @@ impl Serialize for SexprListValue {
 #[derive(Serialize)]
 pub struct SexprListValueFields {
     pub l_paren_token: SyntaxResult<SyntaxToken>,
-    pub sexpr_list: SyntaxResult<SexprList>,
+    pub sexpr_list: SexprList,
     pub r_paren_token: SyntaxResult<SyntaxToken>,
 }
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -236,82 +168,6 @@ impl AnySexprValue {
         }
     }
 }
-impl AstNode for SexprList {
-    type Language = Language;
-    const KIND_SET: SyntaxKindSet<Language> =
-        SyntaxKindSet::from_raw(RawSyntaxKind(SEXPR_LIST as u16));
-    fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SEXPR_LIST
-    }
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
-        if Self::can_cast(syntax.kind()) {
-            Some(Self { syntax })
-        } else {
-            None
-        }
-    }
-    fn syntax(&self) -> &SyntaxNode {
-        &self.syntax
-    }
-    fn into_syntax(self) -> SyntaxNode {
-        self.syntax
-    }
-}
-impl std::fmt::Debug for SexprList {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SexprList")
-            .field("items", &self.items())
-            .finish()
-    }
-}
-impl From<SexprList> for SyntaxNode {
-    fn from(n: SexprList) -> SyntaxNode {
-        n.syntax
-    }
-}
-impl From<SexprList> for SyntaxElement {
-    fn from(n: SexprList) -> SyntaxElement {
-        n.syntax.into()
-    }
-}
-impl AstNode for SexprListItem {
-    type Language = Language;
-    const KIND_SET: SyntaxKindSet<Language> =
-        SyntaxKindSet::from_raw(RawSyntaxKind(SEXPR_LIST_ITEM as u16));
-    fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SEXPR_LIST_ITEM
-    }
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
-        if Self::can_cast(syntax.kind()) {
-            Some(Self { syntax })
-        } else {
-            None
-        }
-    }
-    fn syntax(&self) -> &SyntaxNode {
-        &self.syntax
-    }
-    fn into_syntax(self) -> SyntaxNode {
-        self.syntax
-    }
-}
-impl std::fmt::Debug for SexprListItem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SexprListItem")
-            .field("item", &support::DebugSyntaxResult(self.item()))
-            .finish()
-    }
-}
-impl From<SexprListItem> for SyntaxNode {
-    fn from(n: SexprListItem) -> SyntaxNode {
-        n.syntax
-    }
-}
-impl From<SexprListItem> for SyntaxElement {
-    fn from(n: SexprListItem) -> SyntaxElement {
-        n.syntax.into()
-    }
-}
 impl AstNode for SexprListValue {
     type Language = Language;
     const KIND_SET: SyntaxKindSet<Language> =
@@ -340,7 +196,7 @@ impl std::fmt::Debug for SexprListValue {
                 "l_paren_token",
                 &support::DebugSyntaxResult(self.l_paren_token()),
             )
-            .field("sexpr_list", &support::DebugSyntaxResult(self.sexpr_list()))
+            .field("sexpr_list", &self.sexpr_list())
             .field(
                 "r_paren_token",
                 &support::DebugSyntaxResult(self.r_paren_token()),
@@ -517,16 +373,6 @@ impl std::fmt::Display for AnySexprValue {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for SexprList {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self.syntax(), f)
-    }
-}
-impl std::fmt::Display for SexprListItem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self.syntax(), f)
-    }
-}
 impl std::fmt::Display for SexprListValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -655,10 +501,10 @@ impl From<SexprBogusValue> for SyntaxElement {
     }
 }
 #[derive(Clone, Eq, PartialEq, Hash)]
-pub struct SexprItemList {
+pub struct SexprList {
     syntax_list: SyntaxList,
 }
-impl SexprItemList {
+impl SexprList {
     #[doc = r" Create an AstNode from a SyntaxNode without checking its kind"]
     #[doc = r""]
     #[doc = r" # Safety"]
@@ -671,16 +517,16 @@ impl SexprItemList {
         }
     }
 }
-impl AstNode for SexprItemList {
+impl AstNode for SexprList {
     type Language = Language;
     const KIND_SET: SyntaxKindSet<Language> =
-        SyntaxKindSet::from_raw(RawSyntaxKind(SEXPR_ITEM_LIST as u16));
+        SyntaxKindSet::from_raw(RawSyntaxKind(SEXPR_LIST as u16));
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SEXPR_ITEM_LIST
+        kind == SEXPR_LIST
     }
-    fn cast(syntax: SyntaxNode) -> Option<SexprItemList> {
+    fn cast(syntax: SyntaxNode) -> Option<SexprList> {
         if Self::can_cast(syntax.kind()) {
-            Some(SexprItemList {
+            Some(SexprList {
                 syntax_list: syntax.into_list(),
             })
         } else {
@@ -694,7 +540,7 @@ impl AstNode for SexprItemList {
         self.syntax_list.into_node()
     }
 }
-impl Serialize for SexprItemList {
+impl Serialize for SexprList {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -706,9 +552,9 @@ impl Serialize for SexprItemList {
         seq.end()
     }
 }
-impl AstNodeList for SexprItemList {
+impl AstNodeList for SexprList {
     type Language = Language;
-    type Node = SexprListItem;
+    type Node = AnySexprValue;
     fn syntax_list(&self) -> &SyntaxList {
         &self.syntax_list
     }
@@ -716,22 +562,22 @@ impl AstNodeList for SexprItemList {
         self.syntax_list
     }
 }
-impl Debug for SexprItemList {
+impl Debug for SexprList {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("SexprItemList ")?;
+        f.write_str("SexprList ")?;
         f.debug_list().entries(self.iter()).finish()
     }
 }
-impl IntoIterator for &SexprItemList {
-    type Item = SexprListItem;
-    type IntoIter = AstNodeListIterator<Language, SexprListItem>;
+impl IntoIterator for &SexprList {
+    type Item = AnySexprValue;
+    type IntoIter = AstNodeListIterator<Language, AnySexprValue>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
-impl IntoIterator for SexprItemList {
-    type Item = SexprListItem;
-    type IntoIter = AstNodeListIterator<Language, SexprListItem>;
+impl IntoIterator for SexprList {
+    type Item = AnySexprValue;
+    type IntoIter = AstNodeListIterator<Language, AnySexprValue>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
