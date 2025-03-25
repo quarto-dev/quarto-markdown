@@ -962,8 +962,10 @@ dependencies = [
  "biome_rowan",
  "biome_unicode_table",
  "insta",
+ "line_ending",
  "quarto_markdown_syntax",
  "serde",
+ "tests_macros",
  "tracing",
  "tree-sitter",
 ]
@@ -982,6 +984,15 @@ name = "quarto_sexpr_factory"
 version = "0.0.0"
 dependencies = [
  "biome_rowan",
+ "quarto_sexpr_syntax",
+]
+
+[[package]]
+name = "quarto_sexpr_pandoc"
+version = "0.0.0"
+dependencies = [
+ "biome_rowan",
+ "quarto_sexpr_parser",
  "quarto_sexpr_syntax",
 ]
 
