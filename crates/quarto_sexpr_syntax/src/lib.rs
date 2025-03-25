@@ -6,7 +6,7 @@ pub use self::generated::*;
 pub use biome_rowan::{TextLen, TextRange, TextSize, TokenAtOffset, TriviaPieceKind, WalkEvent};
 pub use syntax_node::*;
 
-use biome_rowan::{RawSyntaxKind, SyntaxKind, TokenText};
+use biome_rowan::RawSyntaxKind;
 
 impl From<u16> for SexprSyntaxKind {
     fn from(d: u16) -> SexprSyntaxKind {

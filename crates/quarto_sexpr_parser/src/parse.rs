@@ -115,6 +115,27 @@ impl<T> From<Parse<T>> for AnyParse {
     }
 }
 
+pub fn parse_text(
+    text: &str,
+    _options: SexprParserOptions,
+) -> (Vec<Event<SexprSyntaxKind>>, Vec<Trivia>, Vec<ParseError>) {
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&tree_sitter_sexpr::LANGUAGE.into())
+        .unwrap();
+
+    let ast = parser.parse(text, None).unwrap();
+
+    if ast.root_node().has_error() {
+        // TODO: In the long term we want an error resiliant parser.
+        // This would probably only be able to happen if we swap out tree sitter
+        // for a hand written recursive descent pratt parser using the Biome infra.
+        return parse_failure();
+    }
+
+    parse_tree(ast, text)
+}
+
 pub fn parse(text: &str, options: SexprParserOptions) -> Parse<SexprRoot> {
     let mut cache = NodeCache::default();
     parse_sexpr_with_cache(text, options, &mut cache)
@@ -135,33 +156,11 @@ pub fn parse_sexpr_with_cache(
         let _diagnostics = vec![];
 
         let mut tree_sink = SexprLosslessTreeSink::with_cache(text, &tokens, cache);
-        println!("Events: {:?}", events);
         biome_parser::event::process(&mut tree_sink, events, _diagnostics);
         let (green, _diagnostics) = tree_sink.finish();
 
         Parse::new(green, errors)
     })
-}
-
-pub fn parse_text(
-    text: &str,
-    _options: SexprParserOptions,
-) -> (Vec<Event<SexprSyntaxKind>>, Vec<Trivia>, Vec<ParseError>) {
-    let mut parser = tree_sitter::Parser::new();
-    parser
-        .set_language(&tree_sitter_sexpr::LANGUAGE.into())
-        .unwrap();
-
-    let ast = parser.parse(text, None).unwrap();
-
-    if ast.root_node().has_error() {
-        // TODO: In the long term we want an error resiliant parser.
-        // This would probably only be able to happen if we swap out tree sitter
-        // for a hand written recursive descent pratt parser using the Biome infra.
-        return parse_failure();
-    }
-
-    parse_tree(ast, text)
 }
 
 fn parse_failure() -> (Vec<Event<SexprSyntaxKind>>, Vec<Trivia>, Vec<ParseError>) {
@@ -259,7 +258,6 @@ impl<'src> SexprWalk<'src> {
     }
     
     fn handle_enter(&mut self, node: tree_sitter::Node, kind: SexprSyntaxKind, iter: &mut Preorder) {
-        println!("Enter Node: {:?}, {:?}", node, kind);
         match kind {
             SexprSyntaxKind::SEXPR_ROOT => self.handle_root_enter(),
             SexprSyntaxKind::SEXPR_SYMBOL_VALUE => self.handle_value_enter(kind),
@@ -275,7 +273,6 @@ impl<'src> SexprWalk<'src> {
     }
 
     fn handle_leave(&mut self, node: tree_sitter::Node, kind: SexprSyntaxKind) {
-        println!("Leave Node: {:?}, {:?}", node, kind);
         match kind {
             SexprSyntaxKind::SEXPR_ROOT => self.handle_root_leave(node),
             SexprSyntaxKind::SEXPR_SYMBOL_VALUE => 
@@ -294,7 +291,6 @@ impl<'src> SexprWalk<'src> {
 
     fn handle_list_enter(&mut self, node: tree_sitter::Node, iter: &mut Preorder) {
         self.handle_node_enter(SexprSyntaxKind::SEXPR_LIST_VALUE);
-        println!("Handling List Enter");
 
         while let Some(event) = iter.peek() {
             match event {
@@ -308,6 +304,9 @@ impl<'src> SexprWalk<'src> {
                         self.walk_next(iter);
                     }
                     SexprSyntaxKind::SEXPR_SYMBOL_VALUE => {
+                        self.walk_next(iter);
+                    }
+                    SexprSyntaxKind::SEXPR_LIST_VALUE => {
                         self.walk_next(iter);
                     }
                     // SexprSyntaxKind::R_PARAMETER | SexprSyntaxKind::COMMA | SexprSyntaxKind::COMMENT => {
@@ -346,9 +345,6 @@ impl<'src> SexprWalk<'src> {
         // TODO!: Don't unwrap()
         let this_end = TextSize::try_from(node.end_byte()).unwrap();
         let gap = &self.text[usize::from(self.last_end)..usize::from(this_end)];
-
-        println!("this_end: {:?}", this_end);
-        println!("gap: {:?}", gap);
 
         // Derive trivia between last token and end of document.
         // It is always leading trivia of the `EOF` token,
@@ -411,7 +407,6 @@ impl SexprParse {
     }
 
     fn start(&mut self, kind: SexprSyntaxKind) {
-        println!("pushing Start event {:?}", kind);
         self.push_event(Event::Start {
             kind,
             forward_parent: None,
@@ -427,7 +422,6 @@ impl SexprParse {
     }
 
     fn finish(&mut self) {
-        println!("pushing Finish event");
         self.push_event(Event::Finish);
     }
 
