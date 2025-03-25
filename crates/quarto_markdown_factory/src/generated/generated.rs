@@ -4,4 +4,4 @@ pub(super) mod syntax_factory;
 #[allow(unused)]
 pub mod node_factory;
 
-pub use syntax_factory::RSyntaxFactory;
+pub use syntax_factory::MarkdownSyntaxFactory;

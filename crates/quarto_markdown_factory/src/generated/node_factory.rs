@@ -7,32 +7,26 @@ use quarto_markdown_syntax::{
     MarkdownSyntaxElement as SyntaxElement, MarkdownSyntaxNode as SyntaxNode,
     MarkdownSyntaxToken as SyntaxToken, *,
 };
-pub fn md_bullet_list_item(md_bullet_list: MdBulletList) -> MdBulletListItem {
-    MdBulletListItem::unwrap_cast(SyntaxNode::new_detached(
-        MarkdownSyntaxKind::MD_BULLET_LIST_ITEM,
-        [Some(SyntaxElement::Node(md_bullet_list.into_syntax()))],
-    ))
-}
-pub fn md_document(value: MdBlockList, eof_token: SyntaxToken) -> MdDocumentBuilder {
-    MdDocumentBuilder {
+pub fn markdown_root(value: MdBlockList, eof_token: SyntaxToken) -> MarkdownRootBuilder {
+    MarkdownRootBuilder {
         value,
         eof_token,
         bom_token: None,
     }
 }
-pub struct MdDocumentBuilder {
+pub struct MarkdownRootBuilder {
     value: MdBlockList,
     eof_token: SyntaxToken,
     bom_token: Option<SyntaxToken>,
 }
-impl MdDocumentBuilder {
+impl MarkdownRootBuilder {
     pub fn with_bom_token(mut self, bom_token: SyntaxToken) -> Self {
         self.bom_token = Some(bom_token);
         self
     }
-    pub fn build(self) -> MdDocument {
-        MdDocument::unwrap_cast(SyntaxNode::new_detached(
-            MarkdownSyntaxKind::MD_DOCUMENT,
+    pub fn build(self) -> MarkdownRoot {
+        MarkdownRoot::unwrap_cast(SyntaxNode::new_detached(
+            MarkdownSyntaxKind::MARKDOWN_ROOT,
             [
                 self.bom_token.map(|token| SyntaxElement::Token(token)),
                 Some(SyntaxElement::Node(self.value.into_syntax())),
@@ -40,6 +34,12 @@ impl MdDocumentBuilder {
             ],
         ))
     }
+}
+pub fn md_bullet_list_item(md_bullet_list: MdBulletList) -> MdBulletListItem {
+    MdBulletListItem::unwrap_cast(SyntaxNode::new_detached(
+        MarkdownSyntaxKind::MD_BULLET_LIST_ITEM,
+        [Some(SyntaxElement::Node(md_bullet_list.into_syntax()))],
+    ))
 }
 pub fn md_fenced_code_block(md_textual: MdTextual) -> MdFencedCodeBlock {
     MdFencedCodeBlock::unwrap_cast(SyntaxNode::new_detached(

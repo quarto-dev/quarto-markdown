@@ -16,12 +16,12 @@ macro_rules! map_syntax_node {
     ($ node : expr , $ pattern : pat => $ body : expr) => {
         match $node {
             node => match $crate::MarkdownSyntaxNode::kind(&node) {
-                $crate::MarkdownSyntaxKind::MD_BULLET_LIST_ITEM => {
-                    let $pattern = unsafe { $crate::MdBulletListItem::new_unchecked(node) };
+                $crate::MarkdownSyntaxKind::MARKDOWN_ROOT => {
+                    let $pattern = unsafe { $crate::MarkdownRoot::new_unchecked(node) };
                     $body
                 }
-                $crate::MarkdownSyntaxKind::MD_DOCUMENT => {
-                    let $pattern = unsafe { $crate::MdDocument::new_unchecked(node) };
+                $crate::MarkdownSyntaxKind::MD_BULLET_LIST_ITEM => {
+                    let $pattern = unsafe { $crate::MdBulletListItem::new_unchecked(node) };
                     $body
                 }
                 $crate::MarkdownSyntaxKind::MD_FENCED_CODE_BLOCK => {

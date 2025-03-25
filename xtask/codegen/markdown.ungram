@@ -39,7 +39,7 @@ SyntaxElement = SyntaxElement
 
 MdBogus = SyntaxElement*
 
-MdDocument =
+MarkdownRoot =
 	bom: 'UNICODE_BOM'?
     value: MdBlockList
     eof: 'EOF'

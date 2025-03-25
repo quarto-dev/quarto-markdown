@@ -24,6 +24,51 @@ use std::fmt::{Debug, Formatter};
 #[allow(dead_code)]
 pub(crate) const SLOT_MAP_EMPTY_VALUE: u8 = u8::MAX;
 #[derive(Clone, PartialEq, Eq, Hash)]
+pub struct MarkdownRoot {
+    pub(crate) syntax: SyntaxNode,
+}
+impl MarkdownRoot {
+    #[doc = r" Create an AstNode from a SyntaxNode without checking its kind"]
+    #[doc = r""]
+    #[doc = r" # Safety"]
+    #[doc = r" This function must be guarded with a call to [AstNode::can_cast]"]
+    #[doc = r" or a match on [SyntaxNode::kind]"]
+    #[inline]
+    pub const unsafe fn new_unchecked(syntax: SyntaxNode) -> Self {
+        Self { syntax }
+    }
+    pub fn as_fields(&self) -> MarkdownRootFields {
+        MarkdownRootFields {
+            bom_token: self.bom_token(),
+            value: self.value(),
+            eof_token: self.eof_token(),
+        }
+    }
+    pub fn bom_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, 0usize)
+    }
+    pub fn value(&self) -> MdBlockList {
+        support::list(&self.syntax, 1usize)
+    }
+    pub fn eof_token(&self) -> SyntaxResult<SyntaxToken> {
+        support::required_token(&self.syntax, 2usize)
+    }
+}
+impl Serialize for MarkdownRoot {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.as_fields().serialize(serializer)
+    }
+}
+#[derive(Serialize)]
+pub struct MarkdownRootFields {
+    pub bom_token: Option<SyntaxToken>,
+    pub value: MdBlockList,
+    pub eof_token: SyntaxResult<SyntaxToken>,
+}
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct MdBulletListItem {
     pub(crate) syntax: SyntaxNode,
 }
@@ -57,51 +102,6 @@ impl Serialize for MdBulletListItem {
 #[derive(Serialize)]
 pub struct MdBulletListItemFields {
     pub md_bullet_list: MdBulletList,
-}
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct MdDocument {
-    pub(crate) syntax: SyntaxNode,
-}
-impl MdDocument {
-    #[doc = r" Create an AstNode from a SyntaxNode without checking its kind"]
-    #[doc = r""]
-    #[doc = r" # Safety"]
-    #[doc = r" This function must be guarded with a call to [AstNode::can_cast]"]
-    #[doc = r" or a match on [SyntaxNode::kind]"]
-    #[inline]
-    pub const unsafe fn new_unchecked(syntax: SyntaxNode) -> Self {
-        Self { syntax }
-    }
-    pub fn as_fields(&self) -> MdDocumentFields {
-        MdDocumentFields {
-            bom_token: self.bom_token(),
-            value: self.value(),
-            eof_token: self.eof_token(),
-        }
-    }
-    pub fn bom_token(&self) -> Option<SyntaxToken> {
-        support::token(&self.syntax, 0usize)
-    }
-    pub fn value(&self) -> MdBlockList {
-        support::list(&self.syntax, 1usize)
-    }
-    pub fn eof_token(&self) -> SyntaxResult<SyntaxToken> {
-        support::required_token(&self.syntax, 2usize)
-    }
-}
-impl Serialize for MdDocument {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.as_fields().serialize(serializer)
-    }
-}
-#[derive(Serialize)]
-pub struct MdDocumentFields {
-    pub bom_token: Option<SyntaxToken>,
-    pub value: MdBlockList,
-    pub eof_token: SyntaxResult<SyntaxToken>,
 }
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct MdFencedCodeBlock {
@@ -987,6 +987,49 @@ impl AnyMdInline {
         }
     }
 }
+impl AstNode for MarkdownRoot {
+    type Language = Language;
+    const KIND_SET: SyntaxKindSet<Language> =
+        SyntaxKindSet::from_raw(RawSyntaxKind(MARKDOWN_ROOT as u16));
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == MARKDOWN_ROOT
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+    fn into_syntax(self) -> SyntaxNode {
+        self.syntax
+    }
+}
+impl std::fmt::Debug for MarkdownRoot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarkdownRoot")
+            .field(
+                "bom_token",
+                &support::DebugOptionalElement(self.bom_token()),
+            )
+            .field("value", &self.value())
+            .field("eof_token", &support::DebugSyntaxResult(self.eof_token()))
+            .finish()
+    }
+}
+impl From<MarkdownRoot> for SyntaxNode {
+    fn from(n: MarkdownRoot) -> SyntaxNode {
+        n.syntax
+    }
+}
+impl From<MarkdownRoot> for SyntaxElement {
+    fn from(n: MarkdownRoot) -> SyntaxElement {
+        n.syntax.into()
+    }
+}
 impl AstNode for MdBulletListItem {
     type Language = Language;
     const KIND_SET: SyntaxKindSet<Language> =
@@ -1022,49 +1065,6 @@ impl From<MdBulletListItem> for SyntaxNode {
 }
 impl From<MdBulletListItem> for SyntaxElement {
     fn from(n: MdBulletListItem) -> SyntaxElement {
-        n.syntax.into()
-    }
-}
-impl AstNode for MdDocument {
-    type Language = Language;
-    const KIND_SET: SyntaxKindSet<Language> =
-        SyntaxKindSet::from_raw(RawSyntaxKind(MD_DOCUMENT as u16));
-    fn can_cast(kind: SyntaxKind) -> bool {
-        kind == MD_DOCUMENT
-    }
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
-        if Self::can_cast(syntax.kind()) {
-            Some(Self { syntax })
-        } else {
-            None
-        }
-    }
-    fn syntax(&self) -> &SyntaxNode {
-        &self.syntax
-    }
-    fn into_syntax(self) -> SyntaxNode {
-        self.syntax
-    }
-}
-impl std::fmt::Debug for MdDocument {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MdDocument")
-            .field(
-                "bom_token",
-                &support::DebugOptionalElement(self.bom_token()),
-            )
-            .field("value", &self.value())
-            .field("eof_token", &support::DebugSyntaxResult(self.eof_token()))
-            .finish()
-    }
-}
-impl From<MdDocument> for SyntaxNode {
-    fn from(n: MdDocument) -> SyntaxNode {
-        n.syntax
-    }
-}
-impl From<MdDocument> for SyntaxElement {
-    fn from(n: MdDocument) -> SyntaxElement {
         n.syntax.into()
     }
 }
@@ -2297,12 +2297,12 @@ impl std::fmt::Display for AnyMdInline {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for MdBulletListItem {
+impl std::fmt::Display for MarkdownRoot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for MdDocument {
+impl std::fmt::Display for MdBulletListItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

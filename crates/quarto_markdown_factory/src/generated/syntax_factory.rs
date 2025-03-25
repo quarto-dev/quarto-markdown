@@ -15,26 +15,7 @@ impl SyntaxFactory for MarkdownSyntaxFactory {
     ) -> RawSyntaxNode<Self::Kind> {
         match kind {
             MD_BOGUS => RawSyntaxNode::new(kind, children.into_iter().map(Some)),
-            MD_BULLET_LIST_ITEM => {
-                let mut elements = (&children).into_iter();
-                let mut slots: RawNodeSlots<1usize> = RawNodeSlots::default();
-                let mut current_element = elements.next();
-                if let Some(element) = &current_element {
-                    if MdBulletList::can_cast(element.kind()) {
-                        slots.mark_present();
-                        current_element = elements.next();
-                    }
-                }
-                slots.next_slot();
-                if current_element.is_some() {
-                    return RawSyntaxNode::new(
-                        MD_BULLET_LIST_ITEM.to_bogus(),
-                        children.into_iter().map(Some),
-                    );
-                }
-                slots.into_node(MD_BULLET_LIST_ITEM, children)
-            }
-            MD_DOCUMENT => {
+            MARKDOWN_ROOT => {
                 let mut elements = (&children).into_iter();
                 let mut slots: RawNodeSlots<3usize> = RawNodeSlots::default();
                 let mut current_element = elements.next();
@@ -61,11 +42,30 @@ impl SyntaxFactory for MarkdownSyntaxFactory {
                 slots.next_slot();
                 if current_element.is_some() {
                     return RawSyntaxNode::new(
-                        MD_DOCUMENT.to_bogus(),
+                        MARKDOWN_ROOT.to_bogus(),
                         children.into_iter().map(Some),
                     );
                 }
-                slots.into_node(MD_DOCUMENT, children)
+                slots.into_node(MARKDOWN_ROOT, children)
+            }
+            MD_BULLET_LIST_ITEM => {
+                let mut elements = (&children).into_iter();
+                let mut slots: RawNodeSlots<1usize> = RawNodeSlots::default();
+                let mut current_element = elements.next();
+                if let Some(element) = &current_element {
+                    if MdBulletList::can_cast(element.kind()) {
+                        slots.mark_present();
+                        current_element = elements.next();
+                    }
+                }
+                slots.next_slot();
+                if current_element.is_some() {
+                    return RawSyntaxNode::new(
+                        MD_BULLET_LIST_ITEM.to_bogus(),
+                        children.into_iter().map(Some),
+                    );
+                }
+                slots.into_node(MD_BULLET_LIST_ITEM, children)
             }
             MD_FENCED_CODE_BLOCK => {
                 let mut elements = (&children).into_iter();

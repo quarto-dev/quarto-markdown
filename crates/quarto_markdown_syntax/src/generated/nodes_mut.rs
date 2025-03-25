@@ -3,15 +3,7 @@
 use crate::{generated::nodes::*, MarkdownSyntaxToken as SyntaxToken};
 use biome_rowan::AstNode;
 use std::iter::once;
-impl MdBulletListItem {
-    pub fn with_md_bullet_list(self, element: MdBulletList) -> Self {
-        Self::unwrap_cast(
-            self.syntax
-                .splice_slots(0usize..=0usize, once(Some(element.into_syntax().into()))),
-        )
-    }
-}
-impl MdDocument {
+impl MarkdownRoot {
     pub fn with_bom_token(self, element: Option<SyntaxToken>) -> Self {
         Self::unwrap_cast(
             self.syntax
@@ -28,6 +20,14 @@ impl MdDocument {
         Self::unwrap_cast(
             self.syntax
                 .splice_slots(2usize..=2usize, once(Some(element.into()))),
+        )
+    }
+}
+impl MdBulletListItem {
+    pub fn with_md_bullet_list(self, element: MdBulletList) -> Self {
+        Self::unwrap_cast(
+            self.syntax
+                .splice_slots(0usize..=0usize, once(Some(element.into_syntax().into()))),
         )
     }
 }

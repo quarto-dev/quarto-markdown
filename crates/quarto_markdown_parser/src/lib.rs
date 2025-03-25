@@ -1,14 +1,18 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod error;
+mod options;
+mod parse;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[allow(unused)]
+mod treesitter;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+use quarto_markdown_factory::MarkdownSyntaxFactory;
+pub use error::ParseError;
+pub use options::MarkdownParserOptions;
+pub use parse::parse;
+pub use parse::parse_markdown_with_cache;
+pub use parse::Parse;
+
+use quarto_markdown_syntax::MarkdownLanguage;
+use biome_parser::tree_sink::LosslessTreeSink;
+
+pub(crate) type MarkdownLosslessTreeSink<'source> = LosslessTreeSink<'source, SexprLanguage, SexprSyntaxFactory>;

@@ -12,7 +12,6 @@ repository.workspace = true
 version = "0.0.0"
 
 [dependencies]
-# quarto_markdown_factory = { workspace = true }
 quarto_markdown_syntax = { workspace = true }
 biome_diagnostics = { workspace = true }
 biome_parser = { workspace = true }
@@ -26,6 +25,8 @@ tree-sitter = { workspace = true }
 biome_console = { workspace = true }
 biome_diagnostics = { workspace = true }
 insta = { workspace = true }
+line_ending = { workspace = true }
+tests_macros = { workspace = true }
 
 # cargo-workspaces metadata
 [package.metadata.workspaces]
