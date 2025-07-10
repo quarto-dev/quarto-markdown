@@ -70,11 +70,12 @@ An "AST" is an instance of the `Pandoc` datatype from [`pandoc-types`](https://h
 
 :::
 
-In practice we will also say that anything that is clearly isomorphic to a `Pandoc` value "is" an AST as well.
-This is so that we can e.g. talk about the output of `pandoc -t native` as an AST.
+In practice we will sometimes say that some document "is" an AST as well.
+In this context, we mean the result of `pandoc -t native` or some input to `pandoc -f native`.
+We try to keep the two different meanings clear, and to never intentionally refer to the same document as both a document that will be read as (eg) `markdown` and an AST.
 
 Similarly to documents, it is not the case that all possible Pandoc ASTs survive a roundtrip (through some other format, often `markdown`).
-So we can have an analogous definition:
+We have an analogous definition:
 
 ::: {#def-canonical-ast}
 
@@ -200,10 +201,10 @@ Technically, `pandoc` writers can do anything they want with nodes, and so any p
 to inspect the `pandoc` writers for all formats of interest.
 
 But the idea is that the goal of `RawBlock` and `RawInline` nodes is to produce "naked" output without any additional markup, and so the markup that defined the node as a `RawBlock` or `RawInline` will be missing on output,
-and so roundtripping will fail, and so the AST cannot be canonical.
+and so roundtripping will fail, and so the AST cannot be canonical. (This can be verified by inspecting the Pandoc source code)
 
 Finally, `pandoc` writers ignore `RawBlock` and `RawInline` nodes of formats that are not their own, immediately failing
-the case where the `format` field of these nodes doesn't match the format relatively to which we're making the statement.
+the case where the `format` field of these nodes doesn't match the format relatively to which we're making the statement. (This, once again, is verified by inspecting the Pandoc source code)
 
 :::
 
