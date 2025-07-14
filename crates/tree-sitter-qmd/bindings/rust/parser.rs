@@ -126,6 +126,14 @@ impl<'a> MarkdownCursor<'a> {
         }
     }
 
+    pub fn goto_top(&mut self) {
+        loop {
+            if !self.goto_parent() {
+                break;
+            }
+        }
+    }
+
     /// Move this cursor to the next sibling of its current node.
     ///
     /// This returns true if the cursor successfully moved, and returns false if there was no next
@@ -177,6 +185,42 @@ impl<'a> MarkdownCursor<'a> {
                 }
             }
         }
+    }
+
+    pub fn id(&self) -> (bool, usize) {
+        match &self.inline_cursor {
+            Some(cursor) => (true, cursor.node().id()), 
+            None => (false, self.block_cursor.node().id()),
+        }
+    }
+
+    fn inner_goto_id(&mut self, id: (bool, usize)) -> bool {
+        if self.id() == id {
+            return true;
+        }
+        if self.goto_first_child() {
+            if self.inner_goto_id(id) {
+                return true;
+            }
+            loop {
+                if !self.goto_next_sibling() {
+                    break;
+                }
+                if self.inner_goto_id(id) {
+                    return true;
+                }
+            }
+            self.goto_parent();
+        }
+        false
+    }
+
+    /// Move this cursor to the node with the given id.
+    /// 
+    /// takes time O(n) to find the node, where n is the number of nodes in the tree.
+    pub fn goto_id(&mut self, id: (bool, usize)) -> bool {
+        self.goto_top();
+        return self.inner_goto_id(id);
     }
 }
 
