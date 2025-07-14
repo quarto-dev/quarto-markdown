@@ -20,6 +20,7 @@ quarto_sexpr_syntax     = { path = "./crates/quarto_sexpr_syntax" }
 quarto_sexpr_parser     = { path = "./crates/quarto_sexpr_parser" }
 quarto_sexpr_factory    = { path = "./crates/quarto_sexpr_factory" }
 tree-sitter-sexpr       = { path = "./crates/tree-sitter-sexpr" }
+tree-sitter-qmd         = { path = "./crates/tree-sitter-qmd" }
 settings = { path = "./crates/settings" }
 line_ending = { path = "./crates/line_ending" }
 tests_macros = { path = "./crates/tests_macros" }

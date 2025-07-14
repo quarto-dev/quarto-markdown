@@ -953,6 +953,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quarto_markdown_pandoc"
+version = "0.0.0"
+dependencies = [
+ "tree-sitter",
+ "tree-sitter-qmd",
+]
+
+[[package]]
 name = "quarto_markdown_parser"
 version = "0.0.0"
 dependencies = [
@@ -968,6 +976,7 @@ dependencies = [
  "tests_macros",
  "tracing",
  "tree-sitter",
+ "tree-sitter-qmd",
 ]
 
 [[package]]
