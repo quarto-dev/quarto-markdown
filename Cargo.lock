@@ -976,7 +976,6 @@ dependencies = [
  "tests_macros",
  "tracing",
  "tree-sitter",
- "tree-sitter-qmd",
 ]
 
 [[package]]
