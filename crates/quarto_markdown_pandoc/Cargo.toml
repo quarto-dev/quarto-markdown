@@ -13,6 +13,7 @@ repository.workspace = true
 [dependencies]
 tree-sitter = { workspace = true }
 tree-sitter-qmd = { workspace = true }
+regex = { version = "1.10.0", features = ["unicode"] }
 
 [lints]
 workspace = true

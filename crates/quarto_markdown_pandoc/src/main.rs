@@ -1,20 +1,23 @@
 use std::io::{self, Read};
 use tree_sitter_qmd::MarkdownParser;
 
+mod traversals;
 mod errors;
+mod pandoc;
+mod writers;
 use errors::parse_is_good;
 
-fn print_whole_tree(cursor: &mut tree_sitter_qmd::MarkdownCursor, indent: usize) {
-    println!("{}node: {:?}", "  ".repeat(indent), cursor.node());
-    if cursor.goto_first_child() {
-        loop {
-            print_whole_tree(cursor, indent + 1);
-            if !cursor.goto_next_sibling() {
-                break;
-            }
+fn print_whole_tree(cursor: &mut tree_sitter_qmd::MarkdownCursor) {
+    let mut depth = 0;
+    traversals::topdown_traverse_concrete_tree(cursor, &mut |node, phase| {
+        if phase == traversals::TraversePhase::Enter {
+            println!("{}{}: {:?}", "  ".repeat(depth), node.kind(), node);
+            depth += 1;
+        } else {
+            depth -= 1;
         }
-        cursor.goto_parent();
-    }
+        true  // continue traversing
+    });
 }
 
 fn main() {
@@ -34,33 +37,10 @@ fn main() {
         }
         return;
     }
-    let mut cursor = tree.walk();
 
-    print_whole_tree(&mut cursor, 0);
+    print_whole_tree(&mut tree.walk());
 
-    // println!("{:?}", cursor.node());
-    // cursor.goto_first_child();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_first_child();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_first_child();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_first_child();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
-    // cursor.goto_next_sibling();
-    // println!("{:?}", cursor.node());
+    let pandoc = pandoc::treesitter_to_pandoc(&tree, &input_bytes);
+    let native_output = writers::native::write(&pandoc);
+    println!("{}", native_output);
 }

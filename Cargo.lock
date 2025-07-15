@@ -956,6 +956,7 @@ dependencies = [
 name = "quarto_markdown_pandoc"
 version = "0.0.0"
 dependencies = [
+ "regex",
  "tree-sitter",
  "tree-sitter-qmd",
 ]
