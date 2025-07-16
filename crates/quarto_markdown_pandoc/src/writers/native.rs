@@ -1,4 +1,9 @@
 
+/*
+ * native.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+
 use crate::pandoc::{Pandoc, Block, Inline, MathType, Attr};
 
 fn write_safe_string(text: &str) -> String {

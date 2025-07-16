@@ -1,3 +1,8 @@
+/*
+ * test.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+
 use tree_sitter_qmd::MarkdownParser;
 use quarto_markdown_pandoc::pandoc::{treesitter_to_pandoc};
 use quarto_markdown_pandoc::writers;

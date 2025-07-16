@@ -1,3 +1,8 @@
+/*
+ * traversals.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum TraversePhase {
     Enter,

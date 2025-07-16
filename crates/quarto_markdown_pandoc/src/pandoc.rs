@@ -1,4 +1,9 @@
 /*
+ * pandoc.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+
+/*
  * A data structure that mimics Pandoc's `data Pandoc` type.
  * This is used to represent the parsed structure of a Quarto Markdown document.
  */

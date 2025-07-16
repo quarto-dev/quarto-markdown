@@ -1,3 +1,8 @@
+/*
+ * errors.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+
 // tree-sitter doesn't have a good mechanism for error reporting,
 // so we have to manually traverse the tree and find error nodes.
 

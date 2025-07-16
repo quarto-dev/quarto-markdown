@@ -1,11 +1,25 @@
+/*
+ * main.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+
 use std::io::{self, Read};
 use tree_sitter_qmd::MarkdownParser;
+use clap::Parser;
 
 mod traversals;
 mod errors;
 mod pandoc;
 mod writers;
 use errors::parse_is_good;
+
+#[derive(Parser)]
+#[command(name = "quarto-markdown-pandoc")]
+#[command(about = "Convert Quarto markdown to various output formats")]
+struct Args {
+    #[arg(short = 't', long = "to", default_value = "native")]
+    to: String,
+}
 
 fn print_whole_tree(cursor: &mut tree_sitter_qmd::MarkdownCursor) {
     let mut depth = 0;
@@ -21,6 +35,8 @@ fn print_whole_tree(cursor: &mut tree_sitter_qmd::MarkdownCursor) {
 }
 
 fn main() {
+    let args = Args::parse();
+    
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
 
