@@ -56,7 +56,7 @@ fn main() {
 
     print_whole_tree(&mut tree.walk());
 
-    let pandoc = pandoc::treesitter_to_pandoc(&tree, &input_bytes);
+    let pandoc = pandoc::treesitter_to_pandoc(&tree, &input_bytes);    
     let output = match args.to.as_str() {
         "json" => writers::json::write(&pandoc),
         "native" => writers::native::write(&pandoc),

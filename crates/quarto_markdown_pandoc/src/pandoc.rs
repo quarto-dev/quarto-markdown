@@ -166,71 +166,122 @@ pub type Target = (String, String);
 pub enum MathType { InlineMath, DisplayMath }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct Str {
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Emph {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Underline {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Strong {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Strikeout {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Superscript {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Subscript {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SmallCaps {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Quoted {
+    pub quote_type: QuoteType,
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Cite {
+    pub citations: Vec<Citation>,
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Code {
+    pub attr: Attr,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Math {
+    pub math_type: MathType,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct RawInline {
+    pub format: String,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Link {
+    pub attr: Attr,
+    pub content: Inlines,
+    pub target: Target,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Image {
+    pub attr: Attr,
+    pub content: Inlines,
+    pub target: Target,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Note {
+    pub content: Blocks,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Span {
+    pub attr: Attr,
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Inline {
-    Str {
-        text: String,
-    },
-    Emph {
-        content: Inlines,
-    },
-    Underline {
-        content: Inlines,
-    },
-    Strong {
-        content: Inlines,
-    },
-    Strikeout {
-        content: Inlines,
-    },
-    Superscript {
-        content: Inlines,
-    },
-    Subscript {
-        content: Inlines,
-    },
-    SmallCaps {
-        content: Inlines,
-    },
-    Quoted {
-        quote_type: QuoteType,
-        content: Inlines,
-    },
-    Cite {
-        citations: Vec<Citation>,
-        content: Inlines,
-    },
-    Code {
-        attr: Attr,
-        text: String,
-    },
+    Str(Str),
+    Emph(Emph),
+    Underline(Underline),
+    Strong(Strong),
+    Strikeout(Strikeout),
+    Superscript(Superscript),
+    Subscript(Subscript),
+    SmallCaps(SmallCaps),
+    Quoted(Quoted),
+    Cite(Cite),
+    Code(Code),
     Space,
     SoftBreak,
     LineBreak,
-    Math {
-        math_type: MathType,
-        text: String,
-    },
-    RawInline {
-        format: String,
-        text: String,
-    },
-    Link {
-        attr: Attr,
-        content: Inlines,
-        target: Target,
-    },
-    Image {
-        attr: Attr,
-        content: Inlines,
-        target: Target,
-    },
-    Note {
-        content: Blocks,
-    },
-    Span {
-        attr: Attr,
-        content: Inlines,
-    },
+    Math(Math),
+    RawInline(RawInline),
+    Link(Link),
+    Image(Image),
+    Note(Note),
+    Span(Span),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -277,7 +328,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 if let Some(_) = whitespace_re.find(&text) {
                     Inline::Space
                 } else {
-                    Inline::Str { text }
+                    Inline::Str(Str { text })
                 }
             }
             _ => panic!("Expected Inline, got {:?} {:?}", node, child),
@@ -293,7 +344,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     if let Some(_) = whitespace_re.find(&text) {
                         inlines.push(Inline::Space)
                     } else {
-                        inlines.push(Inline::Str { text })
+                        inlines.push(Inline::Str(Str { text }))
                     }
                 }
                 _ => panic!("Unexpected child in link_text: {:?}", child)
@@ -425,16 +476,16 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             }
             if target.0.is_empty() & target.1.is_empty() {
                 // this is actually a span
-                PandocNativeIntermediate::IntermediateInline(Inline::Span {
+                PandocNativeIntermediate::IntermediateInline(Inline::Span(Span {
                     attr,
                     content,
-                })
+                }))
             } else {
-                PandocNativeIntermediate::IntermediateInline(Inline::Link {
+                PandocNativeIntermediate::IntermediateInline(Inline::Link(Link {
                     attr,
                     content,
                     target,
-                })
+                }))
             }
         },
         "key_value_specifier" => {
@@ -470,9 +521,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 .filter(|(node, _)| {
                     node != "emphasis_delimiter" // skip emphasis delimiters
                 }).map(native_inline).collect();
-            PandocNativeIntermediate::IntermediateInline(Inline::Emph {
+            PandocNativeIntermediate::IntermediateInline(Inline::Emph(Emph {
                 content: inlines,
-            })
+            }))
         },
         "strong_emphasis" => {
             let inlines: Vec<Inline> = children
@@ -480,9 +531,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 .filter(|(node, _)| {
                     node != "emphasis_delimiter" // skip emphasis delimiters
                 }).map(native_inline).collect();
-            PandocNativeIntermediate::IntermediateInline(Inline::Strong {
+            PandocNativeIntermediate::IntermediateInline(Inline::Strong(Strong {
                 content: inlines,
-            })
+            }))
         },
         "inline" => {
             let inlines: Vec<Inline> = children.into_iter().map(native_inline).collect();
@@ -515,10 +566,10 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let (_, child) = inlines.remove(0);
             match child {
                 PandocNativeIntermediate::IntermediateBaseText(text) => {
-                    PandocNativeIntermediate::IntermediateInline(Inline::Code {
+                    PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
                         attr: ("".to_string(), vec![], HashMap::new()), // todo: handle attributes
                         text,
-                    })
+                    }))
                 }
                 _ => panic!("Expected BaseText in code_span, got {:?}", child),
             }
@@ -554,10 +605,10 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let (_, child) = inlines.remove(0);
             match child {
                 PandocNativeIntermediate::IntermediateBaseText(text) => {
-                    PandocNativeIntermediate::IntermediateInline(Inline::Math {
+                    PandocNativeIntermediate::IntermediateInline(Inline::Math(Math {
                         math_type: math_type,
                         text,
-                    })
+                    }))
                 }
                 _ => panic!("Expected BaseText in latex_span, got {:?}", child),
             }

@@ -35,31 +35,31 @@ fn write_inline_math_type(math_type: &MathType) -> String {
 
 fn write_inline(text: &Inline) -> String {
     match text {
-        Inline::Math { math_type, text } => {
-            format!("Math {} {}", write_inline_math_type(math_type), write_safe_string(text))
+        Inline::Math(math_struct) => {
+            format!("Math {} {}", write_inline_math_type(&math_struct.math_type), write_safe_string(&math_struct.text))
         }
         Inline::Space => "Space".to_string(),
         Inline::SoftBreak => "SoftBreak".to_string(),
-        Inline::Str { text } => format!("Str {}", write_safe_string(&text)),
-        Inline::Emph { content } => {
-            let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+        Inline::Str(str_struct) => format!("Str {}", write_safe_string(&str_struct.text)),
+        Inline::Emph(emph_struct) => {
+            let content_str = emph_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Emph [{}]", content_str)
         },
-        Inline::Strong { content } => {
-            let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+        Inline::Strong(strong_struct) => {
+            let content_str = strong_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Strong [{}]", content_str)
         },
-        Inline::Span { attr, content } => {
-            let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
-            format!("Span {} [{}]", write_native_attr(attr), content_str)
+        Inline::Span(span_struct) => {
+            let content_str = span_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Span {} [{}]", write_native_attr(&span_struct.attr), content_str)
         },
-        Inline::Link { attr, content, target } => {
-            let (url, title) = target;
-            let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
-            format!("Link {} [{}] ({} , {})", write_native_attr(attr), content_str, write_safe_string(url), write_safe_string(title))
+        Inline::Link(link_struct) => {
+            let (url, title) = &link_struct.target;
+            let content_str = link_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Link {} [{}] ({} , {})", write_native_attr(&link_struct.attr), content_str, write_safe_string(url), write_safe_string(title))
         }
-        Inline::Code { text, attr } => {
-            format!("Code {} {}", write_native_attr(attr), write_safe_string(text))
+        Inline::Code(code_struct) => {
+            format!("Code {} {}", write_native_attr(&code_struct.attr), write_safe_string(&code_struct.text))
         }
         _ => panic!("Unsupported inline type: {:?}", text),
     }
