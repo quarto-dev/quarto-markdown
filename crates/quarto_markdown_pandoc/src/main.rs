@@ -57,6 +57,13 @@ fn main() {
     print_whole_tree(&mut tree.walk());
 
     let pandoc = pandoc::treesitter_to_pandoc(&tree, &input_bytes);
-    let native_output = writers::native::write(&pandoc);
-    println!("{}", native_output);
+    let output = match args.to.as_str() {
+        "json" => writers::json::write(&pandoc),
+        "native" => writers::native::write(&pandoc),
+        _ => {
+            eprintln!("Unknown output format: {}", args.to);
+            return;
+        }
+    };
+    println!("{}", output);
 }

@@ -1072,6 +1072,7 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "regex",
+ "serde_json",
  "tree-sitter",
  "tree-sitter-qmd",
 ]
