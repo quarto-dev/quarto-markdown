@@ -94,3 +94,14 @@ attribute 2 key-values with spaces
       (key_value_specifier
         (key_value_key)
         (key_value_value)))))
+================================================================================
+attribute key-values with escaped quote in value
+================================================================================
+[]{ k2="v\"2" }
+--------------------------------------------------------------------------------
+(inline
+  (inline_link
+    (commonmark_attribute
+      (key_value_specifier
+       (key_value_key)
+       (key_value_value)))))
