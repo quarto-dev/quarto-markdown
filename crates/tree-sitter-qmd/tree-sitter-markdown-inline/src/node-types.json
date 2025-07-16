@@ -359,6 +359,25 @@
   {
     "type": "key_value_specifier",
     "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "key_value_key",
+          "named": true
+        },
+        {
+          "type": "key_value_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "key_value_value",
+    "named": true,
     "fields": {}
   },
   {
@@ -832,6 +851,10 @@
   },
   {
     "type": "id_specifier",
+    "named": true
+  },
+  {
+    "type": "key_value_key",
     "named": true
   },
   {

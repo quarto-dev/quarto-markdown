@@ -109,11 +109,6 @@ module.exports.rules = {
       $.raw_attribute,
       $.commonmark_attribute
     ),
-    language_attribute: $ => seq(
-      "{",
-      alias($.commonmark_name, $.language),
-      "}"
-    ),
     raw_specifier: $ => /=[a-zA-Z_][a-zA-Z0-9_-]*/,
     _commonmark_whitespace: $ => /[ \t]+/,
     raw_attribute: $ => seq(
@@ -123,11 +118,11 @@ module.exports.rules = {
       optional($._commonmark_whitespace),
       "}"
     ),
-    commonmark_name: $ => token(prec(1, /[a-zA-Z_][a-zA-Z0-9_-]*/)),
-    id_specifier: $ => /[#][a-zA-Z_][a-zA-Z0-9_-]*/,
-    class_specifier: $ => /[.][a-zA-Z_][a-zA-Z0-9_-]*/,
+    commonmark_name: $ => token(prec(1, /[a-zA-Z_][a-zA-Z0-9_\-.]*/)),
+    id_specifier: $ => /[#][a-zA-Z0-9_\-.]+/,
+    class_specifier: $ => /[.][a-zA-Z0-9_\-][a-zA-Z0-9_\-.]+/,
 
-    commonmark_attribute: $ => prec(2, seq(
+    commonmark_attribute: $ => prec.dynamic(2, seq(
       "{",
       optional($._commonmark_whitespace),
       repeat(seq($.id_specifier, optional($._commonmark_whitespace))),
@@ -135,15 +130,21 @@ module.exports.rules = {
       repeat(seq(alias($._attribute, $.key_value_specifier), optional($._commonmark_whitespace))),
       "}"
     )),
+    language_attribute: $ => prec.dynamic(1, seq(
+      "{",
+      alias($.commonmark_name, $.language),
+      "}"
+    )),
 
     _attribute: $ => seq(
-      $._attribute_name, 
+      // the choice here is an important hack that allows us to intentionally introduce a conflict that will be resolved later
+      alias(choice($.key_value_key, $.commonmark_name), $.key_value_key),
       optional($._commonmark_whitespace), 
       '=', 
       optional($._commonmark_whitespace), 
-      $._attribute_value),
-    _attribute_name: $ => /[a-zA-Z_:][a-zA-Z0-9_\.:\-]*/,
-    _attribute_value: $ => choice(
+      $.key_value_value),
+    key_value_key: $ => /[a-zA-Z_:][a-zA-Z0-9_\.:\-]*/,
+    key_value_value: $ => choice(
         /[^ \t\r\n}"'=<>`]+/,
         seq("'", repeat(choice($._word, $._commonmark_whitespace, $._soft_line_break, punctuation_without($, ["'"]))), "'"),
         seq('"', repeat(choice($._word, $._commonmark_whitespace, $._soft_line_break, punctuation_without($, ['"']))), '"'),

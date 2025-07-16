@@ -91,6 +91,8 @@ module.exports = grammar(add_inline_rules({
         // [$.shortcut_link, $._link_text],
         [$.link_destination, $.link_title],
         [$._link_destination_parenthesis, $.link_title],
+
+        [$.commonmark_attribute, $.language_attribute],
     ],
     extras: $ => [],
 
@@ -289,7 +291,7 @@ module.exports = grammar(add_inline_rules({
         ))),
         _text_base: $ => choice(
             $._word,
-            common.punctuation_without($, ['[', ']']),
+            common.punctuation_without($, ['[', '{', '}', ']']),
             $._whitespace,
         ),
 
