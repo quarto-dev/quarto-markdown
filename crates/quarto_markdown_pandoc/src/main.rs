@@ -10,6 +10,7 @@ use clap::Parser;
 mod traversals;
 mod errors;
 mod pandoc;
+mod filters;
 mod writers;
 use errors::parse_is_good;
 

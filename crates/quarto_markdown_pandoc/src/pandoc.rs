@@ -261,6 +261,16 @@ pub struct Span {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct Space {}
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LineBreak {}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SoftBreak {}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Inline {
     Str(Str),
     Emph(Emph),
@@ -273,9 +283,9 @@ pub enum Inline {
     Quoted(Quoted),
     Cite(Cite),
     Code(Code),
-    Space,
-    SoftBreak,
-    LineBreak,
+    Space(Space),
+    SoftBreak(SoftBreak),
+    LineBreak(LineBreak),
     Math(Math),
     RawInline(RawInline),
     Link(Link),
@@ -326,7 +336,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             PandocNativeIntermediate::IntermediateInline(inline) => inline,
             PandocNativeIntermediate::IntermediateBaseText(text) => {
                 if let Some(_) = whitespace_re.find(&text) {
-                    Inline::Space
+                    Inline::Space(Space {})
                 } else {
                     Inline::Str(Str { text })
                 }
@@ -342,7 +352,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 PandocNativeIntermediate::IntermediateInlines(inner_inlines) => inlines.extend(inner_inlines),
                 PandocNativeIntermediate::IntermediateBaseText(text) => {
                     if let Some(_) = whitespace_re.find(&text) {
-                        inlines.push(Inline::Space)
+                        inlines.push(Inline::Space(Space {}))
                     } else {
                         inlines.push(Inline::Str(Str { text }))
                     }
@@ -544,7 +554,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             PandocNativeIntermediate::IntermediateUnknown
         },
         "soft_line_break" => {
-            PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak)
+            PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { }))
         },
         "latex_span_delimiter" => {
             let str = node.utf8_text(input_bytes).unwrap();
