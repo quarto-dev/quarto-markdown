@@ -13,10 +13,10 @@ pub struct Pandoc {
     pub blocks: Vec<Block>
     // eventually, meta: 
 }
-type Attr = (String, Vec<String>, HashMap<String, String>);
+pub type Attr = (String, Vec<String>, HashMap<String, String>);
 
-type Blocks = Vec<Block>;
-type Inlines = Vec<Inline>;
+pub type Blocks = Vec<Block>;
+pub type Inlines = Vec<Inline>;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ListNumberStyle {
@@ -36,7 +36,7 @@ pub enum ListNumberDelim {
     TwoParens,
 }
 
-type ListAttributes = (usize, ListNumberStyle, ListNumberDelim);
+pub type ListAttributes = (usize, ListNumberStyle, ListNumberDelim);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Alignment {
@@ -52,7 +52,7 @@ pub enum ColWidth {
     Percentage(f64)
 }
 
-type ColSpec = (Alignment, ColWidth);
+pub type ColSpec = (Alignment, ColWidth);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Row {
@@ -155,7 +155,7 @@ pub enum Block {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum QuoteType { SingleQuote, DoubleQuote }
 
-type Target = (String, String);
+pub type Target = (String, String);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MathType { InlineMath, DisplayMath }
@@ -248,6 +248,7 @@ pub enum CitationMode {
 #[derive(Debug, Clone, PartialEq)]
 enum PandocNativeIntermediate {
     IntermediatePandoc(Pandoc),
+    IntermediateAttr(Attr),
     IntermediateSection(Vec<Block>),
     IntermediateBlock(Block),
     IntermediateInline(Inline),
@@ -255,12 +256,14 @@ enum PandocNativeIntermediate {
     IntermediateBaseText(String),
     IntermediateLatexInlineDelimiter,
     IntermediateLatexDisplayDelimiter,
+    IntermediateKeyValueSpec(HashMap<String, String>),
     IntermediateUnknown,
 }
 
 fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeIntermediate)>, input_bytes: &[u8]) -> PandocNativeIntermediate {
 
     let whitespace_re = Regex::new(r"\s+").unwrap();
+    let escaped_quote_re = Regex::new("\\\"").unwrap();
 
     let native_inline = |(node, child)| {
         match child {
@@ -275,6 +278,26 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             _ => panic!("Expected Inline, got {:?} {:?}", node, child),
         }
     };
+    let native_inlines = |children| {
+        let mut inlines: Vec<Inline> = Vec::new();
+        for (_, child) in children {
+            match child {
+                PandocNativeIntermediate::IntermediateInline(inline) => inlines.push(inline),
+                PandocNativeIntermediate::IntermediateInlines(inner_inlines) => inlines.extend(inner_inlines),
+                PandocNativeIntermediate::IntermediateBaseText(text) => {
+                    if let Some(_) = whitespace_re.find(&text) {
+                        inlines.push(Inline::Space)
+                    } else {
+                        inlines.push(Inline::Str { text })
+                    }
+                }
+                _ => panic!("Unexpected child in link_text: {:?}", child)
+            }
+        }
+        inlines
+    };
+
+
     match node.kind() {
         "document" => {
             let mut blocks: Vec<Block> = Vec::new();
@@ -312,6 +335,124 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 content: inlines,
             })
         },
+        "commonmark_attribute" => {
+            let mut attr = ("".to_string(), vec![], HashMap::new());
+            children.into_iter().for_each(|(node, child)| {
+                match child {
+                    PandocNativeIntermediate::IntermediateBaseText(id) => {
+                        if node == "id_specifier" {
+                            attr.0 = id;
+                        } else if node == "class_specifier" {
+                            attr.1.push(id);
+                        } else {
+                            panic!("Unexpected commonmark_attribute node: {}", node);
+                        }
+                    },
+                    PandocNativeIntermediate::IntermediateKeyValueSpec(spec) => {
+                        for (key, value) in spec {
+                            attr.2.insert(key, value);
+                        }
+                    },
+                    PandocNativeIntermediate::IntermediateUnknown => {},
+                    _ => panic!("Unexpected child in commonmark_attribute: {:?}", child),
+                }
+            });
+            PandocNativeIntermediate::IntermediateAttr(attr)
+        },
+        "class_specifier" => {
+            let id = node.utf8_text(input_bytes).unwrap().to_string().split_off(1);
+            PandocNativeIntermediate::IntermediateBaseText(id)
+        },
+        "id_specifier" => {
+            let id = node.utf8_text(input_bytes).unwrap().to_string().split_off(1);
+            PandocNativeIntermediate::IntermediateBaseText(id)
+        },
+        "key_value_key" => {
+            let id = node.utf8_text(input_bytes).unwrap().to_string();
+            PandocNativeIntermediate::IntermediateBaseText(id)
+        },
+        "key_value_value" => {
+            let value = node.utf8_text(input_bytes).unwrap().to_string();
+            if value.starts_with('"') && value.ends_with('"') {
+                // Remove surrounding quotes
+                let value = value[1..value.len()-1].to_string();
+                PandocNativeIntermediate::IntermediateBaseText(
+                    escaped_quote_re.replace_all(&value, "\"").to_string()
+                )
+            } else {
+                // If not quoted, return as is
+                PandocNativeIntermediate::IntermediateBaseText(value)
+            }
+        },
+        "link_title" => {
+            let title = node.utf8_text(input_bytes).unwrap().to_string();
+            let title = title[1..title.len()-1].to_string();
+            PandocNativeIntermediate::IntermediateBaseText(title)
+        },
+        "link_destination" => {
+            let url = node.utf8_text(input_bytes).unwrap().to_string();
+            PandocNativeIntermediate::IntermediateBaseText(url)
+        },
+        "link_text" => {
+            PandocNativeIntermediate::IntermediateInlines(native_inlines(children))
+        },
+        "inline_link" => {
+            let mut attr = ("".to_string(), vec![], HashMap::new());
+            let mut target = ("".to_string(), "".to_string());
+            let mut content: Vec<Inline> = Vec::new();
+            for (node, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
+                    PandocNativeIntermediate::IntermediateBaseText(text) => {
+                        if node == "link_destination" {
+                            target.0 = text; // URL
+                        } else if node == "link_title" {
+                            target.1 = text; // Title
+                        } else {
+                            panic!("Unexpected inline_link node: {}", node);
+                        }
+                    },
+                    PandocNativeIntermediate::IntermediateUnknown => {},
+                    PandocNativeIntermediate::IntermediateInlines(inlines) => content.extend(inlines),
+                    PandocNativeIntermediate::IntermediateInline(inline) => content.push(inline),
+                    _ => panic!("Unexpected child in inline_link: {:?}", child),
+                }
+            }
+            if target.0.is_empty() & target.1.is_empty() {
+                // this is actually a span
+                PandocNativeIntermediate::IntermediateInline(Inline::Span {
+                    attr,
+                    content,
+                })
+            } else {
+                PandocNativeIntermediate::IntermediateInline(Inline::Link {
+                    attr,
+                    content,
+                    target,
+                })
+            }
+        },
+        "key_value_specifier" => {
+            let mut spec = HashMap::new();
+            let mut current_key: Option<String> = None;
+            for (node, child) in children {
+                if let PandocNativeIntermediate::IntermediateBaseText(value) = child {
+                    if node == "key_value_key" {
+                        current_key = Some(value);
+                    } else if node == "key_value_value" {
+                        if let Some(key) = current_key.take() {
+                            spec.insert(key, value);
+                        } else {
+                            panic!("Found key_value_value without a preceding key_value_key");
+                        }
+                    } else {
+                        eprintln!("Unexpected key_value_specifier node: {}", node);
+                    }
+                }
+            }
+            PandocNativeIntermediate::IntermediateKeyValueSpec(spec)
+        },
+        "code_content" |
         "latex_content" |
         "text_base" => {
             node.utf8_text(input_bytes)
@@ -358,7 +499,25 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             } else {
                 panic!("Warning: Unrecognized latex_span_delimiter: {}", str);
             }
-        }
+        },
+        "code_span" => {
+            let mut inlines: Vec<_> = children
+                .into_iter()
+                .filter(|(_, child)| {
+                    *child != PandocNativeIntermediate::IntermediateUnknown 
+                }).collect();
+            assert!(inlines.len() == 1, "Expected exactly one inline in code_span, got {}", inlines.len());
+            let (_, child) = inlines.remove(0);
+            match child {
+                PandocNativeIntermediate::IntermediateBaseText(text) => {
+                    PandocNativeIntermediate::IntermediateInline(Inline::Code {
+                        attr: ("".to_string(), vec![], HashMap::new()), // todo: handle attributes
+                        text,
+                    })
+                }
+                _ => panic!("Expected BaseText in code_span, got {:?}", child),
+            }
+        },
         "latex_span" => {
             let mut is_inline_math = false;
             let mut is_display_math = false;
