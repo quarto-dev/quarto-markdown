@@ -2184,6 +2184,79 @@
         }
       ]
     },
+    "quoted_span": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC_RIGHT",
+          "value": 0,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_single_quote_open"
+                },
+                "named": true,
+                "value": "single_quoted_span_delimiter"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_inline_element"
+                }
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_single_quote_close"
+                },
+                "named": true,
+                "value": "single_quoted_span_delimiter"
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 0,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_double_quote_open"
+                },
+                "named": true,
+                "value": "double_quoted_span_delimiter"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_inline_element"
+                }
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_double_quote_close"
+                },
+                "named": true,
+                "value": "double_quoted_span_delimiter"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "_link_text": {
       "type": "PREC_DYNAMIC",
       "value": 10,
@@ -3549,7 +3622,7 @@
     },
     "_word_no_digit": {
       "type": "PATTERN",
-      "value": "[^!-/:-@\\[-`\\{-~ \\t\\n\\r0-9]+(_+[^!-/:-@\\[-`\\{-~ \\t\\n\\r0-9]+)*"
+      "value": "[^!-/:-@\\[-`\\{-~' \\t\\n\\r0-9]+(_+[^!-/:-@\\[-`\\{-~' \\t\\n\\r0-9]+)*"
     },
     "_digits": {
       "type": "PATTERN",
@@ -3630,6 +3703,10 @@
               "name": "code_span"
             },
             {
+              "type": "SYMBOL",
+              "name": "quoted_span"
+            },
+            {
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
@@ -3686,10 +3763,6 @@
                 {
                   "type": "STRING",
                   "value": "&"
-                },
-                {
-                  "type": "STRING",
-                  "value": "'"
                 },
                 {
                   "type": "STRING",
@@ -5178,6 +5251,22 @@
     {
       "type": "SYMBOL",
       "name": "_latex_span_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_single_quote_open"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_single_quote_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_double_quote_open"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_double_quote_close"
     },
     {
       "type": "SYMBOL",

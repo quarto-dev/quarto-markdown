@@ -15,7 +15,7 @@ const PRECEDENCE_LEVEL_HTML = 100;
 
 // Punctuation characters as specified in
 // https://github.github.com/gfm/#ascii-punctuation-character
-const PUNCTUATION_CHARACTERS_REGEX = '!-/:-@\\[-`\\{-~';
+const PUNCTUATION_CHARACTERS_REGEX = '!-/:-@\\[-`\\{-~\'';
 
 
 // !!!
@@ -55,6 +55,11 @@ module.exports = grammar(add_inline_rules({
         // An opening token does not mean the text after has to be latex if there is no closing token
         $._latex_span_start,
         $._latex_span_close,
+
+        $._single_quote_open,
+        $._single_quote_close,
+        $._double_quote_open,
+        $._double_quote_close,
 
         // Token emmited when encountering opening delimiters for a leaf span
         // e.g. a code span, that does not have a matching closing span
@@ -123,6 +128,19 @@ module.exports = grammar(add_inline_rules({
             alias($._latex_span_start, $.latex_span_delimiter),
             alias(repeat(choice($._text_base, '[', ']', $._soft_line_break, $.backslash_escape)), $.latex_content),
             alias($._latex_span_close, $.latex_span_delimiter),
+        ),
+
+        quoted_span: $ => choice(
+            prec.right(seq(
+                alias($._single_quote_open, $.single_quoted_span_delimiter),
+                repeat($._inline_element),
+                alias($._single_quote_close, $.single_quoted_span_delimiter),
+            )),
+            prec.right(seq(
+                alias($._double_quote_open, $.double_quoted_span_delimiter),
+                repeat($._inline_element),
+                alias($._double_quote_close, $.double_quoted_span_delimiter),
+            )),
         ),
 
         // Different kinds of links:
@@ -282,6 +300,7 @@ module.exports = grammar(add_inline_rules({
             $.numeric_character_reference,
             $.latex_span,
             $.code_span,
+            $.quoted_span,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),
@@ -291,7 +310,7 @@ module.exports = grammar(add_inline_rules({
         ))),
         _text_base: $ => choice(
             $._word,
-            common.punctuation_without($, ['[', '{', '}', ']']),
+            common.punctuation_without($, ['[', '{', '}', ']', "'"]),
             $._whitespace,
         ),
 

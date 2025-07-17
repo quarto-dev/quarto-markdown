@@ -1,1 +1,1 @@
-((latex_block) @injection.content (#set! injection.language "latex"))
+((latex_span) @injection.content (#set! injection.language "latex"))

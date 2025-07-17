@@ -1,0 +1,46 @@
+================================================================================
+single quotes
+================================================================================
+'hello'
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (single_quoted_span_delimiter)
+    (text_base)
+    (single_quoted_span_delimiter)))
+================================================================================
+double quotes
+================================================================================
+"hello"
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (double_quoted_span_delimiter)
+    (text_base)
+    (double_quoted_span_delimiter)))
+================================================================================
+nested through emphasis
+================================================================================
+"hello _wo 'r' ld_. Bad."
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (double_quoted_span_delimiter)
+    (text_base)
+    (text_base)
+    (emphasis
+      (emphasis_delimiter)
+      (text_base)
+      (text_base)
+      (quoted_span
+        (single_quoted_span_delimiter)
+        (text_base)
+        (single_quoted_span_delimiter))
+      (text_base)
+      (text_base)
+      (emphasis_delimiter))
+    (text_base)
+    (text_base)
+    (text_base)
+    (text_base)
+    (double_quoted_span_delimiter)))

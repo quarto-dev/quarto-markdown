@@ -116,6 +116,10 @@
           "named": true
         },
         {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -227,6 +231,10 @@
           "named": true
         },
         {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -296,6 +304,10 @@
         },
         {
           "type": "numeric_character_reference",
+          "named": true
+        },
+        {
+          "type": "quoted_span",
           "named": true
         },
         {
@@ -497,6 +509,10 @@
           "named": true
         },
         {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -537,6 +553,89 @@
         },
         {
           "type": "numeric_character_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "quoted_span",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "double_quoted_span_delimiter",
+          "named": true
+        },
+        {
+          "type": "email_autolink",
+          "named": true
+        },
+        {
+          "type": "emphasis",
+          "named": true
+        },
+        {
+          "type": "entity_reference",
+          "named": true
+        },
+        {
+          "type": "hard_line_break",
+          "named": true
+        },
+        {
+          "type": "image",
+          "named": true
+        },
+        {
+          "type": "inline_link",
+          "named": true
+        },
+        {
+          "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "numeric_character_reference",
+          "named": true
+        },
+        {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "single_quoted_span_delimiter",
+          "named": true
+        },
+        {
+          "type": "soft_line_break",
+          "named": true
+        },
+        {
+          "type": "strikethrough",
+          "named": true
+        },
+        {
+          "type": "strong_emphasis",
+          "named": true
+        },
+        {
+          "type": "text_base",
+          "named": true
+        },
+        {
+          "type": "uri_autolink",
           "named": true
         }
       ]
@@ -615,6 +714,10 @@
           "named": true
         },
         {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -687,6 +790,10 @@
         },
         {
           "type": "numeric_character_reference",
+          "named": true
+        },
+        {
+          "type": "quoted_span",
           "named": true
         },
         {
@@ -838,6 +945,10 @@
     "named": true
   },
   {
+    "type": "double_quoted_span_delimiter",
+    "named": true
+  },
+  {
     "type": "email_autolink",
     "named": true
   },
@@ -871,6 +982,10 @@
   },
   {
     "type": "raw_specifier",
+    "named": true
+  },
+  {
+    "type": "single_quoted_span_delimiter",
     "named": true
   },
   {

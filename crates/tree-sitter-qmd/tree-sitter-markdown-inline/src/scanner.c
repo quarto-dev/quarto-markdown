@@ -1,4 +1,5 @@
 #include "tree_sitter/parser.h"
+#include "stdio.h"
 
 #ifdef _MSC_VER
 #define UNUSED __pragma(warning(suppress : 4101))
@@ -22,6 +23,10 @@ typedef enum {
     STRIKETHROUGH_CLOSE,
     LATEX_SPAN_START,
     LATEX_SPAN_CLOSE,
+    SINGLE_QUOTE_OPEN,
+    SINGLE_QUOTE_CLOSE,
+    DOUBLE_QUOTE_OPEN,
+    DOUBLE_QUOTE_CLOSE,
     UNCLOSED_SPAN
 } TokenType;
 
@@ -64,6 +69,8 @@ typedef struct {
     // run.
     uint8_t num_emphasis_delimiters_left;
 
+    uint8_t inside_single_quote;
+    uint8_t inside_double_quote;
 } Scanner;
 
 // Write the whole state of a Scanner to a byte buffer
@@ -73,6 +80,8 @@ static unsigned serialize(Scanner *s, char *buffer) {
     buffer[size++] = (char)s->code_span_delimiter_length;
     buffer[size++] = (char)s->latex_span_delimiter_length;
     buffer[size++] = (char)s->num_emphasis_delimiters_left;
+    buffer[size++] = (char)s->inside_single_quote;
+    buffer[size++] = (char)s->inside_double_quote;
     return size;
 }
 
@@ -83,12 +92,16 @@ static void deserialize(Scanner *s, const char *buffer, unsigned length) {
     s->code_span_delimiter_length = 0;
     s->latex_span_delimiter_length = 0;
     s->num_emphasis_delimiters_left = 0;
+    s->inside_single_quote = 0;
+    s->inside_double_quote = 0;
     if (length > 0) {
         size_t size = 0;
         s->state = (uint8_t)buffer[size++];
         s->code_span_delimiter_length = (uint8_t)buffer[size++];
         s->latex_span_delimiter_length = (uint8_t)buffer[size++];
         s->num_emphasis_delimiters_left = (uint8_t)buffer[size++];
+        s->inside_single_quote = (uint8_t)buffer[size++];
+        s->inside_double_quote = (uint8_t)buffer[size++];
     }
 }
 
@@ -149,6 +162,55 @@ static bool parse_dollar(Scanner *s, TSLexer *lexer,
                                 valid_symbols, '$', LATEX_SPAN_START,
                                 LATEX_SPAN_CLOSE);
 }
+
+static bool parse_single_quote(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    if (s->inside_single_quote > 0) {
+        if (valid_symbols[SINGLE_QUOTE_CLOSE]) {
+            lexer->result_symbol = SINGLE_QUOTE_CLOSE;
+            s->inside_single_quote = 0;
+            return true;
+        }
+        // HEY do we ever get here?
+    }
+    lexer->mark_end(lexer);
+    if (valid_symbols[SINGLE_QUOTE_CLOSE]) {
+        s->inside_single_quote = 0;
+        lexer->result_symbol = SINGLE_QUOTE_CLOSE;
+        return true;
+    }
+    if (valid_symbols[SINGLE_QUOTE_OPEN]) {
+        s->inside_single_quote = 1;
+        lexer->result_symbol = SINGLE_QUOTE_OPEN;
+        return true;
+    }
+    return false;
+}
+
+static bool parse_double_quote(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    if (s->inside_double_quote > 0) {
+        if (valid_symbols[DOUBLE_QUOTE_CLOSE]) {
+            lexer->result_symbol = DOUBLE_QUOTE_CLOSE;
+            s->inside_double_quote = 0;
+            return true;
+        }
+        // HEY do we ever get here?
+    }
+    lexer->mark_end(lexer);
+    if (valid_symbols[DOUBLE_QUOTE_CLOSE]) {
+        s->inside_double_quote = 0;
+        lexer->result_symbol = DOUBLE_QUOTE_CLOSE;
+        return true;
+    }
+    if (valid_symbols[DOUBLE_QUOTE_OPEN]) {
+        s->inside_double_quote = 1;
+        lexer->result_symbol = DOUBLE_QUOTE_OPEN;
+        return true;
+    }
+    return false;
+}
+
 
 static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     lexer->advance(lexer, false);
@@ -347,6 +409,10 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // Decide which tokens to consider based on the first non-whitespace
     // character
     switch (lexer->lookahead) {
+        case '\'':
+            return parse_single_quote(s, lexer, valid_symbols);
+        case '"':
+            return parse_double_quote(s, lexer, valid_symbols);
         case '`':
             // A backtick could mark the beginning or ending of a code span or a
             // fenced code block.
