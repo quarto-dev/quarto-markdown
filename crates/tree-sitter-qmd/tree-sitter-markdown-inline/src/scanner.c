@@ -16,6 +16,10 @@ typedef enum {
     EMPHASIS_OPEN_UNDERSCORE,
     EMPHASIS_CLOSE_STAR,
     EMPHASIS_CLOSE_UNDERSCORE,
+    QUOTED_OPEN_SINGLE,
+    QUOTED_OPEN_DOUBLE,
+    QUOTED_CLOSE_SINGLE,
+    QUOTED_CLOSE_DOUBLE,
     LAST_TOKEN_WHITESPACE,
     LAST_TOKEN_PUNCTUATION,
     STRIKETHROUGH_OPEN,
@@ -60,6 +64,8 @@ typedef struct {
     uint8_t state;
     uint8_t code_span_delimiter_length;
     uint8_t latex_span_delimiter_length;
+    uint8_t single_quote_delimiter_length;
+    uint8_t double_quote_delimiter_length;
     // The number of characters remaining in the currrent emphasis delimiter
     // run.
     uint8_t num_emphasis_delimiters_left;
@@ -72,6 +78,8 @@ static unsigned serialize(Scanner *s, char *buffer) {
     buffer[size++] = (char)s->state;
     buffer[size++] = (char)s->code_span_delimiter_length;
     buffer[size++] = (char)s->latex_span_delimiter_length;
+    buffer[size++] = (char)s->single_quote_delimiter_length;
+    buffer[size++] = (char)s->double_quote_delimiter_length;
     buffer[size++] = (char)s->num_emphasis_delimiters_left;
     return size;
 }
@@ -82,12 +90,16 @@ static void deserialize(Scanner *s, const char *buffer, unsigned length) {
     s->state = 0;
     s->code_span_delimiter_length = 0;
     s->latex_span_delimiter_length = 0;
+    s->single_quote_delimiter_length = 0;
+    s->double_quote_delimiter_length = 0;
     s->num_emphasis_delimiters_left = 0;
     if (length > 0) {
         size_t size = 0;
         s->state = (uint8_t)buffer[size++];
         s->code_span_delimiter_length = (uint8_t)buffer[size++];
         s->latex_span_delimiter_length = (uint8_t)buffer[size++];
+        s->single_quote_delimiter_length = (uint8_t)buffer[size++];
+        s->double_quote_delimiter_length = (uint8_t)buffer[size++];
         s->num_emphasis_delimiters_left = (uint8_t)buffer[size++];
     }
 }
@@ -148,6 +160,20 @@ static bool parse_dollar(Scanner *s, TSLexer *lexer,
     return parse_leaf_delimiter(lexer, &s->latex_span_delimiter_length,
                                 valid_symbols, '$', LATEX_SPAN_START,
                                 LATEX_SPAN_CLOSE);
+}
+
+static bool parse_single_quote(Scanner *s, TSLexer *lexer,
+                                   const bool *valid_symbols) {
+    return parse_leaf_delimiter(lexer, &s->single_quote_delimiter_length,
+                                valid_symbols, '\'', QUOTED_OPEN_SINGLE,
+                                QUOTED_CLOSE_SINGLE);
+}
+
+static bool parse_double_quote(Scanner *s, TSLexer *lexer,
+                                   const bool *valid_symbols) {
+    return parse_leaf_delimiter(lexer, &s->double_quote_delimiter_length,
+                                valid_symbols, '"', QUOTED_OPEN_DOUBLE,
+                                QUOTED_CLOSE_DOUBLE);
 }
 
 static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
@@ -362,6 +388,10 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             return parse_underscore(s, lexer, valid_symbols);
         case '~':
             return parse_tilde(s, lexer, valid_symbols);
+        case '\'':
+            return parse_single_quote(s, lexer, valid_symbols);
+        case '"':
+            return parse_double_quote(s, lexer, valid_symbols);
     }
     return false;
 }

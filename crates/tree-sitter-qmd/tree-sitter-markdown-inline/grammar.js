@@ -37,6 +37,12 @@ module.exports = grammar(add_inline_rules({
         $._code_span_start,
         $._code_span_close,
 
+        // Opening and closing delimiters for quotes.
+        $._quoted_open_single,
+        $._quoted_open_double,
+        $._quoted_close_single,
+        $._quoted_close_double,
+
         // Opening and closing delimiters for emphasis.
         $._emphasis_open_star,
         $._emphasis_open_underscore,
@@ -123,6 +129,18 @@ module.exports = grammar(add_inline_rules({
             alias($._latex_span_start, $.latex_span_delimiter),
             alias(repeat(choice($._text_base, '[', ']', $._soft_line_break, $.backslash_escape)), $.latex_content),
             alias($._latex_span_close, $.latex_span_delimiter),
+        ),
+
+        quoted_single: $ => seq(
+            alias($._quoted_open_single, $.quoted_single_delimiter),
+            alias($._inline, $.content),
+            alias($._quoted_close_single, $.quoted_single_delimiter),
+        ),
+
+        quoted_double: $ => seq(
+            alias($._quoted_open_double, $.quoted_double_delimiter),
+            alias($._inline, $.content),
+            alias($._quoted_close_double, $.quoted_double_delimiter),
         ),
 
         // Different kinds of links:
