@@ -1,6 +1,5 @@
 [workspace]
-# members = ["crates/*", "xtask/codegen", "editors/zed"]
-members = ["crates/*", "xtask/codegen"]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
@@ -13,28 +12,10 @@ license = "MIT"
 repository = "https://github.com/posit-dev/quarto-markdown-syntax"
 
 [workspace.dependencies]
-quarto_markdown_syntax  = { path = "./crates/quarto_markdown_syntax" }
-quarto_markdown_parser  = { path = "./crates/quarto_markdown_parser" }
-quarto_markdown_factory = { path = "./crates/quarto_markdown_factory" }
-quarto_sexpr_syntax     = { path = "./crates/quarto_sexpr_syntax" }
-quarto_sexpr_parser     = { path = "./crates/quarto_sexpr_parser" }
-quarto_sexpr_factory    = { path = "./crates/quarto_sexpr_factory" }
 tree-sitter-sexpr       = { path = "./crates/tree-sitter-sexpr" }
 tree-sitter-qmd         = { path = "./crates/tree-sitter-qmd" }
-settings = { path = "./crates/settings" }
-line_ending = { path = "./crates/line_ending" }
 tests_macros = { path = "./crates/tests_macros" }
-biome_ungrammar         = { version = "0.3.1", path = "./crates/biome_ungrammar" }
 
-biome_console           = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_diagnostics       = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_formatter         = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_lsp_converters    = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_parser            = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_rowan             = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_string_case       = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_text_size         = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-biome_unicode_table     = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
 tracing                 = { version = "0.1.40", default-features = false, features = ["std"] }
 tree-sitter             = { version = "0.25.3" }
 insta                   = "1.40.0"
