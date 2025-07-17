@@ -48,6 +48,7 @@ fn write_inline(text: &Inline) -> String {
         }
         Inline::Space(_) => "Space".to_string(),
         Inline::SoftBreak(_) => "SoftBreak".to_string(),
+        Inline::LineBreak(_) => "LineBreak".to_string(),
         Inline::Str(str_struct) => format!("Str {}", write_safe_string(&str_struct.text)),
         Inline::Emph(emph_struct) => {
             let content_str = emph_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");

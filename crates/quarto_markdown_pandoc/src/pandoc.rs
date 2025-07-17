@@ -558,6 +558,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "soft_line_break" => {
             PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { }))
         },
+        "hard_line_break" => {
+            PandocNativeIntermediate::IntermediateInline(Inline::LineBreak(LineBreak { }))
+        },
         "latex_span_delimiter" => {
             let str = node.utf8_text(input_bytes).unwrap();
             if str == "$" {
