@@ -70,6 +70,9 @@ fn write_inline(text: &Inline) -> String {
         Inline::Code(code_struct) => {
             format!("Code {} {}", write_native_attr(&code_struct.attr), write_safe_string(&code_struct.text))
         }
+        Inline::RawInline(raw_struct) => {
+            format!("RawInline (Format {}) {}", write_safe_string(&raw_struct.format), write_safe_string(&raw_struct.text))
+        }
         Inline::Quoted(quoted_struct) => {
             let content_str = quoted_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Quoted {} [{}]", write_native_quote_type(&quoted_struct.quote_type), content_str)

@@ -323,6 +323,7 @@ enum PandocNativeIntermediate {
     IntermediateLatexInlineDelimiter,
     IntermediateLatexDisplayDelimiter,
     IntermediateKeyValueSpec(HashMap<String, String>),
+    IntermediateRawFormat(String),
     IntermediateUnknown,
 }
 
@@ -518,6 +519,11 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             }
             PandocNativeIntermediate::IntermediateKeyValueSpec(spec)
         },
+        "raw_specifier" => {
+            // like code_content but skipping first character
+            let raw = node.utf8_text(input_bytes).unwrap().to_string();
+            PandocNativeIntermediate::IntermediateBaseText(raw[1..].to_string())            
+        },
         "code_content" |
         "latex_content" |
         "text_base" => {
@@ -549,6 +555,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let inlines: Vec<Inline> = children.into_iter().map(native_inline).collect();
             PandocNativeIntermediate::IntermediateInlines(inlines)
         },
+        "code_span_delimiter" |
         "single_quoted_span_delimiter" |
         "double_quoted_span_delimiter" |
         "emphasis_delimiter" => {
@@ -559,7 +566,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { }))
         },
         "hard_line_break" => {
-            PandocNativeIntermediate::IntermediateInline(Inline::LineBreak(LineBreak { }))
+            PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { }))
         },
         "latex_span_delimiter" => {
             let str = node.utf8_text(input_bytes).unwrap();
@@ -595,19 +602,43 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 content: inlines }))
         },
         "code_span" => {
+            let mut is_raw: Option<String> = None;
+            let mut attr = ("".to_string(), vec![], HashMap::new());
             let mut inlines: Vec<_> = children
                 .into_iter()
+                .map(|(node, child)| {
+                    match child {
+                        PandocNativeIntermediate::IntermediateAttr(a) => {
+                            attr = a;
+                            // IntermediateUnknown here "consumes" the node
+                            (node, PandocNativeIntermediate::IntermediateUnknown)
+                        }
+                        PandocNativeIntermediate::IntermediateRawFormat(raw) => {
+                            is_raw = Some(raw);
+                            // IntermediateUnknown here "consumes" the node
+                            (node, PandocNativeIntermediate::IntermediateUnknown)
+                        }
+                        _ => (node, child)
+                    }
+                })
                 .filter(|(_, child)| {
-                    *child != PandocNativeIntermediate::IntermediateUnknown 
+                    *child != PandocNativeIntermediate::IntermediateUnknown
                 }).collect();
             assert!(inlines.len() == 1, "Expected exactly one inline in code_span, got {}", inlines.len());
             let (_, child) = inlines.remove(0);
             match child {
                 PandocNativeIntermediate::IntermediateBaseText(text) => {
-                    PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
-                        attr: ("".to_string(), vec![], HashMap::new()), // todo: handle attributes
-                        text,
-                    }))
+                    if let Some(raw) = is_raw {
+                        PandocNativeIntermediate::IntermediateInline(Inline::RawInline(RawInline {
+                            format: raw,
+                            text,
+                        }))
+                    } else {
+                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
+                            attr,
+                            text,
+                        }))
+                    }
                 }
                 _ => panic!("Expected BaseText in code_span, got {:?}", child),
             }
@@ -650,6 +681,17 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 }
                 _ => panic!("Expected BaseText in latex_span, got {:?}", child),
             }
+        },
+        "raw_attribute" => {
+            for (_, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateBaseText(raw) => {
+                        return PandocNativeIntermediate::IntermediateRawFormat(raw);
+                    }
+                    _ => {}
+                }
+            }
+            panic!("Expected raw_attribute to have a format, but found none");
         },
         _ => {
             eprintln!("Warning: Unhandled node kind: {}", node.kind());
