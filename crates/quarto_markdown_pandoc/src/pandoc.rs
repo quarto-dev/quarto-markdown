@@ -549,6 +549,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let inlines: Vec<Inline> = children.into_iter().map(native_inline).collect();
             PandocNativeIntermediate::IntermediateInlines(inlines)
         },
+        "single_quoted_span_delimiter" |
+        "double_quoted_span_delimiter" |
         "emphasis_delimiter" => {
             // This is a marker node, we don't need to do anything with it
             PandocNativeIntermediate::IntermediateUnknown
@@ -565,6 +567,29 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             } else {
                 panic!("Warning: Unrecognized latex_span_delimiter: {}", str);
             }
+        },
+        "quoted_span" => {
+            let mut quote_type = QuoteType::SingleQuote;
+            let inlines: Vec<_> = children
+                .into_iter()
+                .filter(|(node, intermediate)| {
+                    if node == "single_quoted_span_delimiter" {
+                        quote_type = QuoteType::SingleQuote;
+                        false // skip the opening delimiter
+                    } else if node == "double_quoted_span_delimiter" {
+                        quote_type = QuoteType::DoubleQuote;
+                        false // skip the opening delimiter
+                    } else {
+                        match intermediate {
+                            PandocNativeIntermediate::IntermediateInline(_) => true,
+                            PandocNativeIntermediate::IntermediateBaseText(_) => true,
+                            _ => false
+                        }
+                    }
+                }).map(native_inline).collect();
+            PandocNativeIntermediate::IntermediateInline(Inline::Quoted(Quoted {
+                quote_type,
+                content: inlines }))
         },
         "code_span" => {
             let mut inlines: Vec<_> = children

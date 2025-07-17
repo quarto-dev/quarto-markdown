@@ -4,7 +4,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Pandoc, Block, Inline, MathType, Attr};
+use crate::pandoc::{Attr, Block, Inline, MathType, Pandoc, QuoteType};
 
 fn write_safe_string(text: &str) -> String {
     format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\""))
@@ -33,6 +33,14 @@ fn write_inline_math_type(math_type: &MathType) -> String {
     }
 }
 
+fn write_native_quote_type(quote_type: &QuoteType) -> String {
+    match quote_type {
+        QuoteType::SingleQuote => "SingleQuote".to_string(),
+        QuoteType::DoubleQuote => "DoubleQuote".to_string(),
+    }
+}
+
+
 fn write_inline(text: &Inline) -> String {
     match text {
         Inline::Math(math_struct) => {
@@ -60,6 +68,10 @@ fn write_inline(text: &Inline) -> String {
         }
         Inline::Code(code_struct) => {
             format!("Code {} {}", write_native_attr(&code_struct.attr), write_safe_string(&code_struct.text))
+        }
+        Inline::Quoted(quoted_struct) => {
+            let content_str = quoted_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Quoted {} [{}]", write_native_quote_type(&quoted_struct.quote_type), content_str)
         }
         _ => panic!("Unsupported inline type: {:?}", text),
     }
