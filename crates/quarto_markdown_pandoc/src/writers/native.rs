@@ -84,18 +84,50 @@ fn write_inline(text: &Inline) -> String {
             let content_str = quoted_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Quoted {} [{}]", write_native_quote_type(&quoted_struct.quote_type), content_str)
         }
+        Inline::Note(note_struct) => {
+            let content_str = note_struct.content.iter().map(write_block).collect::<Vec<_>>().join(", ");
+            format!("Note [{}]", content_str)
+        }
         _ => panic!("Unsupported inline type: {:?}", text),
     }
 }
 
-pub fn write(pandoc: &Pandoc) -> String {
-    String::from("[ ") + &pandoc.blocks.iter().map(|block| {
-        match block {
-            Block::Paragraph { content } => String::from("Para [ ") +
-                &(content
-                    .iter().map(write_inline)
-                    .collect::<Vec<_>>().join(", ")) + " ]",
-            _ => panic!("Expected Paragraph block, got {:?}", block),
+fn write_block(block: &Block) -> String {
+    match block {
+        Block::Paragraph { content } => {
+            let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Para [{}]", content_str)
         }
-    }).collect::<Vec<String>>().join(" ") + " ]"
+        // Block::Header { level, attr, content } => {
+        //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+        //     format!("Header {} {} [{}]", level, write_native_attr(attr), content_str)
+        // }
+        // Block::CodeBlock { attr, text } => {
+        //     format!("CodeBlock {} {}", write_native_attr(attr), write_safe_string(text))
+        // }
+        // Block::Quote { attr, blocks } => {
+        //     let blocks_str = blocks.iter().map(write_block).collect::<Vec<_>>().join(", ");
+        //     format!("Quote {} [{}]", write_native_attr(attr), blocks_str)
+        // }
+        // Block::List { attr, items } => {
+        //     let items_str = items.iter().map(write_block).collect::<Vec<_>>().join(", ");
+        //     format!("List {} [{}]", write_native_attr(attr), items_str)
+        // }
+        // Block::Table { attr, caption, headers, rows } => {
+        //     let caption_str = caption.as_ref().map_or("None".to_string(), |c| write_safe_string(c));
+        //     let headers_str = headers.iter().map(|h| write_safe_string(h)).collect::<Vec<_>>().join(", ");
+        //     let rows_str = rows.iter().map(|row| row.iter().map(write_inline).collect::<Vec<_>>().join(", ")).collect::<Vec<_>>().join("; ");
+        //     format!("Table {} (Caption: {}, Headers: [{}], Rows: [{}])", write_native_attr(attr), caption_str, headers_str, rows_str)
+        // }
+        // Block::HorizontalRule(_) => "HorizontalRule".to_string(),
+        // Block::Div { attr, blocks } => {
+        //     let blocks_str = blocks.iter().map(write_block).collect::<Vec<_>>().join(", ");
+        //     format!("Div {} [{}]", write_native_attr(attr), blocks_str)
+        // }
+        _ => panic!("Unsupported block type: {:?}", block),
+    }
+}
+
+pub fn write(pandoc: &Pandoc) -> String {
+    String::from("[ ") + &pandoc.blocks.iter().map(write_block).collect::<Vec<_>>().join(" ") + " ]"
 }
