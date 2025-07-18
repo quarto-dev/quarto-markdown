@@ -330,7 +330,8 @@ enum PandocNativeIntermediate {
 fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeIntermediate)>, input_bytes: &[u8]) -> PandocNativeIntermediate {
 
     let whitespace_re = Regex::new(r"\s+").unwrap();
-    let escaped_quote_re = Regex::new("\\\"").unwrap();
+    let escaped_double_quote_re = Regex::new("[\\\\][\"]").unwrap();
+    let escaped_single_quote_re = Regex::new("[\\\\][']").unwrap();
 
     let native_inline = |(node, child)| {
         match child {
@@ -441,10 +442,16 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "key_value_value" => {
             let value = node.utf8_text(input_bytes).unwrap().to_string();
             if value.starts_with('"') && value.ends_with('"') {
-                // Remove surrounding quotes
+                let value = value[1..value.len()-1].to_string();
+                println!("Unescaping double quotes in value: {}", value);
+                println!("unescaped: {}", escaped_double_quote_re.replace_all(&value, "\""));
+                PandocNativeIntermediate::IntermediateBaseText(
+                    escaped_double_quote_re.replace_all(&value, "\"").to_string()
+                )
+            } else if value.starts_with('\'') && value.ends_with('\'') {
                 let value = value[1..value.len()-1].to_string();
                 PandocNativeIntermediate::IntermediateBaseText(
-                    escaped_quote_re.replace_all(&value, "\"").to_string()
+                    escaped_single_quote_re.replace_all(&value, "'").to_string()
                 )
             } else {
                 // If not quoted, return as is

@@ -146,8 +146,8 @@ module.exports.rules = {
     key_value_key: $ => /[a-zA-Z_:][a-zA-Z0-9_\.:\-]*/,
     key_value_value: $ => choice(
         /[^ \t\r\n}"'=<>`]+/,
-        seq("'", repeat(choice($._word, $._commonmark_whitespace, $._soft_line_break, punctuation_without($, ["'"]))), "'"),
-        seq('"', repeat(choice($._word, $._commonmark_whitespace, $._soft_line_break, punctuation_without($, ['"']))), '"'),
+        seq("'", repeat(choice($._word, $._commonmark_whitespace, $._soft_line_break, "\\'", punctuation_without($, ["'"]))), "'"),
+        seq('"', repeat(choice($._word, $._commonmark_whitespace, $._soft_line_break, "\\\"", punctuation_without($, ['"']))), '"'),
     ),
 
 };

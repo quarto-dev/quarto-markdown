@@ -1725,6 +1725,10 @@
                     "name": "_soft_line_break"
                   },
                   {
+                    "type": "STRING",
+                    "value": "\\'"
+                  },
+                  {
                     "type": "SEQ",
                     "members": [
                       {
@@ -1902,6 +1906,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "_soft_line_break"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "\\\""
                   },
                   {
                     "type": "SEQ",
