@@ -108,6 +108,10 @@
           "named": true
         },
         {
+          "type": "inline_note",
+          "named": true
+        },
+        {
           "type": "latex_span",
           "named": true
         },
@@ -223,6 +227,10 @@
           "named": true
         },
         {
+          "type": "inline_note",
+          "named": true
+        },
+        {
           "type": "latex_span",
           "named": true
         },
@@ -299,6 +307,10 @@
           "named": true
         },
         {
+          "type": "inline_note",
+          "named": true
+        },
+        {
           "type": "latex_span",
           "named": true
         },
@@ -363,6 +375,89 @@
         },
         {
           "type": "raw_attribute",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "inline_note",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "email_autolink",
+          "named": true
+        },
+        {
+          "type": "emphasis",
+          "named": true
+        },
+        {
+          "type": "entity_reference",
+          "named": true
+        },
+        {
+          "type": "hard_line_break",
+          "named": true
+        },
+        {
+          "type": "image",
+          "named": true
+        },
+        {
+          "type": "inline_link",
+          "named": true
+        },
+        {
+          "type": "inline_note",
+          "named": true
+        },
+        {
+          "type": "inline_note_delimiter",
+          "named": true
+        },
+        {
+          "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "numeric_character_reference",
+          "named": true
+        },
+        {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "soft_line_break",
+          "named": true
+        },
+        {
+          "type": "strikethrough",
+          "named": true
+        },
+        {
+          "type": "strong_emphasis",
+          "named": true
+        },
+        {
+          "type": "text_base",
+          "named": true
+        },
+        {
+          "type": "uri_autolink",
           "named": true
         }
       ]
@@ -501,6 +596,10 @@
           "named": true
         },
         {
+          "type": "inline_note",
+          "named": true
+        },
+        {
           "type": "latex_span",
           "named": true
         },
@@ -600,6 +699,10 @@
         },
         {
           "type": "inline_link",
+          "named": true
+        },
+        {
+          "type": "inline_note",
           "named": true
         },
         {
@@ -706,6 +809,10 @@
           "named": true
         },
         {
+          "type": "inline_note",
+          "named": true
+        },
+        {
           "type": "latex_span",
           "named": true
         },
@@ -782,6 +889,10 @@
         },
         {
           "type": "inline_link",
+          "named": true
+        },
+        {
+          "type": "inline_note",
           "named": true
         },
         {
@@ -970,6 +1081,10 @@
   },
   {
     "type": "id_specifier",
+    "named": true
+  },
+  {
+    "type": "inline_note_delimiter",
     "named": true
   },
   {

@@ -1,5 +1,5 @@
-// This grammar only concerns the inline structure according to the CommonMark Spec
-// (https://spec.commonmark.org/0.30/#inlines)
+// This grammar only concerns the inline structure of Quarto's dialect of markdown (QMD).
+//
 // For more information see README.md
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -17,7 +17,10 @@ const PRECEDENCE_LEVEL_HTML = 100;
 
 // Punctuation characters as specified in
 // https://github.github.com/gfm/#ascii-punctuation-character
-const PUNCTUATION_CHARACTERS_REGEX = '!-/:-@\\[-`\\{-~\'';
+//
+// the characters on the right side of the addition are not
+// GFM punctuation characters, but are needed in QMD
+const PUNCTUATION_CHARACTERS_REGEX = '!-/:-@\\[-`\\{-~' + '\'^';
 
 
 // !!!
@@ -144,6 +147,12 @@ module.exports = grammar(add_inline_rules({
                 alias($._double_quote_close, $.double_quoted_span_delimiter),
             )),
         ),
+
+        inline_note: $ => prec(2, seq(
+            alias("^[", $.inline_note_delimiter),
+            repeat($._inline_element),
+            alias("]", $.inline_note_delimiter),
+        )),
 
         // Different kinds of links:
         // * inline links (https://github.github.com/gfm/#inline-link)
@@ -303,6 +312,7 @@ module.exports = grammar(add_inline_rules({
             $.latex_span,
             $.code_span,
             $.quoted_span,
+            $.inline_note,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),

@@ -2265,6 +2265,40 @@
         }
       ]
     },
+    "inline_note": {
+      "type": "PREC",
+      "value": 2,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "STRING",
+              "value": "^["
+            },
+            "named": true,
+            "value": "inline_note_delimiter"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_inline_element"
+            }
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "STRING",
+              "value": "]"
+            },
+            "named": true,
+            "value": "inline_note_delimiter"
+          }
+        ]
+      }
+    },
     "_link_text": {
       "type": "PREC_DYNAMIC",
       "value": 10,
@@ -3630,7 +3664,7 @@
     },
     "_word_no_digit": {
       "type": "PATTERN",
-      "value": "[^!-/:-@\\[-`\\{-~' \\t\\n\\r0-9]+(_+[^!-/:-@\\[-`\\{-~' \\t\\n\\r0-9]+)*"
+      "value": "[^!-/:-@\\[-`\\{-~'^ \\t\\n\\r0-9]+(_+[^!-/:-@\\[-`\\{-~'^ \\t\\n\\r0-9]+)*"
     },
     "_digits": {
       "type": "PATTERN",
@@ -3713,6 +3747,10 @@
             {
               "type": "SYMBOL",
               "name": "quoted_span"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "inline_note"
             },
             {
               "type": "ALIAS",

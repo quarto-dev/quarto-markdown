@@ -40,7 +40,6 @@ fn write_native_quote_type(quote_type: &QuoteType) -> String {
     }
 }
 
-
 fn write_inline(text: &Inline) -> String {
     match text {
         Inline::Math(math_struct) => {
@@ -53,6 +52,14 @@ fn write_inline(text: &Inline) -> String {
         Inline::Emph(emph_struct) => {
             let content_str = emph_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Emph [{}]", content_str)
+        },
+        Inline::Underline(underline_struct) => {
+            let content_str = underline_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Underline [{}]", content_str)
+        },
+        Inline::SmallCaps(smallcaps_struct) => {
+            let content_str = smallcaps_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("SmallCaps [{}]", content_str)
         },
         Inline::Strong(strong_struct) => {
             let content_str = strong_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");

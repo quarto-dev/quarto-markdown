@@ -96,8 +96,9 @@ attribute 2 key-values with spaces
         (key_value_value)))))
 ================================================================================
 attribute key-values with escaped quote in value
+(NB: the tree-sitter test infra wants the backslash in this file to be escaped)
 ================================================================================
-[]{ k2="v\"2" }
+[]{ k2="v\\"2" }
 --------------------------------------------------------------------------------
 (inline
   (inline_link

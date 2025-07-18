@@ -327,6 +327,14 @@ enum PandocNativeIntermediate {
     IntermediateUnknown,
 }
 
+fn is_empty_attr(attr: &Attr) -> bool {
+    attr.0.is_empty() && attr.1.is_empty() && attr.2.is_empty()
+}
+
+fn is_empty_target(target: &Target) -> bool {
+    target.0.is_empty() && target.1.is_empty()
+}
+
 fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeIntermediate)>, input_bytes: &[u8]) -> PandocNativeIntermediate {
 
     let whitespace_re = Regex::new(r"\s+").unwrap();
@@ -492,19 +500,47 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     _ => panic!("Unexpected child in inline_link: {:?}", child),
                 }
             }
-            if target.0.is_empty() & target.1.is_empty() {
-                // this is actually a span
-                PandocNativeIntermediate::IntermediateInline(Inline::Span(Span {
-                    attr,
-                    content,
-                }))
-            } else {
-                PandocNativeIntermediate::IntermediateInline(Inline::Link(Link {
-                    attr,
-                    content,
-                    target,
-                }))
+            fn make_span_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
+                // non-empty targets are never Underline or SmallCaps
+                if !is_empty_target(&target) {
+                    return Inline::Link(Link {
+                        attr,
+                        content,
+                        target,
+                    });
+                }
+                if attr.1.contains(&"smallcaps".to_string()) {
+                    let mut new_attr = (attr.0.clone(), attr.1.clone(), attr.2.clone());
+                    new_attr.1 = new_attr.1.into_iter().filter(|s| s != "smallcaps").collect();
+                    if is_empty_attr(&new_attr) {
+                        return Inline::SmallCaps(SmallCaps { content });
+                    }
+                    let inner_inline = make_span_inline(new_attr, target, content);
+                    return Inline::SmallCaps(SmallCaps { content: vec![inner_inline] });
+                } else if attr.1.contains(&"ul".to_string()) {
+                    let mut new_attr = (attr.0.clone(), attr.1.clone(), attr.2.clone());
+                    new_attr.1 = new_attr.1.into_iter().filter(|s| s != "ul").collect();
+                    if is_empty_attr(&new_attr) {
+                        return Inline::Underline(Underline { content });
+                    }
+                    let inner_inline = make_span_inline(new_attr, target, content);
+                    return Inline::Underline(Underline { content: vec![inner_inline] });
+                } else if attr.1.contains(&"underline".to_string()) {
+                    let mut new_attr = (attr.0.clone(), attr.1.clone(), attr.2.clone());
+                    new_attr.1 = new_attr.1.into_iter().filter(|s| s != "underline").collect();
+                    if is_empty_attr(&new_attr) {
+                        return Inline::Underline(Underline { content });
+                    }
+                    let inner_inline = make_span_inline(new_attr, target, content);
+                    return Inline::Underline(Underline { content: vec![inner_inline] });
+                }
+
+                return Inline::Span(Span { attr, content });
             }
+
+            return PandocNativeIntermediate::IntermediateInline(
+                make_span_inline(attr, target, content)
+            );
         },
         "key_value_specifier" => {
             let mut spec = HashMap::new();
