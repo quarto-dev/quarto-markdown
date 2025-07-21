@@ -8,6 +8,8 @@
 #endif
 
 // For explanation of the tokens see grammar.js
+//
+// NB THESE NEED TO MATCH THE EXTERNS IN GRAMMAR.JS
 typedef enum {
     ERROR,
     TRIGGER_ERROR,
@@ -27,6 +29,8 @@ typedef enum {
     SINGLE_QUOTE_CLOSE,
     DOUBLE_QUOTE_OPEN,
     DOUBLE_QUOTE_CLOSE,
+    SUPERSCRIPT_OPEN,
+    SUPERSCRIPT_CLOSE,
     UNCLOSED_SPAN
 } TokenType;
 
@@ -69,6 +73,7 @@ typedef struct {
     // run.
     uint8_t num_emphasis_delimiters_left;
 
+    uint8_t inside_superscript;
     uint8_t inside_single_quote;
     uint8_t inside_double_quote;
 } Scanner;
@@ -80,6 +85,7 @@ static unsigned serialize(Scanner *s, char *buffer) {
     buffer[size++] = (char)s->code_span_delimiter_length;
     buffer[size++] = (char)s->latex_span_delimiter_length;
     buffer[size++] = (char)s->num_emphasis_delimiters_left;
+    buffer[size++] = (char)s->inside_superscript;
     buffer[size++] = (char)s->inside_single_quote;
     buffer[size++] = (char)s->inside_double_quote;
     return size;
@@ -100,6 +106,7 @@ static void deserialize(Scanner *s, const char *buffer, unsigned length) {
         s->code_span_delimiter_length = (uint8_t)buffer[size++];
         s->latex_span_delimiter_length = (uint8_t)buffer[size++];
         s->num_emphasis_delimiters_left = (uint8_t)buffer[size++];
+        s->inside_superscript = (uint8_t)buffer[size++];
         s->inside_single_quote = (uint8_t)buffer[size++];
         s->inside_double_quote = (uint8_t)buffer[size++];
     }
@@ -211,6 +218,32 @@ static bool parse_double_quote(Scanner *s, TSLexer *lexer, const bool *valid_sym
     return false;
 }
 
+static bool parse_caret(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    if (lexer->lookahead == '[') {
+        return false; // do not lex ^[ as superscript because that's a footnote and we need the token
+    }
+    if (s->inside_superscript > 0) {
+        if (valid_symbols[SUPERSCRIPT_CLOSE]) {
+            lexer->result_symbol = SUPERSCRIPT_CLOSE;
+            s->inside_superscript = 0;
+            return true;
+        }
+        // HEY do we ever get here?
+    }
+    if (valid_symbols[SUPERSCRIPT_CLOSE]) {
+        s->inside_superscript = 0;
+        lexer->result_symbol = SUPERSCRIPT_CLOSE;
+        return true;
+    }
+    if (valid_symbols[SUPERSCRIPT_OPEN]) {
+        s->inside_superscript = 1;
+        lexer->result_symbol = SUPERSCRIPT_OPEN;
+        return true;
+    }
+    return false;
+}
 
 static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     lexer->advance(lexer, false);
@@ -409,6 +442,8 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // Decide which tokens to consider based on the first non-whitespace
     // character
     switch (lexer->lookahead) {
+        case '^':
+            return parse_caret(s, lexer, valid_symbols);
         case '\'':
             return parse_single_quote(s, lexer, valid_symbols);
         case '"':

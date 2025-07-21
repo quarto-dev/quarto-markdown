@@ -61,6 +61,10 @@ fn write_inline(text: &Inline) -> String {
             let content_str = smallcaps_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("SmallCaps [{}]", content_str)
         },
+        Inline::Superscript(superscript_struct) => {
+            let content_str = superscript_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Superscript [{}]", content_str)
+        },
         Inline::Strong(strong_struct) => {
             let content_str = strong_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Strong [{}]", content_str)

@@ -136,6 +136,10 @@
           "named": true
         },
         {
+          "type": "superscript",
+          "named": true
+        },
+        {
           "type": "text_base",
           "named": true
         },
@@ -255,6 +259,10 @@
           "named": true
         },
         {
+          "type": "superscript",
+          "named": true
+        },
+        {
           "type": "text_base",
           "named": true
         },
@@ -332,6 +340,10 @@
         },
         {
           "type": "strong_emphasis",
+          "named": true
+        },
+        {
+          "type": "superscript",
           "named": true
         },
         {
@@ -450,6 +462,10 @@
         },
         {
           "type": "strong_emphasis",
+          "named": true
+        },
+        {
+          "type": "superscript",
           "named": true
         },
         {
@@ -624,6 +640,10 @@
           "named": true
         },
         {
+          "type": "superscript",
+          "named": true
+        },
+        {
           "type": "text_base",
           "named": true
         },
@@ -734,6 +754,10 @@
           "named": true
         },
         {
+          "type": "superscript",
+          "named": true
+        },
+        {
           "type": "text_base",
           "named": true
         },
@@ -837,6 +861,10 @@
           "named": true
         },
         {
+          "type": "superscript",
+          "named": true
+        },
+        {
           "type": "text_base",
           "named": true
         },
@@ -917,6 +945,97 @@
         },
         {
           "type": "strong_emphasis",
+          "named": true
+        },
+        {
+          "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "text_base",
+          "named": true
+        },
+        {
+          "type": "uri_autolink",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "superscript",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "email_autolink",
+          "named": true
+        },
+        {
+          "type": "emphasis",
+          "named": true
+        },
+        {
+          "type": "entity_reference",
+          "named": true
+        },
+        {
+          "type": "hard_line_break",
+          "named": true
+        },
+        {
+          "type": "image",
+          "named": true
+        },
+        {
+          "type": "inline_link",
+          "named": true
+        },
+        {
+          "type": "inline_note",
+          "named": true
+        },
+        {
+          "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "numeric_character_reference",
+          "named": true
+        },
+        {
+          "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "soft_line_break",
+          "named": true
+        },
+        {
+          "type": "strikethrough",
+          "named": true
+        },
+        {
+          "type": "strong_emphasis",
+          "named": true
+        },
+        {
+          "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "superscript_delimiter",
           "named": true
         },
         {
@@ -1109,6 +1228,10 @@
   },
   {
     "type": "single_quoted_span_delimiter",
+    "named": true
+  },
+  {
+    "type": "superscript_delimiter",
     "named": true
   },
   {

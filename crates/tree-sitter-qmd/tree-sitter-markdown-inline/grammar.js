@@ -31,6 +31,8 @@ module.exports = grammar(add_inline_rules({
     name: 'markdown_inline',
 
     externals: $ => [
+        // NB THESE NEED TO MATCH THE ENUM IN SCANNER.C
+        //
         // An `$._error` token is never valid  and gets emmited to kill invalid parse branches. Concretely
         // this is used to decide wether a newline closes a paragraph and together and it gets emitted
         // when trying to parse the `$._trigger_error` token in `$.link_title`.
@@ -65,6 +67,8 @@ module.exports = grammar(add_inline_rules({
         $._single_quote_close,
         $._double_quote_open,
         $._double_quote_close,
+        $._superscript_open,
+        $._superscript_close,
 
         // Token emmited when encountering opening delimiters for a leaf span
         // e.g. a code span, that does not have a matching closing span
@@ -133,6 +137,12 @@ module.exports = grammar(add_inline_rules({
             alias($._latex_span_start, $.latex_span_delimiter),
             alias(repeat(choice($._text_base, '[', ']', $._soft_line_break, $.backslash_escape)), $.latex_content),
             alias($._latex_span_close, $.latex_span_delimiter),
+        ),
+
+        superscript: $ => seq(
+            alias($._superscript_open, $.superscript_delimiter),
+            repeat($._inline_element),
+            alias($._superscript_close, $.superscript_delimiter),
         ),
 
         quoted_span: $ => choice(
@@ -313,6 +323,7 @@ module.exports = grammar(add_inline_rules({
             $.code_span,
             $.quoted_span,
             $.inline_note,
+            $.superscript,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),
@@ -396,9 +407,7 @@ function add_inline_rules(grammar) {
             }
         }
 
-        if (common.EXTENSION_STRIKETHROUGH) {
-            grammar.rules['_strikethrough' + suffix_link] = $ => prec.dynamic(PRECEDENCE_LEVEL_EMPHASIS, seq(alias($._strikethrough_open, $.emphasis_delimiter), optional($._last_token_punctuation), $['_inline' + '_no_tilde' + suffix_link], alias($._strikethrough_close, $.emphasis_delimiter)));
-        }
+        grammar.rules['_strikethrough' + suffix_link] = $ => prec.dynamic(PRECEDENCE_LEVEL_EMPHASIS, seq(alias($._strikethrough_open, $.emphasis_delimiter), optional($._last_token_punctuation), $['_inline' + '_no_tilde' + suffix_link], alias($._strikethrough_close, $.emphasis_delimiter)));
         grammar.rules['_emphasis_star' + suffix_link] = $ => prec.dynamic(PRECEDENCE_LEVEL_EMPHASIS, seq(alias($._emphasis_open_star, $.emphasis_delimiter), optional($._last_token_punctuation), $['_inline' + '_no_star' + suffix_link], alias($._emphasis_close_star, $.emphasis_delimiter)));
         grammar.rules['_strong_emphasis_star' + suffix_link] = $ => prec.dynamic(2 * PRECEDENCE_LEVEL_EMPHASIS, seq(alias($._emphasis_open_star, $.emphasis_delimiter), $['_emphasis_star' + suffix_link], alias($._emphasis_close_star, $.emphasis_delimiter)));
         grammar.rules['_emphasis_underscore' + suffix_link] = $ => prec.dynamic(PRECEDENCE_LEVEL_EMPHASIS, seq(alias($._emphasis_open_underscore, $.emphasis_delimiter), optional($._last_token_punctuation), $['_inline' + '_no_underscore' + suffix_link], alias($._emphasis_close_underscore, $.emphasis_delimiter)));

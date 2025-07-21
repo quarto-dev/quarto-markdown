@@ -2192,6 +2192,36 @@
         }
       ]
     },
+    "superscript": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_superscript_open"
+          },
+          "named": true,
+          "value": "superscript_delimiter"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_element"
+          }
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_superscript_close"
+          },
+          "named": true,
+          "value": "superscript_delimiter"
+        }
+      ]
+    },
     "quoted_span": {
       "type": "CHOICE",
       "members": [
@@ -3751,6 +3781,10 @@
             {
               "type": "SYMBOL",
               "name": "inline_note"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "superscript"
             },
             {
               "type": "ALIAS",
@@ -5313,6 +5347,14 @@
     {
       "type": "SYMBOL",
       "name": "_double_quote_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_superscript_open"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_superscript_close"
     },
     {
       "type": "SYMBOL",
