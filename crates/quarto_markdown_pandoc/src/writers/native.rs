@@ -97,6 +97,14 @@ fn write_inline(text: &Inline) -> String {
             let content_str = image_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Image {} [{}] ({} , {})", write_native_attr(&image_struct.attr), content_str, write_safe_string(url), write_safe_string(title))
         }
+        Inline::Subscript(subscript_struct) => {
+            let content_str = subscript_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Subscript [{}]", content_str)
+        }
+        Inline::Strikeout(strikeout_struct) => {
+            let content_str = strikeout_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Strikeout [{}]", content_str)
+        }
         _ => panic!("Unsupported inline type: {:?}", text),
     }
 }

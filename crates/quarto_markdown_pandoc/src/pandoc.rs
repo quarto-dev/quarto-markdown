@@ -642,6 +642,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "single_quoted_span_delimiter" |
         "double_quoted_span_delimiter" |
         "superscript_delimiter" |
+        "subscript_delimiter" |
+        "strikeout_delimiter" |
         "emphasis_delimiter" => {
             // This is a marker node, we don't need to do anything with it
             PandocNativeIntermediate::IntermediateUnknown
@@ -675,11 +677,28 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "superscript" => {
             let inlines: Vec<_> = children
                 .into_iter()
-                .filter(|(node, intermediate)| node != "superscript_delimiter")
+                .filter(|(node, _)| node != "superscript_delimiter")
                 .map(native_inline).collect();
             PandocNativeIntermediate::IntermediateInline(Inline::Superscript(Superscript {
                 content: inlines }))
         },
+        "subscript" => {
+            let inlines: Vec<_> = children
+                .into_iter()
+                .filter(|(node, _)| node != "subscript_delimiter")
+                .map(native_inline).collect();
+            PandocNativeIntermediate::IntermediateInline(Inline::Subscript(Subscript {
+                content: inlines }))
+        },
+        "strikeout" => {
+            let inlines: Vec<_> = children
+                .into_iter()
+                .filter(|(node, _)| node != "strikeout_delimiter")
+                .map(native_inline).collect();
+            PandocNativeIntermediate::IntermediateInline(Inline::Strikeout(Strikeout {
+                content: inlines }))
+        },
+
         "quoted_span" => {
             let mut quote_type = QuoteType::SingleQuote;
             let inlines: Vec<_> = children

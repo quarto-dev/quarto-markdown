@@ -60,14 +60,38 @@ fn matches_pandoc_markdown_reader(input: &str) -> bool {
     our_ast == pandoc_ast
 }
 
+fn matches_pandoc_commonmark_reader(input: &str) -> bool {
+    if !has_good_pandoc_version() {
+        return true; // Skip test if pandoc version is not suitable
+    }
+    let ast = writers::native::write(&treesitter_to_pandoc(&MarkdownParser::default().parse(input.as_bytes(), None).unwrap(), input.as_bytes()));
+    let our_ast = canonicalize_pandoc_ast(&ast, "native", "native");
+    let pandoc_ast = canonicalize_pandoc_ast(input, "commonmark+strikeout+subscript+superscript", "native");
+    our_ast == pandoc_ast
+}
+
 #[test]
 fn unit_test_corpus_matches_pandoc_markdown() {
     assert!(has_good_pandoc_version(), "Pandoc version is not suitable for testing");
-    for entry in glob("tests/corpus/**/*.qmd").expect("Failed to read glob pattern") {
+    for entry in glob("tests/corpus/markdown/*.qmd").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 assert!(matches_pandoc_markdown_reader(&input), "File {} does not match pandoc markdown reader", path.display());
+            }
+            Err(e) => panic!("Error reading glob entry: {}", e),
+        }
+    }
+}
+
+#[test]
+fn unit_test_corpus_matches_pandoc_commonmark() {
+    assert!(has_good_pandoc_version(), "Pandoc version is not suitable for testing");
+    for entry in glob("tests/corpus/commonmark/*.qmd").expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                let input = std::fs::read_to_string(&path).expect("Failed to read file");
+                assert!(matches_pandoc_commonmark_reader(&input), "File {} does not match pandoc commonmark reader", path.display());
             }
             Err(e) => panic!("Error reading glob entry: {}", e),
         }
