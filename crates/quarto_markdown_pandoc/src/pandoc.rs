@@ -478,6 +478,46 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "link_text" => {
             PandocNativeIntermediate::IntermediateInlines(native_inlines(children))
         },
+        "image" => {
+            let mut attr = ("".to_string(), vec![], HashMap::new());
+            let mut target: Target = ("".to_string(), "".to_string());
+            let mut content: Vec<Inline> = Vec::new();
+            for (node, child) in children {
+                if node == "image_description" {
+                    match child {
+                        PandocNativeIntermediate::IntermediateInlines(inlines) => {
+                            content.extend(inlines);
+                        },
+                        _ => panic!("Expected inlines in image_description, got {:?}", child),
+                    }
+                    continue;
+                }
+                match child {
+                    PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
+                    PandocNativeIntermediate::IntermediateBaseText(text) => {
+                        if node == "link_destination" {
+                            target.0 = text; // URL
+                        } else if node == "link_title" {
+                            target.1 = text; // Title
+                        } else {
+                            panic!("Unexpected image node: {}", node);
+                        }
+                    },
+                    PandocNativeIntermediate::IntermediateUnknown => {},
+                    PandocNativeIntermediate::IntermediateInlines(inlines) => content.extend(inlines),
+                    PandocNativeIntermediate::IntermediateInline(inline) => content.push(inline),
+                    _ => panic!("Unexpected child in inline_link: {:?}", child),
+                }
+            }
+            PandocNativeIntermediate::IntermediateInline(Inline::Image(Image {
+                attr,
+                content,
+                target
+            }))
+        },
+        "image_description" => {
+            PandocNativeIntermediate::IntermediateInlines(native_inlines(children))
+        },
         "inline_link" => {
             let mut attr = ("".to_string(), vec![], HashMap::new());
             let mut target = ("".to_string(), "".to_string());

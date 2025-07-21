@@ -88,6 +88,11 @@ fn write_inline(text: &Inline) -> String {
             let content_str = note_struct.content.iter().map(write_block).collect::<Vec<_>>().join(", ");
             format!("Note [{}]", content_str)
         }
+        Inline::Image(image_struct) => {
+            let (url, title) = &image_struct.target;
+            let content_str = image_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            format!("Image {} [{}] ({} , {})", write_native_attr(&image_struct.attr), content_str, write_safe_string(url), write_safe_string(title))
+        }
         _ => panic!("Unsupported inline type: {:?}", text),
     }
 }
