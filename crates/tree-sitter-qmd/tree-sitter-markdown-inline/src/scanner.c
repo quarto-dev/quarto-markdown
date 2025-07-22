@@ -33,6 +33,10 @@ typedef enum {
     SUPERSCRIPT_CLOSE,
     SUBSCRIPT_OPEN,
     SUBSCRIPT_CLOSE,
+    CITE_AUTHOR_IN_TEXT_WITH_OPEN_BRACKET,
+    CITE_SUPPRESS_AUTHOR_WITH_OPEN_BRACKET,
+    CITE_AUTHOR_IN_TEXT,
+    CITE_SUPPRESS_AUTHOR,
     UNCLOSED_SPAN
 } TokenType;
 
@@ -429,6 +433,43 @@ static bool parse_underscore(Scanner *s, TSLexer *lexer,
     return false;
 }
 
+static bool parse_cite_author_in_text(Scanner *s, TSLexer *lexer,
+                                      const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '{' && valid_symbols[CITE_AUTHOR_IN_TEXT_WITH_OPEN_BRACKET]) {
+        lexer->advance(lexer, false);
+        // We have an opening bracket, so we can parse the author in text with
+        // brackets.
+        lexer->result_symbol = CITE_AUTHOR_IN_TEXT_WITH_OPEN_BRACKET;
+        lexer->mark_end(lexer);
+        return true;
+    } else if (valid_symbols[CITE_AUTHOR_IN_TEXT]) {
+        lexer->result_symbol = CITE_AUTHOR_IN_TEXT;
+        lexer->mark_end(lexer);
+        return true;
+    }
+    return false;
+}
+
+static bool parse_cite_suppress_author(Scanner *s, TSLexer *lexer,
+                                       const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '@') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '{' && valid_symbols[CITE_SUPPRESS_AUTHOR_WITH_OPEN_BRACKET]) {
+            lexer->advance(lexer, false);
+            lexer->result_symbol = CITE_SUPPRESS_AUTHOR_WITH_OPEN_BRACKET;
+            lexer->mark_end(lexer);
+            return true;
+        } else if (valid_symbols[CITE_SUPPRESS_AUTHOR]) {
+            lexer->result_symbol = CITE_SUPPRESS_AUTHOR;
+            lexer->mark_end(lexer);
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // A normal tree-sitter rule decided that the current branch is invalid and
     // now "requests" an error to stop the branch
@@ -439,6 +480,10 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // Decide which tokens to consider based on the first non-whitespace
     // character
     switch (lexer->lookahead) {
+        case '@':
+            return parse_cite_author_in_text(s, lexer, valid_symbols);
+        case '-':
+            return parse_cite_suppress_author(s, lexer, valid_symbols);
         case '^':
             return parse_caret(s, lexer, valid_symbols);
         case '\'':

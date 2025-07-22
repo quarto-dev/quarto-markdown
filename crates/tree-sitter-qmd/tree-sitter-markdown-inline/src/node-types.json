@@ -5,6 +5,37 @@
     "fields": {}
   },
   {
+    "type": "citation",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "citation_delimiter",
+          "named": true
+        },
+        {
+          "type": "citation_id_author_in_text",
+          "named": true
+        },
+        {
+          "type": "citation_id_author_in_text_with_brackets",
+          "named": true
+        },
+        {
+          "type": "citation_id_suppress_author",
+          "named": true
+        },
+        {
+          "type": "citation_id_suppress_author_with_brackets",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "code_content",
     "named": true,
     "fields": {}
@@ -73,6 +104,10 @@
       "types": [
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "citation",
           "named": true
         },
         {
@@ -207,6 +242,10 @@
           "named": true
         },
         {
+          "type": "citation",
+          "named": true
+        },
+        {
           "type": "code_span",
           "named": true
         },
@@ -292,6 +331,10 @@
       "types": [
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "citation",
           "named": true
         },
         {
@@ -414,6 +457,10 @@
       "types": [
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "citation",
           "named": true
         },
         {
@@ -604,6 +651,10 @@
           "named": true
         },
         {
+          "type": "citation",
+          "named": true
+        },
+        {
           "type": "code_span",
           "named": true
         },
@@ -707,6 +758,10 @@
       "types": [
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "citation",
           "named": true
         },
         {
@@ -825,6 +880,10 @@
           "named": true
         },
         {
+          "type": "citation",
+          "named": true
+        },
+        {
           "type": "code_span",
           "named": true
         },
@@ -913,6 +972,10 @@
       "types": [
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "citation",
           "named": true
         },
         {
@@ -1007,6 +1070,10 @@
           "named": true
         },
         {
+          "type": "citation",
+          "named": true
+        },
+        {
           "type": "code_span",
           "named": true
         },
@@ -1095,6 +1162,10 @@
       "types": [
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "citation",
           "named": true
         },
         {
@@ -1300,6 +1371,26 @@
   {
     "type": "`",
     "named": false
+  },
+  {
+    "type": "citation_delimiter",
+    "named": true
+  },
+  {
+    "type": "citation_id_author_in_text",
+    "named": true
+  },
+  {
+    "type": "citation_id_author_in_text_with_brackets",
+    "named": true
+  },
+  {
+    "type": "citation_id_suppress_author",
+    "named": true
+  },
+  {
+    "type": "citation_id_suppress_author_with_brackets",
+    "named": true
   },
   {
     "type": "class_specifier",

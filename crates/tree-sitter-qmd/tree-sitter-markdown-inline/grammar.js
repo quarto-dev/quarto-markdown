@@ -72,6 +72,11 @@ module.exports = grammar(add_inline_rules({
         $._subscript_open,
         $._subscript_close,
 
+        $._cite_author_in_text_with_open_bracket,
+        $._cite_suppress_author_with_open_bracket,
+        $._cite_author_in_text,
+        $._cite_suppress_author,
+
         // Token emmited when encountering opening delimiters for a leaf span
         // e.g. a code span, that does not have a matching closing span
         $._unclosed_span
@@ -177,6 +182,33 @@ module.exports = grammar(add_inline_rules({
             repeat($._inline_element),
             alias("]", $.inline_note_delimiter),
         )),
+        /*
+            From https://pandoc.org/demo/example33/8.20-citation-syntax.html:
+
+            Unless a citation key starts with a letter, digit, or _, and contains only 
+            alphanumerics and single internal punctuation characters (:.#$%&-+?<>~/), 
+            it must be surrounded by curly braces, which are not considered part of the key.
+        */
+
+        // citations are impossible to parse in a context-free manner, so we parse
+        // them as terminal nodes and then use a post-processing step taking advantage
+        // of the inline_link syntax
+        citation: $ => choice(
+            seq(alias($._cite_author_in_text_with_open_bracket, $.citation_delimiter),
+                alias(new RegExp('[^\\s\\n}]+'), $.citation_id_author_in_text_with_brackets),
+                alias("}", $.citation_delimiter),
+            ),
+            seq(alias($._cite_suppress_author_with_open_bracket, $.citation_delimiter),
+                alias(new RegExp('[^\\s\\n}]+'), $.citation_id_suppress_author_with_brackets),
+                alias("}", $.citation_delimiter),
+            ),
+            seq(alias($._cite_author_in_text, $.citation_delimiter),
+                alias(new RegExp('[0-9A-Za-z_]+([:.#$%&-+?<>~/][0-9A-Za-z_]+)*'), $.citation_id_author_in_text)
+            ),
+            seq(alias($._cite_suppress_author, $.citation_delimiter),
+                alias(new RegExp('[0-9A-Za-z_]+([:.#$%&-+?<>~/][0-9A-Za-z_]+)*'), $.citation_id_suppress_author)
+            ),
+        ),
 
         // Different kinds of links:
         // * inline links (https://github.github.com/gfm/#inline-link)
@@ -340,6 +372,7 @@ module.exports = grammar(add_inline_rules({
             $.superscript,
             $.strikeout,
             $.subscript,
+            $.citation,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),
@@ -349,7 +382,7 @@ module.exports = grammar(add_inline_rules({
         ))),
         _text_base: $ => choice(
             $._word,
-            common.punctuation_without($, ['[', '{', '}', ']', "'"]),
+            common.punctuation_without($, ['[', '{', '}', ']', "'", "@"]),
             $._whitespace,
         ),
 

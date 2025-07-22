@@ -1691,7 +1691,7 @@
     },
     "key_value_key": {
       "type": "PATTERN",
-      "value": "[a-zA-Z_:][a-zA-Z0-9_\\.:\\-]*"
+      "value": "[a-zA-Z_][a-zA-Z0-9_\\.:\\-]*"
     },
     "key_value_value": {
       "type": "CHOICE",
@@ -2388,6 +2388,121 @@
           }
         ]
       }
+    },
+    "citation": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_cite_author_in_text_with_open_bracket"
+              },
+              "named": true,
+              "value": "citation_delimiter"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[^\\s\\n}]+"
+              },
+              "named": true,
+              "value": "citation_id_author_in_text_with_brackets"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "STRING",
+                "value": "}"
+              },
+              "named": true,
+              "value": "citation_delimiter"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_cite_suppress_author_with_open_bracket"
+              },
+              "named": true,
+              "value": "citation_delimiter"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[^\\s\\n}]+"
+              },
+              "named": true,
+              "value": "citation_id_suppress_author_with_brackets"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "STRING",
+                "value": "}"
+              },
+              "named": true,
+              "value": "citation_delimiter"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_cite_author_in_text"
+              },
+              "named": true,
+              "value": "citation_delimiter"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[0-9A-Za-z_]+([:.#$%&-+?<>~/][0-9A-Za-z_]+)*"
+              },
+              "named": true,
+              "value": "citation_id_author_in_text"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_cite_suppress_author"
+              },
+              "named": true,
+              "value": "citation_delimiter"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[0-9A-Za-z_]+([:.#$%&-+?<>~/][0-9A-Za-z_]+)*"
+              },
+              "named": true,
+              "value": "citation_id_suppress_author"
+            }
+          ]
+        }
+      ]
     },
     "_link_text": {
       "type": "PREC_DYNAMIC",
@@ -3855,6 +3970,10 @@
               "name": "subscript"
             },
             {
+              "type": "SYMBOL",
+              "name": "citation"
+            },
+            {
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
@@ -3967,10 +4086,6 @@
                 {
                   "type": "STRING",
                   "value": "?"
-                },
-                {
-                  "type": "STRING",
-                  "value": "@"
                 },
                 {
                   "type": "STRING",
@@ -5225,6 +5340,22 @@
     {
       "type": "SYMBOL",
       "name": "_subscript_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_cite_author_in_text_with_open_bracket"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_cite_suppress_author_with_open_bracket"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_cite_author_in_text"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_cite_suppress_author"
     },
     {
       "type": "SYMBOL",
