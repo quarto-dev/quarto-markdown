@@ -14,10 +14,12 @@ Subscript basic
 a~b~c
 --------------------------------------------------------------------------------
 (inline
+  (text_base)
   (subscript
     (subscript_delimiter)
     (text_base)
-    (subscript_delimiter)))
+    (subscript_delimiter))
+  (text_base))
 ================================================================================
 Subscript nesting
 ================================================================================
