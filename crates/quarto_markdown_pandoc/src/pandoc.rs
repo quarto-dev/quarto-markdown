@@ -638,6 +638,48 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let inlines: Vec<Inline> = children.into_iter().map(native_inline).collect();
             PandocNativeIntermediate::IntermediateInlines(inlines)
         },
+        "citation_id_suppress_author" |
+        "citation_id_author_in_text" => {
+            let id = node.utf8_text(input_bytes).unwrap().to_string();
+            PandocNativeIntermediate::IntermediateBaseText(id)
+        },
+        "citation" => {
+            let mut citation_type = CitationMode::NormalCitation;
+            let mut citation_id = String::new();
+            for (node, child) in children {
+                if node == "citation_id_suppress_author" {
+                    citation_type = CitationMode::SuppressAuthor;
+                    if let PandocNativeIntermediate::IntermediateBaseText(id) = child {
+                        citation_id = id;
+                    } else {
+                        panic!("Expected BaseText in citation_id_suppress_author, got {:?}", child);
+                    }
+                } else if node == "citation_id_author_in_text" {
+                    citation_type = CitationMode::AuthorInText;
+                    if let PandocNativeIntermediate::IntermediateBaseText(id) = child {
+                        citation_id = id;
+                    } else {
+                        panic!("Expected BaseText in citation_id_author_in_text, got {:?}", child);
+                    }
+                }
+            }
+            PandocNativeIntermediate::IntermediateInline(Inline::Cite(Cite {
+                citations: vec![Citation {
+                    id: citation_id,
+                    prefix: vec![],
+                    suffix: vec![],
+                    mode: citation_type,
+                    note_num: 0, // this needs to be set later
+                    hash: 0,
+                }],
+                content: vec![
+                    Inline::Str(Str {
+                        text: node.utf8_text(input_bytes).unwrap().to_string()
+                    })
+                ],
+            }))
+        },
+        "citation_delimiter" |
         "code_span_delimiter" |
         "single_quoted_span_delimiter" |
         "double_quoted_span_delimiter" |

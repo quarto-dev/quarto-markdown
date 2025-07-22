@@ -4,7 +4,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Attr, Block, Inline, MathType, Pandoc, QuoteType};
+use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode};
 
 fn write_safe_string(text: &str) -> String {
     format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\""))
@@ -37,6 +37,17 @@ fn write_native_quote_type(quote_type: &QuoteType) -> String {
     match quote_type {
         QuoteType::SingleQuote => "SingleQuote".to_string(),
         QuoteType::DoubleQuote => "DoubleQuote".to_string(),
+    }
+}
+
+fn write_inlines(inlines: &[Inline]) -> String {
+    "[".to_string() + &(inlines.iter().map(write_inline).collect::<Vec<_>>().join(", ")) + "]"
+}
+fn write_citation_mode(mode: &CitationMode) -> String {
+    match mode {
+        CitationMode::NormalCitation => "NormalCitation".to_string(),
+        CitationMode::SuppressAuthor => "SuppressAuthor".to_string(),
+        CitationMode::AuthorInText => "AuthorInText".to_string(),
     }
 }
 
@@ -104,6 +115,18 @@ fn write_inline(text: &Inline) -> String {
         Inline::Strikeout(strikeout_struct) => {
             let content_str = strikeout_struct.content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Strikeout [{}]", content_str)
+        }
+        Inline::Cite(cite_struct) => {
+            format!("Cite [{}] {}", 
+                cite_struct.citations.iter().map(|Citation { mode, note_num, hash, id, prefix, suffix }| {
+                    format!("Citation {{ citationId = {}, citationPrefix = {}, citationSuffix = {}, citationMode = {}, citationNoteNum = {}, citationHash = {} }}",
+                        write_safe_string(id), 
+                        write_inlines(prefix), 
+                        write_inlines(suffix),
+                        write_citation_mode(mode),
+                        note_num, hash)
+                }).collect::<Vec<_>>().join(", "),
+                write_inlines(&cite_struct.content))
         }
         _ => panic!("Unsupported inline type: {:?}", text),
     }

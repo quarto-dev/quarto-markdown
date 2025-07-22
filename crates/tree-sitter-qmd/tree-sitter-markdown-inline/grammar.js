@@ -195,11 +195,11 @@ module.exports = grammar(add_inline_rules({
         // of the inline_link syntax
         citation: $ => choice(
             seq(alias($._cite_author_in_text_with_open_bracket, $.citation_delimiter),
-                alias(new RegExp('[^\\s\\n}]+'), $.citation_id_author_in_text_with_brackets),
+                alias(new RegExp('[^\\s\\n}]+'), $.citation_id_author_in_text),
                 alias("}", $.citation_delimiter),
             ),
             seq(alias($._cite_suppress_author_with_open_bracket, $.citation_delimiter),
-                alias(new RegExp('[^\\s\\n}]+'), $.citation_id_suppress_author_with_brackets),
+                alias(new RegExp('[^\\s\\n}]+'), $.citation_id_suppress_author),
                 alias("}", $.citation_delimiter),
             ),
             seq(alias($._cite_author_in_text, $.citation_delimiter),
