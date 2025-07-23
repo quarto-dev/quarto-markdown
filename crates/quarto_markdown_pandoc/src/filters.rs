@@ -7,7 +7,7 @@ use crate::pandoc;
 
 // filters are destructive and take ownership of the input
 
-type InlineFilterFn<T> = Option<fn(T) -> Vec<pandoc::Inline>>;
+type InlineFilterFn<T> = Option<fn(T) -> (Vec<pandoc::Inline>, bool)>;
 
 #[derive(Default)]
 pub struct Filter {
@@ -33,4 +33,23 @@ pub struct Filter {
     pub image: InlineFilterFn<pandoc::Image>,
     pub note: InlineFilterFn<pandoc::Note>,
     pub span: InlineFilterFn<pandoc::Span>,
+    pub shortcode: InlineFilterFn<pandoc::Shortcode>,
+
+    pub block: Option<fn(pandoc::Block) -> pandoc::Block>,
+}
+
+// pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &Filter) -> pandoc::Pandoc {
+//     let mut result = pandoc::Pandoc::default();
+//     for block in pandoc.blocks {
+//         result.blocks.push(new_block);
+//         match block {
+//             pandoc::P
+//             }
+//         }
+//     }
+//     result
+// }
+
+pub fn traverse_para(para: pandoc::Block::Paragraph) -> bool {
+    true
 }

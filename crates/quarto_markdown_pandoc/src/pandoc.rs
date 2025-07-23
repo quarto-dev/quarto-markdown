@@ -276,10 +276,12 @@ pub enum ShortcodeArg {
     Number(f64),
     Boolean(bool),
     Shortcode(Shortcode),
+    KeyValue(HashMap<String, ShortcodeArg>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Shortcode {
+    pub is_escaped: bool,
     pub name: String,
     pub positional_args: Vec<ShortcodeArg>,
     pub keyword_args: HashMap<String, ShortcodeArg>,
@@ -342,6 +344,7 @@ enum PandocNativeIntermediate {
     IntermediateLatexDisplayDelimiter,
     IntermediateKeyValueSpec(HashMap<String, String>),
     IntermediateRawFormat(String),
+    IntermediateShortcodeArg(ShortcodeArg),
     IntermediateUnknown,
 }
 
@@ -359,6 +362,25 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
     let escaped_double_quote_re = Regex::new("[\\\\][\"]").unwrap();
     let escaped_single_quote_re = Regex::new("[\\\\][']").unwrap();
 
+    let string_as_base_text = || {
+        let value = node.utf8_text(input_bytes).unwrap().to_string();
+        if value.starts_with('"') && value.ends_with('"') {
+            let value = value[1..value.len()-1].to_string();
+            println!("Unescaping double quotes in value: {}", value);
+            println!("unescaped: {}", escaped_double_quote_re.replace_all(&value, "\""));
+            PandocNativeIntermediate::IntermediateBaseText(
+                escaped_double_quote_re.replace_all(&value, "\"").to_string()
+            )
+        } else if value.starts_with('\'') && value.ends_with('\'') {
+            let value = value[1..value.len()-1].to_string();
+            PandocNativeIntermediate::IntermediateBaseText(
+                escaped_single_quote_re.replace_all(&value, "'").to_string()
+            )
+        } else {
+            // If not quoted, return as is
+            PandocNativeIntermediate::IntermediateBaseText(value)
+        }
+    };
     let native_inline = |(node, child)| {
         match child {
             PandocNativeIntermediate::IntermediateInline(inline) => inline,
@@ -390,7 +412,6 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         }
         inlines
     };
-
 
     match node.kind() {
         "document" => {
@@ -461,29 +482,24 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let id = node.utf8_text(input_bytes).unwrap().to_string().split_off(1);
             PandocNativeIntermediate::IntermediateBaseText(id)
         },
+        "shortcode_naked_string" |
+        "shortcode_name" => {
+            let id = node.utf8_text(input_bytes).unwrap().to_string();
+            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id))
+        },
         "key_value_key" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string();
             PandocNativeIntermediate::IntermediateBaseText(id)
         },
-        "key_value_value" => {
-            let value = node.utf8_text(input_bytes).unwrap().to_string();
-            if value.starts_with('"') && value.ends_with('"') {
-                let value = value[1..value.len()-1].to_string();
-                println!("Unescaping double quotes in value: {}", value);
-                println!("unescaped: {}", escaped_double_quote_re.replace_all(&value, "\""));
-                PandocNativeIntermediate::IntermediateBaseText(
-                    escaped_double_quote_re.replace_all(&value, "\"").to_string()
-                )
-            } else if value.starts_with('\'') && value.ends_with('\'') {
-                let value = value[1..value.len()-1].to_string();
-                PandocNativeIntermediate::IntermediateBaseText(
-                    escaped_single_quote_re.replace_all(&value, "'").to_string()
-                )
-            } else {
-                // If not quoted, return as is
-                PandocNativeIntermediate::IntermediateBaseText(value)
+        "shortcode_string" => {
+            match string_as_base_text() {
+                PandocNativeIntermediate::IntermediateBaseText(id) => {
+                    PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id))
+                },
+                _ => panic!("Expected BaseText in shortcode_string, got {:?}", string_as_base_text()),
             }
-        },
+        }
+        "key_value_value" => { string_as_base_text() },
         "link_title" => {
             let title = node.utf8_text(input_bytes).unwrap().to_string();
             let title = title[1..title.len()-1].to_string();
@@ -697,15 +713,92 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 ],
             }))
         },
+        "shortcode" |
         "shortcode_escaped" => {
+            let is_escaped = node.kind() == "shortcode_escaped";
             let mut name = String::new();
             let mut positional_args: Vec<ShortcodeArg> = Vec::new();
             let mut keyword_args: HashMap<String, ShortcodeArg> = HashMap::new();
+            for (node, child) in children {
+                match (node.as_str(), child) {
+                    ("shortcode_name", PandocNativeIntermediate::IntermediateBaseText(text)) |
+                    ("shortcode_string", PandocNativeIntermediate::IntermediateBaseText(text)) => {
+                        if name.is_empty() {
+                            name = text;
+                        } else {
+                            positional_args.push(ShortcodeArg::String(text));
+                        }
+                    },
+                    ("shortcode_keyword_param", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::KeyValue(spec))) => {
+                        for (key, value) in spec {
+                            keyword_args.insert(key, value);
+                        }
+                    },
+                    ("shortcode", PandocNativeIntermediate::IntermediateInline(Inline::Shortcode(arg))) => {
+                        positional_args.push(ShortcodeArg::Shortcode(arg));
+                    },
+                    ("shortcode_number", PandocNativeIntermediate::IntermediateShortcodeArg(arg)) |
+                    ("shortcode_boolean", PandocNativeIntermediate::IntermediateShortcodeArg(arg)) => {
+                        positional_args.push(arg);
+                    },
+                    (_, child) => panic!("Unexpected shortcode_escaped node: {} with child {:?}", node, child.clone()),
+                }
+            }
             PandocNativeIntermediate::IntermediateInline(Inline::Shortcode(Shortcode {
+                is_escaped,
                 name,
                 positional_args,
                 keyword_args,
             }))
+        },
+        "shortcode_keyword_param" => {
+            let mut result = HashMap::new();
+            let mut name = String::new();
+            for (node, child) in children {
+                match node.as_str() {
+                    "shortcode_name" => {
+                        match child {
+                            PandocNativeIntermediate::IntermediateBaseText(text) => {
+                                if name.is_empty() {
+                                    name = text;
+                                } else {
+                                    result.insert(name.clone(), ShortcodeArg::String(text));
+                                }
+                            }
+                            _ => panic!("Expected BaseText in shortcode_name, got {:?}", child)
+                        }
+                    },
+                    "shortcode_string" | 
+                    "shortcode_number" | "shortcode_naked_string" | "shortcode_boolean" => {
+                        match child {
+                            PandocNativeIntermediate::IntermediateShortcodeArg(arg) => {
+                                result.insert(name.clone(), arg);
+                            }
+                            _ => panic!("Expected ShortcodeArg in shortcode_string, got {:?}", child)
+                        }
+                    },
+                    _ => {
+                        eprintln!("Warning: Unhandled node kind: {}", node);
+                    }
+                }
+            }
+            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::KeyValue(result))
+        },
+        "shortcode_boolean" => {
+            let value = node.utf8_text(input_bytes).unwrap().to_string();
+            let value = match value.as_str() {
+                "true" => ShortcodeArg::Boolean(true),
+                "false" => ShortcodeArg::Boolean(false),
+                _ => panic!("Unexpected shortcode_boolean value: {}", value),
+            };
+            PandocNativeIntermediate::IntermediateShortcodeArg(value)
+        },
+        "shortcode_number" => {
+            let value = node.utf8_text(input_bytes).unwrap().to_string();
+            match value.parse::<f64>() {
+                Ok(num) => PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::Number(num)),
+                Err(_) => panic!("Invalid shortcode_number: {}", value),
+            }
         },
         "shortcode_delimiter" |
         "citation_delimiter" |
