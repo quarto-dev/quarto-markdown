@@ -14,6 +14,48 @@ use regex::Regex;
 use crate::traversals::bottomup_traverse_concrete_tree;
 use crate::filters::{topdown_traverse, Filter};
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Location {
+    pub offset: usize,
+    pub row: usize,
+    pub column: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Range {
+    pub start: Location,
+    pub end: Location,
+}
+
+pub trait SourceLocation {
+    fn filename(&self) -> Option<String>;
+    fn range(&self) -> Range;
+}
+
+fn extract_location(node: &tree_sitter::Node) -> Range {
+    let start = node.start_position();
+    let end = node.end_position();
+    Range {
+        start: Location { 
+            offset: node.start_byte(), 
+            row: start.row, 
+            column: start.column 
+        },
+        end: Location { 
+            offset: node.end_byte(), 
+            row: end.row, 
+            column: end.column 
+        }
+    }
+}
+
+fn empty_range() -> Range {
+    Range {
+        start: Location { offset: 0, row: 0, column: 0 },
+        end: Location { offset: 0, row: 0, column: 0 }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Pandoc {
     pub blocks: Vec<Block>
@@ -157,7 +199,10 @@ pub struct Header {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct HorizontalRule {}
+pub struct HorizontalRule {
+    pub filename: Option<String>,
+    pub range: Range,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Table {
@@ -304,14 +349,63 @@ pub struct Span {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Space {}
+pub struct Space {
+    pub filename: Option<String>,
+    pub range: Range,
+}
 
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct LineBreak {}
+pub struct LineBreak {
+    pub filename: Option<String>,
+    pub range: Range,
+}
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct SoftBreak {}
+pub struct SoftBreak {
+    pub filename: Option<String>,
+    pub range: Range,
+}
+
+impl SourceLocation for HorizontalRule {
+    fn filename(&self) -> Option<String> {
+        self.filename.clone()
+    }
+    
+    fn range(&self) -> Range {
+        self.range.clone()
+    }
+}
+
+impl SourceLocation for Space {
+    fn filename(&self) -> Option<String> {
+        self.filename.clone()
+    }
+    
+    fn range(&self) -> Range {
+        self.range.clone()
+    }
+}
+
+impl SourceLocation for LineBreak {
+    fn filename(&self) -> Option<String> {
+        self.filename.clone()
+    }
+    
+    fn range(&self) -> Range {
+        self.range.clone()
+    }
+}
+
+impl SourceLocation for SoftBreak {
+    fn filename(&self) -> Option<String> {
+        self.filename.clone()
+    }
+    
+    fn range(&self) -> Range {
+        self.range.clone()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShortcodeArg {
@@ -382,7 +476,7 @@ enum PandocNativeIntermediate {
     IntermediateBlock(Block),
     IntermediateInline(Inline),
     IntermediateInlines(Vec<Inline>),
-    IntermediateBaseText(String),
+    IntermediateBaseText(String, Range),
     IntermediateLatexInlineDelimiter,
     IntermediateLatexDisplayDelimiter,
     IntermediateKeyValueSpec(HashMap<String, String>),
@@ -406,30 +500,33 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
     let escaped_single_quote_re = Regex::new("[\\\\][']").unwrap();
 
     let string_as_base_text = || {
+        let location = extract_location(node);
         let value = node.utf8_text(input_bytes).unwrap().to_string();
         if value.starts_with('"') && value.ends_with('"') {
             let value = value[1..value.len()-1].to_string();
             println!("Unescaping double quotes in value: {}", value);
             println!("unescaped: {}", escaped_double_quote_re.replace_all(&value, "\""));
             PandocNativeIntermediate::IntermediateBaseText(
-                escaped_double_quote_re.replace_all(&value, "\"").to_string()
+                escaped_double_quote_re.replace_all(&value, "\"").to_string(),
+                location
             )
         } else if value.starts_with('\'') && value.ends_with('\'') {
             let value = value[1..value.len()-1].to_string();
             PandocNativeIntermediate::IntermediateBaseText(
-                escaped_single_quote_re.replace_all(&value, "'").to_string()
+                escaped_single_quote_re.replace_all(&value, "'").to_string(),
+                location
             )
         } else {
             // If not quoted, return as is
-            PandocNativeIntermediate::IntermediateBaseText(value)
+            PandocNativeIntermediate::IntermediateBaseText(value, location)
         }
     };
     let native_inline = |(node, child)| {
         match child {
             PandocNativeIntermediate::IntermediateInline(inline) => inline,
-            PandocNativeIntermediate::IntermediateBaseText(text) => {
+            PandocNativeIntermediate::IntermediateBaseText(text, range) => {
                 if let Some(_) = whitespace_re.find(&text) {
-                    Inline::Space(Space {})
+                    Inline::Space(Space { filename: None, range })
                 } else {
                     Inline::Str(Str { text })
                 }
@@ -443,9 +540,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             match child {
                 PandocNativeIntermediate::IntermediateInline(inline) => inlines.push(inline),
                 PandocNativeIntermediate::IntermediateInlines(inner_inlines) => inlines.extend(inner_inlines),
-                PandocNativeIntermediate::IntermediateBaseText(text) => {
+                PandocNativeIntermediate::IntermediateBaseText(text, range) => {
                     if let Some(_) = whitespace_re.find(&text) {
-                        inlines.push(Inline::Space(Space {}))
+                        inlines.push(Inline::Space(Space { filename: None, range }))
                     } else {
                         inlines.push(Inline::Str(Str { text }))
                     }
@@ -497,7 +594,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut attr = ("".to_string(), vec![], HashMap::new());
             children.into_iter().for_each(|(node, child)| {
                 match child {
-                    PandocNativeIntermediate::IntermediateBaseText(id) => {
+                    PandocNativeIntermediate::IntermediateBaseText(id, _) => {
                         if node == "id_specifier" {
                             attr.0 = id;
                         } else if node == "class_specifier" {
@@ -519,11 +616,11 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         },
         "class_specifier" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string().split_off(1);
-            PandocNativeIntermediate::IntermediateBaseText(id)
+            PandocNativeIntermediate::IntermediateBaseText(id, extract_location(node))
         },
         "id_specifier" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string().split_off(1);
-            PandocNativeIntermediate::IntermediateBaseText(id)
+            PandocNativeIntermediate::IntermediateBaseText(id, extract_location(node))
         },
         "shortcode_naked_string" |
         "shortcode_name" => {
@@ -532,11 +629,11 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         },
         "key_value_key" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string();
-            PandocNativeIntermediate::IntermediateBaseText(id)
+            PandocNativeIntermediate::IntermediateBaseText(id, extract_location(node))
         },
         "shortcode_string" => {
             match string_as_base_text() {
-                PandocNativeIntermediate::IntermediateBaseText(id) => {
+                PandocNativeIntermediate::IntermediateBaseText(id, _) => {
                     PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id))
                 },
                 _ => panic!("Expected BaseText in shortcode_string, got {:?}", string_as_base_text()),
@@ -546,11 +643,11 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "link_title" => {
             let title = node.utf8_text(input_bytes).unwrap().to_string();
             let title = title[1..title.len()-1].to_string();
-            PandocNativeIntermediate::IntermediateBaseText(title)
+            PandocNativeIntermediate::IntermediateBaseText(title, extract_location(node))
         },
         "link_destination" => {
             let url = node.utf8_text(input_bytes).unwrap().to_string();
-            PandocNativeIntermediate::IntermediateBaseText(url)
+            PandocNativeIntermediate::IntermediateBaseText(url, extract_location(node))
         },
         "link_text" => {
             PandocNativeIntermediate::IntermediateInlines(native_inlines(children))
@@ -571,7 +668,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 }
                 match child {
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
-                    PandocNativeIntermediate::IntermediateBaseText(text) => {
+                    PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                         if node == "link_destination" {
                             target.0 = text; // URL
                         } else if node == "link_title" {
@@ -602,7 +699,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             for (node, child) in children {
                 match child {
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
-                    PandocNativeIntermediate::IntermediateBaseText(text) => {
+                    PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                         if node == "link_destination" {
                             target.0 = text; // URL
                         } else if node == "link_title" {
@@ -663,7 +760,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut spec = HashMap::new();
             let mut current_key: Option<String> = None;
             for (node, child) in children {
-                if let PandocNativeIntermediate::IntermediateBaseText(value) = child {
+                if let PandocNativeIntermediate::IntermediateBaseText(value, _) = child {
                     if node == "key_value_key" {
                         current_key = Some(value);
                     } else if node == "key_value_value" {
@@ -682,13 +779,13 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "raw_specifier" => {
             // like code_content but skipping first character
             let raw = node.utf8_text(input_bytes).unwrap().to_string();
-            PandocNativeIntermediate::IntermediateBaseText(raw[1..].to_string())            
+            PandocNativeIntermediate::IntermediateBaseText(raw[1..].to_string(), extract_location(node))            
         },
         "code_content" |
         "latex_content" |
         "text_base" => {
             node.utf8_text(input_bytes)
-                .map(|text| PandocNativeIntermediate::IntermediateBaseText(text.to_string()))
+                .map(|text| PandocNativeIntermediate::IntermediateBaseText(text.to_string(), extract_location(node)))
                 .unwrap()
         },
         "emphasis" => {
@@ -718,7 +815,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "citation_id_suppress_author" |
         "citation_id_author_in_text" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string();
-            PandocNativeIntermediate::IntermediateBaseText(id)
+            PandocNativeIntermediate::IntermediateBaseText(id, extract_location(node))
         },
         "citation" => {
             let mut citation_type = CitationMode::NormalCitation;
@@ -726,14 +823,14 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             for (node, child) in children {
                 if node == "citation_id_suppress_author" {
                     citation_type = CitationMode::SuppressAuthor;
-                    if let PandocNativeIntermediate::IntermediateBaseText(id) = child {
+                    if let PandocNativeIntermediate::IntermediateBaseText(id, _) = child {
                         citation_id = id;
                     } else {
                         panic!("Expected BaseText in citation_id_suppress_author, got {:?}", child);
                     }
                 } else if node == "citation_id_author_in_text" {
                     citation_type = CitationMode::AuthorInText;
-                    if let PandocNativeIntermediate::IntermediateBaseText(id) = child {
+                    if let PandocNativeIntermediate::IntermediateBaseText(id, _) = child {
                         citation_id = id;
                     } else {
                         panic!("Expected BaseText in citation_id_author_in_text, got {:?}", child);
@@ -859,10 +956,16 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             PandocNativeIntermediate::IntermediateUnknown
         },
         "soft_line_break" => {
-            PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { }))
+            PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { 
+                filename: None, 
+                range: extract_location(node) 
+            }))
         },
         "hard_line_break" => {
-            PandocNativeIntermediate::IntermediateInline(Inline::LineBreak(LineBreak { }))
+            PandocNativeIntermediate::IntermediateInline(Inline::LineBreak(LineBreak { 
+                filename: None, 
+                range: extract_location(node) 
+            }))
         },
         "latex_span_delimiter" => {
             let str = node.utf8_text(input_bytes).unwrap();
@@ -923,7 +1026,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     } else {
                         match intermediate {
                             PandocNativeIntermediate::IntermediateInline(_) => true,
-                            PandocNativeIntermediate::IntermediateBaseText(_) => true,
+                            PandocNativeIntermediate::IntermediateBaseText(_, _) => true,
                             _ => false
                         }
                     }
@@ -958,7 +1061,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             assert!(inlines.len() == 1, "Expected exactly one inline in code_span, got {}", inlines.len());
             let (_, child) = inlines.remove(0);
             match child {
-                PandocNativeIntermediate::IntermediateBaseText(text) => {
+                PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                     if let Some(raw) = is_raw {
                         PandocNativeIntermediate::IntermediateInline(Inline::RawInline(RawInline {
                             format: raw,
@@ -1004,7 +1107,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             };
             let (_, child) = inlines.remove(0);
             match child {
-                PandocNativeIntermediate::IntermediateBaseText(text) => {
+                PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                     PandocNativeIntermediate::IntermediateInline(Inline::Math(Math {
                         math_type: math_type,
                         text,
@@ -1016,7 +1119,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "raw_attribute" => {
             for (_, child) in children {
                 match child {
-                    PandocNativeIntermediate::IntermediateBaseText(raw) => {
+                    PandocNativeIntermediate::IntermediateBaseText(raw, _) => {
                         return PandocNativeIntermediate::IntermediateRawFormat(raw);
                     }
                     _ => {}

@@ -3,10 +3,11 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Pandoc, Block, Inline, MathType, Attr};
+use crate::pandoc::{Pandoc};
 use serde_json::{json, Value};
 
-fn write_json(pandoc: &Pandoc) -> Value {
+// this is unfinished
+fn write_json(_: &Pandoc) -> Value {
     json!({
         "pandoc-api-version": [1, 23, 1],
         "meta": {},
