@@ -8,10 +8,29 @@ use crate::pandoc;
 // filters are destructive and take ownership of the input
 
 type InlineFilterFn<T> = Option<fn(T) -> (Vec<pandoc::Inline>, bool)>;
+type BlockFilterFn<T> = Option<fn(T) -> (Vec<pandoc::Block>, bool)>;
+
+// Macro to generate repetitive match arms
+// Macro to reduce repetition in filter logic
+macro_rules! handle_inline_filter {
+    ($variant:ident, $value:ident, $filter_field:ident, $filter:expr) => {
+        if let Some(f) = $filter.$filter_field {
+            return inlines_apply_and_maybe_recurse($value, f, $filter);
+        } else if let Some(f) = $filter.inline {
+            return inlines_apply_and_maybe_recurse(crate::pandoc::Inline::$variant($value), f, $filter);
+        } else {
+            vec![crate::pandoc::Inline::$variant($value)]
+        }
+    };
+}
 
 #[derive(Default)]
 pub struct Filter {
+    pub inlines: InlineFilterFn<pandoc::Inlines>,
     pub inline: InlineFilterFn<pandoc::Inline>,
+
+    pub block: BlockFilterFn<pandoc::Block>,
+    pub blocks: BlockFilterFn<pandoc::Blocks>,
 
     pub str: InlineFilterFn<pandoc::Str>,
     pub emph: InlineFilterFn<pandoc::Emph>,
@@ -35,21 +54,156 @@ pub struct Filter {
     pub span: InlineFilterFn<pandoc::Span>,
     pub shortcode: InlineFilterFn<pandoc::Shortcode>,
 
-    pub block: Option<fn(pandoc::Block) -> pandoc::Block>,
+    pub paragraph: BlockFilterFn<pandoc::Paragraph>,
 }
 
-// pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &Filter) -> pandoc::Pandoc {
-//     let mut result = pandoc::Pandoc::default();
-//     for block in pandoc.blocks {
-//         result.blocks.push(new_block);
-//         match block {
-//             pandoc::P
-//             }
-//         }
-//     }
-//     result
-// }
+fn inlines_apply_and_maybe_recurse<T>(
+    item: T,
+    filter_fn: fn(T) -> (crate::pandoc::Inlines, bool),
+    filter: &Filter
+) -> crate::pandoc::Inlines {
+    let (new_content, recurse) = filter_fn(item);
+    if !recurse {
+        return new_content;
+    } else {
+        return topdown_traverse_inlines(new_content, filter);
+    }
+}
 
-pub fn traverse_para(para: pandoc::Block::Paragraph) -> bool {
-    true
+fn blocks_apply_and_maybe_recurse<T>(
+    item: T,
+    filter_fn: fn(T) -> (crate::pandoc::Blocks, bool),
+    filter: &Filter
+) -> crate::pandoc::Blocks {
+    let (new_content, recurse) = filter_fn(item);
+    if !recurse {
+        return new_content;
+    } else {
+        return topdown_traverse_blocks(new_content, filter);
+    }
+}
+
+pub fn topdown_traverse_inline(inline: crate::pandoc::Inline, filter: &Filter) -> crate::pandoc::Inlines {
+    match inline {
+        crate::pandoc::Inline::Str(s) => {
+            handle_inline_filter!(Str, s, str, filter)
+        },
+        crate::pandoc::Inline::Emph(e) => {
+            handle_inline_filter!(Emph, e, emph, filter)
+        },
+        crate::pandoc::Inline::Underline(u) => {
+            handle_inline_filter!(Underline, u, underline, filter)
+        },
+        crate::pandoc::Inline::Strong(sg) => {
+            handle_inline_filter!(Strong, sg, strong, filter)
+        },
+        crate::pandoc::Inline::Strikeout(st) => {
+            handle_inline_filter!(Strikeout, st, strikeout, filter)
+        },
+        crate::pandoc::Inline::Superscript(sp) => {
+            handle_inline_filter!(Superscript, sp, superscript, filter)
+        },
+        crate::pandoc::Inline::Subscript(sb) => {
+            handle_inline_filter!(Subscript, sb, subscript, filter)
+        },
+        crate::pandoc::Inline::SmallCaps(sc) => {
+            handle_inline_filter!(SmallCaps, sc, small_caps, filter)
+        },
+        crate::pandoc::Inline::Quoted(q) => {
+            handle_inline_filter!(Quoted, q, quoted, filter)
+        },
+        crate::pandoc::Inline::Cite(c) => {
+            handle_inline_filter!(Cite, c, cite, filter)
+        },
+        crate::pandoc::Inline::Code(co) => {
+            handle_inline_filter!(Code, co, code, filter)
+        },
+        crate::pandoc::Inline::Space(sp) => {
+            handle_inline_filter!(Space, sp, space, filter)
+        },
+        crate::pandoc::Inline::SoftBreak(sb) => {
+            handle_inline_filter!(SoftBreak, sb, soft_break, filter)
+        },
+        crate::pandoc::Inline::LineBreak(lb) => {
+            handle_inline_filter!(LineBreak, lb, line_break, filter)
+        },
+        crate::pandoc::Inline::Math(m) => {
+            handle_inline_filter!(Math, m, math, filter)
+        },
+        crate::pandoc::Inline::RawInline(ri) => {
+            handle_inline_filter!(RawInline, ri, raw_inline, filter)
+        },
+        crate::pandoc::Inline::Link(l) => {
+            handle_inline_filter!(Link, l, link, filter)
+        },
+        crate::pandoc::Inline::Image(i) => {
+            handle_inline_filter!(Image, i, image, filter)
+        },
+        crate::pandoc::Inline::Note(note) => {
+            handle_inline_filter!(Note, note, note, filter)
+        },
+        crate::pandoc::Inline::Span(span) => {
+            handle_inline_filter!(Span, span, span, filter)
+        },
+        // quarto extensions
+        crate::pandoc::Inline::Shortcode(shortcode) => {
+            handle_inline_filter!(Shortcode, shortcode, shortcode, filter)
+        },
+    }
+}
+
+pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> crate::pandoc::Blocks {
+    match block {
+        crate::pandoc::Block::Paragraph(para) => {
+            if let Some(f) = filter.paragraph {
+                return blocks_apply_and_maybe_recurse(para, f, filter);
+            } 
+            if let Some(f) = filter.block {
+                return blocks_apply_and_maybe_recurse(crate::pandoc::Block::Paragraph(para), f, filter);
+            }
+            return vec![crate::pandoc::Block::Paragraph(crate::pandoc::Paragraph {
+                content: topdown_traverse_inlines(para.content, filter),
+            })];
+        },
+        _ => panic!("Unsupported block type: {:?}", block),
+    }
+}
+
+pub fn topdown_traverse_inlines(vec: crate::pandoc::Inlines, filter: &Filter) -> crate::pandoc::Inlines {
+    if let Some(f) = filter.inlines {
+        let (inner_result, recurse) = f(vec);
+        if !recurse {
+            return inner_result;
+        } else {
+            return topdown_traverse_inlines(inner_result, filter);
+        }
+    }
+    let mut result = vec![];
+    for inline in vec {
+        result.extend(topdown_traverse_inline(inline, filter));
+    }
+    result
+}
+
+pub fn topdown_traverse_blocks(vec: crate::pandoc::Blocks, filter: &Filter) -> crate::pandoc::Blocks {
+    if let Some(f) = filter.blocks {
+        let (inner_result, recurse) = f(vec);
+        if !recurse {
+            return inner_result;
+        } else {
+            return topdown_traverse_blocks(inner_result, filter);
+        }
+    }
+    let mut result = vec![];
+    for block in vec {
+        result.extend(topdown_traverse_block(block, filter));
+    }
+    result
+}
+
+pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &Filter) -> pandoc::Pandoc {
+    pandoc::Pandoc {
+        blocks: topdown_traverse_blocks(doc.blocks, filter),
+        // TODO: handle meta
+    }
 }

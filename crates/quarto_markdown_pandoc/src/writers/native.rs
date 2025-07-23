@@ -4,7 +4,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode};
+use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode, Paragraph};
 
 fn write_safe_string(text: &str) -> String {
     format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\""))
@@ -134,7 +134,7 @@ fn write_inline(text: &Inline) -> String {
 
 fn write_block(block: &Block) -> String {
     match block {
-        Block::Paragraph { content } => {
+        Block::Paragraph(Paragraph { content }) => {
             let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
             format!("Para [{}]", content_str)
         }

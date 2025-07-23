@@ -12,8 +12,9 @@ use std::collections::HashMap;
 use regex::Regex;
 
 use crate::traversals::bottomup_traverse_concrete_tree;
+use crate::filters::{topdown_traverse, Filter};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Pandoc {
     pub blocks: Vec<Block>
     // eventually, meta: 
@@ -101,60 +102,102 @@ pub struct Cell {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct Plain {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Paragraph {
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LineBlock {
+    pub content: Vec<Inlines>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CodeBlock {
+    pub attr: Attr,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct RawBlock {
+    pub format: String,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BlockQuote {
+    pub content: Blocks,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct OrderedList {
+    pub attr: ListAttributes,
+    pub content: Vec<Blocks>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BulletList {
+    pub content: Vec<Blocks>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DefinitionList {
+    pub content: Vec<(Inlines, Vec<Blocks>)>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Header {
+    pub level: usize,
+    pub attr: Attr,
+    pub content: Inlines,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct HorizontalRule {}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Table {
+    pub attr: Attr,
+    pub caption: Caption,
+    pub colspec: Vec<ColSpec>,
+    pub head: TableHead,
+    pub bodies: Vec<TableBody>,
+    pub foot: TableFoot,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Figure {
+    pub attr: Attr,
+    pub caption: Caption,
+    pub content: Blocks,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Div {
+    pub attr: Attr,
+    pub content: Blocks,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Block {
-    Plain {
-        content: Inlines,
-    },
-    Paragraph {
-        content: Inlines,
-    },
-    LineBlock {
-        content: Vec<Inlines>,
-    },
-    CodeBlock {
-        attr: Attr,
-        text: String,
-    },
-    RawBlock {
-        format: String,
-        text: String,
-    },
-    BlockQuote {
-        content: Blocks,
-    },
-    OrderedList {
-        attr: ListAttributes,
-        content: Vec<Blocks>,
-    },
-    BulletList {
-        content: Vec<Blocks>,
-    },
-    DefinitionList {
-        content: Vec<(Inlines, Vec<Blocks>)>,
-    },
-    Header {
-        level: usize,
-        attr: Attr,
-        content: Inlines,
-    },
-    HorizontalRule,
-    Table {
-        attr: Attr,
-        caption: Caption,
-        colspec: Vec<ColSpec>,
-        head: TableHead,
-        bodies: Vec<TableBody>,
-        foot: TableFoot,
-    },
-    Figure {
-        attr: Attr,
-        caption: Caption,
-        content: Blocks,
-    },
-    Div {
-        attr: Attr,
-        content: Blocks,
-    }
+    Plain(Plain),
+    Paragraph(Paragraph),
+    LineBlock(LineBlock),
+    CodeBlock(CodeBlock),
+    RawBlock(RawBlock),
+    BlockQuote(BlockQuote),
+    OrderedList(OrderedList),
+    BulletList(BulletList),
+    DefinitionList(DefinitionList),
+    Header(Header),
+    HorizontalRule(HorizontalRule),
+    Table(Table),
+    Figure(Figure),
+    Div(Div),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -446,9 +489,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     inlines.extend(inner_inlines);
                 }
             }
-            PandocNativeIntermediate::IntermediateBlock(Block::Paragraph {
+            PandocNativeIntermediate::IntermediateBlock(Block::Paragraph(Paragraph {
                 content: inlines,
-            })
+            }))
         },
         "commonmark_attribute" => {
             let mut attr = ("".to_string(), vec![], HashMap::new());
@@ -721,8 +764,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut keyword_args: HashMap<String, ShortcodeArg> = HashMap::new();
             for (node, child) in children {
                 match (node.as_str(), child) {
-                    ("shortcode_name", PandocNativeIntermediate::IntermediateBaseText(text)) |
-                    ("shortcode_string", PandocNativeIntermediate::IntermediateBaseText(text)) => {
+                    ("shortcode_name", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text))) |
+                    ("shortcode_string", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text))) => {
                         if name.is_empty() {
                             name = text;
                         } else {
@@ -741,6 +784,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     ("shortcode_boolean", PandocNativeIntermediate::IntermediateShortcodeArg(arg)) => {
                         positional_args.push(arg);
                     },
+                    ("shortcode_delimiter", _) => {
+                        // This is a marker node, we don't need to do anything with it
+                    },
                     (_, child) => panic!("Unexpected shortcode_escaped node: {} with child {:?}", node, child.clone()),
                 }
             }
@@ -758,7 +804,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 match node.as_str() {
                     "shortcode_name" => {
                         match child {
-                            PandocNativeIntermediate::IntermediateBaseText(text) => {
+                            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text)) => {
                                 if name.is_empty() {
                                     name = text;
                                 } else {
@@ -835,7 +881,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 .map(native_inline)
                 .collect();
             PandocNativeIntermediate::IntermediateInline(Inline::Note(Note {
-                content: vec![Block::Paragraph { content: inlines }]
+                content: vec![Block::Paragraph(Paragraph { content: inlines })]
             }))
         },
         "superscript" => {
@@ -985,10 +1031,95 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
     }
 }
 
+fn shortcode_value_span(str: String) -> Inline {
+    let mut attr_hash = HashMap::new();
+    attr_hash.insert("data-raw".to_string(), str.clone());
+    attr_hash.insert("data-value".to_string(), str);
+    attr_hash.insert("data-is-shortcode".to_string(), "1".to_string());
+
+    Inline::Span(Span {
+        attr: ("".to_string(), vec!["quarto-shortcode__-param".to_string()], attr_hash),
+        content: vec![],
+    })
+}
+
+fn shortcode_key_value_span(key: String, value: String) -> Inline {
+    let mut attr_hash = HashMap::new();
+
+    // this needs to be fixed and needs to use the actual source. We'll do that when we have source mapping
+    attr_hash.insert("data-raw".to_string(), format!("{} = {}", key.clone(), value.clone()));
+    attr_hash.insert("data-key".to_string(), key);
+    attr_hash.insert("data-value".to_string(), value);
+    attr_hash.insert("data-is-shortcode".to_string(), "1".to_string());
+
+    Inline::Span(Span {
+        attr: ("".to_string(), vec!["quarto-shortcode__-param".to_string()], attr_hash),
+        content: vec![],
+    })
+}
+
+fn shortcode_to_span(shortcode: Shortcode) -> Span {
+    let mut attr_hash: HashMap<String, String> = HashMap::new();
+    let mut content: Inlines = vec![
+        shortcode_value_span(shortcode.name)
+    ];
+    for arg in shortcode.positional_args {
+        match arg {
+            ShortcodeArg::String(text) => {
+                content.push(shortcode_value_span(text));
+            }
+            ShortcodeArg::Number(num) => {
+                content.push(shortcode_value_span(num.to_string()));
+            }
+            ShortcodeArg::Boolean(b) => {
+                content.push(shortcode_value_span(if b { "true".to_string() } else { "false".to_string() }));
+            }
+            ShortcodeArg::Shortcode(inner_shortcode) => {
+                content.push(Inline::Span(shortcode_to_span(inner_shortcode)));
+            }
+            ShortcodeArg::KeyValue(spec) => {
+                for (key, value) in spec {
+                    match value {
+                        ShortcodeArg::String(text) => {
+                            content.push(shortcode_key_value_span(key, text));
+                        }
+                        ShortcodeArg::Number(num) => {
+                            content.push(shortcode_key_value_span(key, num.to_string()));
+                        }
+                        ShortcodeArg::Boolean(b) => {
+                            content.push(shortcode_key_value_span(key, if b { "true".to_string() } else { "false".to_string() }));
+                        }
+                        ShortcodeArg::Shortcode(_) => {
+                            panic!("Quarto itself doesn't yet support nested shortcodes");
+                        }
+                        _ => {
+                            panic!("Unexpected ShortcodeArg type in shortcode: {:?}", value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    attr_hash.insert("data-is-shortcode".to_string(), "1".to_string());
+    Span {
+        attr: ("".to_string(), vec!["quarto-shortcode__".to_string()], attr_hash),
+        content
+    }
+}
+
+pub fn shortcode_to_span_filter(doc: Pandoc) -> Pandoc {
+    topdown_traverse(doc, &Filter {        
+        shortcode: Some(|shortcode| {
+            (vec![Inline::Span(shortcode_to_span(shortcode))], false)
+        }),
+        ..Default::default()
+    })
+}
+
 pub fn treesitter_to_pandoc(tree: &tree_sitter_qmd::MarkdownTree, input_bytes: &[u8]) -> Pandoc {
     let result = bottomup_traverse_concrete_tree(&mut tree.walk(), &mut native_visitor, &input_bytes);
     match result {
-        (_, PandocNativeIntermediate::IntermediatePandoc(pandoc)) => pandoc,
+        (_, PandocNativeIntermediate::IntermediatePandoc(pandoc)) => shortcode_to_span_filter(pandoc),
         _ => panic!("Expected Pandoc, got {:?}", result),
     }
 }
