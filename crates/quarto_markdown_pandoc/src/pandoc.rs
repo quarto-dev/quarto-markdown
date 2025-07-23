@@ -477,12 +477,12 @@ enum PandocNativeIntermediate {
     IntermediateInline(Inline),
     IntermediateInlines(Vec<Inline>),
     IntermediateBaseText(String, Range),
-    IntermediateLatexInlineDelimiter,
-    IntermediateLatexDisplayDelimiter,
+    IntermediateLatexInlineDelimiter(Range),
+    IntermediateLatexDisplayDelimiter(Range),
     IntermediateKeyValueSpec(HashMap<String, String>),
-    IntermediateRawFormat(String),
-    IntermediateShortcodeArg(ShortcodeArg),
-    IntermediateUnknown,
+    IntermediateRawFormat(String, Range),
+    IntermediateShortcodeArg(ShortcodeArg, Range),
+    IntermediateUnknown(Range),
 }
 
 fn is_empty_attr(attr: &Attr) -> bool {
@@ -608,7 +608,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                             attr.2.insert(key, value);
                         }
                     },
-                    PandocNativeIntermediate::IntermediateUnknown => {},
+                    PandocNativeIntermediate::IntermediateUnknown(_) => {},
                     _ => panic!("Unexpected child in commonmark_attribute: {:?}", child),
                 }
             });
@@ -625,7 +625,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "shortcode_naked_string" |
         "shortcode_name" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string();
-            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id))
+            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id), extract_location(node))
         },
         "key_value_key" => {
             let id = node.utf8_text(input_bytes).unwrap().to_string();
@@ -634,7 +634,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "shortcode_string" => {
             match string_as_base_text() {
                 PandocNativeIntermediate::IntermediateBaseText(id, _) => {
-                    PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id))
+                    PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(id), extract_location(node))
                 },
                 _ => panic!("Expected BaseText in shortcode_string, got {:?}", string_as_base_text()),
             }
@@ -677,7 +677,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                             panic!("Unexpected image node: {}", node);
                         }
                     },
-                    PandocNativeIntermediate::IntermediateUnknown => {},
+                    PandocNativeIntermediate::IntermediateUnknown(_) => {},
                     PandocNativeIntermediate::IntermediateInlines(inlines) => content.extend(inlines),
                     PandocNativeIntermediate::IntermediateInline(inline) => content.push(inline),
                     _ => panic!("Unexpected child in inline_link: {:?}", child),
@@ -708,7 +708,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                             panic!("Unexpected inline_link node: {}", node);
                         }
                     },
-                    PandocNativeIntermediate::IntermediateUnknown => {},
+                    PandocNativeIntermediate::IntermediateUnknown(_) => {},
                     PandocNativeIntermediate::IntermediateInlines(inlines) => content.extend(inlines),
                     PandocNativeIntermediate::IntermediateInline(inline) => content.push(inline),
                     _ => panic!("Unexpected child in inline_link: {:?}", child),
@@ -861,15 +861,15 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut keyword_args: HashMap<String, ShortcodeArg> = HashMap::new();
             for (node, child) in children {
                 match (node.as_str(), child) {
-                    ("shortcode_name", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text))) |
-                    ("shortcode_string", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text))) => {
+                    ("shortcode_name", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text), _)) |
+                    ("shortcode_string", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text), _)) => {
                         if name.is_empty() {
                             name = text;
                         } else {
                             positional_args.push(ShortcodeArg::String(text));
                         }
                     },
-                    ("shortcode_keyword_param", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::KeyValue(spec))) => {
+                    ("shortcode_keyword_param", PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::KeyValue(spec), _)) => {
                         for (key, value) in spec {
                             keyword_args.insert(key, value);
                         }
@@ -877,8 +877,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     ("shortcode", PandocNativeIntermediate::IntermediateInline(Inline::Shortcode(arg))) => {
                         positional_args.push(ShortcodeArg::Shortcode(arg));
                     },
-                    ("shortcode_number", PandocNativeIntermediate::IntermediateShortcodeArg(arg)) |
-                    ("shortcode_boolean", PandocNativeIntermediate::IntermediateShortcodeArg(arg)) => {
+                    ("shortcode_number", PandocNativeIntermediate::IntermediateShortcodeArg(arg, _)) |
+                    ("shortcode_boolean", PandocNativeIntermediate::IntermediateShortcodeArg(arg, _)) => {
                         positional_args.push(arg);
                     },
                     ("shortcode_delimiter", _) => {
@@ -901,7 +901,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 match node.as_str() {
                     "shortcode_name" => {
                         match child {
-                            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text)) => {
+                            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::String(text), _) => {
                                 if name.is_empty() {
                                     name = text;
                                 } else {
@@ -914,7 +914,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     "shortcode_string" | 
                     "shortcode_number" | "shortcode_naked_string" | "shortcode_boolean" => {
                         match child {
-                            PandocNativeIntermediate::IntermediateShortcodeArg(arg) => {
+                            PandocNativeIntermediate::IntermediateShortcodeArg(arg, _) => {
                                 result.insert(name.clone(), arg);
                             }
                             _ => panic!("Expected ShortcodeArg in shortcode_string, got {:?}", child)
@@ -925,7 +925,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     }
                 }
             }
-            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::KeyValue(result))
+            let range = extract_location(node);
+            PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::KeyValue(result), range)
         },
         "shortcode_boolean" => {
             let value = node.utf8_text(input_bytes).unwrap().to_string();
@@ -934,12 +935,14 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 "false" => ShortcodeArg::Boolean(false),
                 _ => panic!("Unexpected shortcode_boolean value: {}", value),
             };
-            PandocNativeIntermediate::IntermediateShortcodeArg(value)
+            let range = extract_location(node);
+            PandocNativeIntermediate::IntermediateShortcodeArg(value, range)
         },
         "shortcode_number" => {
             let value = node.utf8_text(input_bytes).unwrap().to_string();
+            let range = extract_location(node);
             match value.parse::<f64>() {
-                Ok(num) => PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::Number(num)),
+                Ok(num) => PandocNativeIntermediate::IntermediateShortcodeArg(ShortcodeArg::Number(num), range),
                 Err(_) => panic!("Invalid shortcode_number: {}", value),
             }
         },
@@ -953,7 +956,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "strikeout_delimiter" |
         "emphasis_delimiter" => {
             // This is a marker node, we don't need to do anything with it
-            PandocNativeIntermediate::IntermediateUnknown
+            let range = extract_location(node);
+            PandocNativeIntermediate::IntermediateUnknown(range)
         },
         "soft_line_break" => {
             PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { 
@@ -969,10 +973,11 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         },
         "latex_span_delimiter" => {
             let str = node.utf8_text(input_bytes).unwrap();
+            let range = extract_location(node);
             if str == "$" {
-                PandocNativeIntermediate::IntermediateLatexInlineDelimiter
+                PandocNativeIntermediate::IntermediateLatexInlineDelimiter(range)
             } else if str == "$$" {
-                PandocNativeIntermediate::IntermediateLatexDisplayDelimiter
+                PandocNativeIntermediate::IntermediateLatexDisplayDelimiter(range)
             } else {
                 panic!("Warning: Unrecognized latex_span_delimiter: {}", str);
             }
@@ -1040,23 +1045,27 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut attr = ("".to_string(), vec![], HashMap::new());
             let mut inlines: Vec<_> = children
                 .into_iter()
-                .map(|(node, child)| {
+                .map(|(node_name, child)| {
+                    let range = extract_location(node);
                     match child {
                         PandocNativeIntermediate::IntermediateAttr(a) => {
                             attr = a;
                             // IntermediateUnknown here "consumes" the node
-                            (node, PandocNativeIntermediate::IntermediateUnknown)
+                            (node_name, PandocNativeIntermediate::IntermediateUnknown(range))
                         }
-                        PandocNativeIntermediate::IntermediateRawFormat(raw) => {
+                        PandocNativeIntermediate::IntermediateRawFormat(raw, _) => {
                             is_raw = Some(raw);
                             // IntermediateUnknown here "consumes" the node
-                            (node, PandocNativeIntermediate::IntermediateUnknown)
+                            (node_name, PandocNativeIntermediate::IntermediateUnknown(range))
                         }
-                        _ => (node, child)
+                        _ => (node_name, child)
                     }
                 })
                 .filter(|(_, child)| {
-                    *child != PandocNativeIntermediate::IntermediateUnknown
+                    match child {
+                        PandocNativeIntermediate::IntermediateUnknown(_) => false, // skip unknown nodes
+                        _ => true // keep other nodes
+                    }
                 }).collect();
             assert!(inlines.len() == 1, "Expected exactly one inline in code_span, got {}", inlines.len());
             let (_, child) = inlines.remove(0);
@@ -1083,10 +1092,10 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut inlines: Vec<_> = children
                 .into_iter()
                 .filter(|(_, child)| {
-                    if *child == PandocNativeIntermediate::IntermediateLatexInlineDelimiter {
+                    if matches!(child, PandocNativeIntermediate::IntermediateLatexInlineDelimiter(_)) {
                         is_inline_math = true;
                         false // skip the delimiter
-                    } else if *child == PandocNativeIntermediate::IntermediateLatexDisplayDelimiter {
+                    } else if matches!(child, PandocNativeIntermediate::IntermediateLatexDisplayDelimiter(_)) {
                         is_display_math = true;
                         false // skip the delimiter
                     } else {
@@ -1118,9 +1127,10 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         },
         "raw_attribute" => {
             for (_, child) in children {
+                let range = extract_location(node);
                 match child {
                     PandocNativeIntermediate::IntermediateBaseText(raw, _) => {
-                        return PandocNativeIntermediate::IntermediateRawFormat(raw);
+                        return PandocNativeIntermediate::IntermediateRawFormat(raw, range);
                     }
                     _ => {}
                 }
@@ -1129,7 +1139,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         },
         _ => {
             eprintln!("Warning: Unhandled node kind: {}", node.kind());
-            PandocNativeIntermediate::IntermediateUnknown
+            let range = extract_location(node);
+            PandocNativeIntermediate::IntermediateUnknown(range)
         }
     }
 }
