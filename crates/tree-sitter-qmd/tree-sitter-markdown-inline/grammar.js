@@ -77,6 +77,11 @@ module.exports = grammar(add_inline_rules({
         $._cite_author_in_text,
         $._cite_suppress_author,
 
+        $._shortcode_open_escaped,
+        $._shortcode_close_escaped,
+        $._shortcode_open,
+        $._shortcode_close,
+
         // Token emmited when encountering opening delimiters for a leaf span
         // e.g. a code span, that does not have a matching closing span
         $._unclosed_span
@@ -114,6 +119,7 @@ module.exports = grammar(add_inline_rules({
         [$._link_destination_parenthesis, $.link_title],
 
         [$.commonmark_attribute, $.language_attribute],
+        [$._shortcode_value, $.shortcode_keyword_param],
     ],
     extras: $ => [],
 
@@ -210,6 +216,51 @@ module.exports = grammar(add_inline_rules({
             ),
         ),
 
+        // shortcodes
+        shortcode_escaped: $ => seq(
+            alias($._shortcode_open_escaped, $.shortcode_delimiter), // "{{{<",
+            $._whitespace,
+            $.shortcode_name,
+            repeat(seq($._whitespace, $._shortcode_value)),
+
+            repeat(seq($._whitespace, $.shortcode_keyword_param)),
+            $._whitespace,
+            alias($._shortcode_close_escaped, $.shortcode_delimiter), //">}}}",
+        ),
+
+        shortcode: $ => seq(
+            alias($._shortcode_open, $.shortcode_delimiter), // "{{<",
+            $._whitespace,
+            $.shortcode_name,
+            repeat(seq($._whitespace, $._shortcode_value)),
+
+            repeat(seq($._whitespace, $.shortcode_keyword_param)),
+            $._whitespace,
+
+            alias($._shortcode_close, $.shortcode_delimiter), //">}}",
+        ),
+
+        _shortcode_value: $ => choice($.shortcode_name, $.shortcode_naked_string, $.shortcode_string, $.shortcode, $.shortcode_number, $.shortcode_boolean),
+
+        shortcode_name: $ => token(prec(1, new RustRegex("[a-zA-Z_][a-zA-Z0-9_-]*"))),
+
+        shortcode_naked_string: $ => token(prec(1, /(?:[A-Za-z0-9_\-.~:/?#\]@!$&()*+,;]|\[)+/)),
+
+        // shortcode_string: $ => new RegExp("[a-zA-Z_][a-zA-Z0-9_-]*"),
+        shortcode_string: $ => choice(
+            /'(?:([\\].)|[^'\\\n])*'/,
+            /"(?:([\\].)|[^"\\\n])*"/,
+        ),
+        // // shortcode numbers are numbers as JSON sees them
+        // // https://stackoverflow.com/a/13340826
+        shortcode_number: $ => token(prec(3, /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/)),
+
+        // // shortcode booleans are true or false
+        shortcode_boolean: $ => choice(token(prec(2, "true")), token(prec(2, "false"))),
+
+        shortcode_keyword_param: $ => prec.left(prec(2, seq($.shortcode_name, optional($._whitespace), "=", optional($._whitespace), $._shortcode_value))),
+
+
         // Different kinds of links:
         // * inline links (https://github.github.com/gfm/#inline-link)
         // * full reference links (https://github.github.com/gfm/#full-reference-link)
@@ -248,16 +299,6 @@ module.exports = grammar(add_inline_rules({
             )),
             optional($._qmd_attribute)
         ))),
-
-        // _span_text_non_empty:         $ => prec(1,seq(     '[', alias($._inline, $.span_text), prec(1, ']'))),
-        // _span_text: $ => prec.dynamic(5 * PRECEDENCE_LEVEL_LINK, choice(
-        //     seq($._span_text_non_empty, $._qmd_attribute),
-        //     seq('[', ']', $._qmd_attribute),
-        // )),
-        // fenced_span: $ => prec.dynamic(5 * PRECEDENCE_LEVEL_LINK, prec.right(seq(
-        //     $._span_text,
-        //     optional($._qmd_attribute)
-        // ))),
 
         // Images work exactly like links with a '!' added in front.
         //
@@ -373,6 +414,8 @@ module.exports = grammar(add_inline_rules({
             $.strikeout,
             $.subscript,
             $.citation,
+            $.shortcode,
+            $.shortcode_escaped,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),

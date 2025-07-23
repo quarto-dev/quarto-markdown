@@ -21,15 +21,7 @@
           "named": true
         },
         {
-          "type": "citation_id_author_in_text_with_brackets",
-          "named": true
-        },
-        {
           "type": "citation_id_suppress_author",
-          "named": true
-        },
-        {
-          "type": "citation_id_suppress_author_with_brackets",
           "named": true
         }
       ]
@@ -156,6 +148,14 @@
         },
         {
           "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
           "named": true
         },
         {
@@ -290,6 +290,14 @@
           "named": true
         },
         {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -379,6 +387,14 @@
         },
         {
           "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
           "named": true
         },
         {
@@ -509,6 +525,14 @@
         },
         {
           "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
           "named": true
         },
         {
@@ -695,6 +719,14 @@
           "named": true
         },
         {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -813,6 +845,14 @@
           "named": true
         },
         {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
+          "named": true
+        },
+        {
           "type": "single_quoted_span_delimiter",
           "named": true
         },
@@ -861,6 +901,137 @@
         }
       ]
     }
+  },
+  {
+    "type": "shortcode",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_boolean",
+          "named": true
+        },
+        {
+          "type": "shortcode_delimiter",
+          "named": true
+        },
+        {
+          "type": "shortcode_keyword_param",
+          "named": true
+        },
+        {
+          "type": "shortcode_naked_string",
+          "named": true
+        },
+        {
+          "type": "shortcode_name",
+          "named": true
+        },
+        {
+          "type": "shortcode_number",
+          "named": true
+        },
+        {
+          "type": "shortcode_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shortcode_boolean",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "shortcode_escaped",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_boolean",
+          "named": true
+        },
+        {
+          "type": "shortcode_delimiter",
+          "named": true
+        },
+        {
+          "type": "shortcode_keyword_param",
+          "named": true
+        },
+        {
+          "type": "shortcode_naked_string",
+          "named": true
+        },
+        {
+          "type": "shortcode_name",
+          "named": true
+        },
+        {
+          "type": "shortcode_number",
+          "named": true
+        },
+        {
+          "type": "shortcode_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shortcode_keyword_param",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_boolean",
+          "named": true
+        },
+        {
+          "type": "shortcode_naked_string",
+          "named": true
+        },
+        {
+          "type": "shortcode_name",
+          "named": true
+        },
+        {
+          "type": "shortcode_number",
+          "named": true
+        },
+        {
+          "type": "shortcode_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shortcode_string",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "soft_line_break",
@@ -925,6 +1096,14 @@
         },
         {
           "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
           "named": true
         },
         {
@@ -1027,6 +1206,14 @@
           "named": true
         },
         {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
+          "named": true
+        },
+        {
           "type": "soft_line_break",
           "named": true
         },
@@ -1115,6 +1302,14 @@
         },
         {
           "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
           "named": true
         },
         {
@@ -1210,6 +1405,14 @@
         },
         {
           "type": "quoted_span",
+          "named": true
+        },
+        {
+          "type": "shortcode",
+          "named": true
+        },
+        {
+          "type": "shortcode_escaped",
           "named": true
         },
         {
@@ -1381,15 +1584,7 @@
     "named": true
   },
   {
-    "type": "citation_id_author_in_text_with_brackets",
-    "named": true
-  },
-  {
     "type": "citation_id_suppress_author",
-    "named": true
-  },
-  {
-    "type": "citation_id_suppress_author_with_brackets",
     "named": true
   },
   {
@@ -1415,6 +1610,10 @@
   {
     "type": "entity_reference",
     "named": true
+  },
+  {
+    "type": "false",
+    "named": false
   },
   {
     "type": "id_specifier",
@@ -1445,6 +1644,22 @@
     "named": true
   },
   {
+    "type": "shortcode_delimiter",
+    "named": true
+  },
+  {
+    "type": "shortcode_naked_string",
+    "named": true
+  },
+  {
+    "type": "shortcode_name",
+    "named": true
+  },
+  {
+    "type": "shortcode_number",
+    "named": true
+  },
+  {
     "type": "single_quoted_span_delimiter",
     "named": true
   },
@@ -1459,6 +1674,10 @@
   {
     "type": "superscript_delimiter",
     "named": true
+  },
+  {
+    "type": "true",
+    "named": false
   },
   {
     "type": "uri_autolink",

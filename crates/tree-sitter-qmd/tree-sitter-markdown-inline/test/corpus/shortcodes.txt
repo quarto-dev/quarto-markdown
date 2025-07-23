@@ -1,0 +1,94 @@
+================================================================================
+Simple 1
+================================================================================
+{{< call >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_delimiter)))
+================================================================================
+Simple 2
+================================================================================
+{{< call 123 true "false" 'hello' >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_number)
+    (shortcode_boolean)
+    (shortcode_string)
+    (shortcode_string)
+    (shortcode_delimiter)))
+================================================================================
+Nested shortcode
+================================================================================
+{{< call {{< call >}} >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode
+      (shortcode_delimiter)
+      (shortcode_name)
+      (shortcode_delimiter))
+    (shortcode_delimiter)))
+================================================================================
+Key-value
+================================================================================
+{{< call key=value >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_keyword_param
+      (shortcode_name)
+      (shortcode_name))
+    (shortcode_delimiter)))
+================================================================================
+single-quoted string with single quotes inside
+================================================================================
+{{< video 'https://yo\'utube.to' >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_string)
+    (shortcode_delimiter)))
+================================================================================
+double-quoted string with single quotes inside
+================================================================================
+{{< video "single 'quotes'" >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_string)
+    (shortcode_delimiter)))
+================================================================================
+double-quoted string with double quotes inside
+================================================================================
+{{< video "https://yo\"utube.to" >}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_string)
+    (shortcode_delimiter)))
+================================================================================
+escaped shortcodes
+================================================================================
+{{{< call >}}}
+--------------------------------------------------------------------------------
+(inline
+  (shortcode_escaped
+    (shortcode_delimiter)
+    (shortcode_name)
+    (shortcode_delimiter)))

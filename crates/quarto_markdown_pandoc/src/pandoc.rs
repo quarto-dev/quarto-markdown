@@ -271,6 +271,21 @@ pub struct LineBreak {}
 pub struct SoftBreak {}
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum ShortcodeArg {
+    String(String),
+    Number(f64),
+    Boolean(bool),
+    Shortcode(Shortcode),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Shortcode {
+    pub name: String,
+    pub positional_args: Vec<ShortcodeArg>,
+    pub keyword_args: HashMap<String, ShortcodeArg>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Inline {
     Str(Str),
     Emph(Emph),
@@ -292,6 +307,9 @@ pub enum Inline {
     Image(Image),
     Note(Note),
     Span(Span),
+
+    // quarto extensions
+    Shortcode(Shortcode)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -679,6 +697,17 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 ],
             }))
         },
+        "shortcode_escaped" => {
+            let mut name = String::new();
+            let mut positional_args: Vec<ShortcodeArg> = Vec::new();
+            let mut keyword_args: HashMap<String, ShortcodeArg> = HashMap::new();
+            PandocNativeIntermediate::IntermediateInline(Inline::Shortcode(Shortcode {
+                name,
+                positional_args,
+                keyword_args,
+            }))
+        },
+        "shortcode_delimiter" |
         "citation_delimiter" |
         "code_span_delimiter" |
         "single_quoted_span_delimiter" |

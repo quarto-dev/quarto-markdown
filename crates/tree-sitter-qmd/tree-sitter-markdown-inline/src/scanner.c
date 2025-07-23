@@ -37,6 +37,10 @@ typedef enum {
     CITE_SUPPRESS_AUTHOR_WITH_OPEN_BRACKET,
     CITE_AUTHOR_IN_TEXT,
     CITE_SUPPRESS_AUTHOR,
+    SHORTCODE_OPEN_ESCAPED,
+    SHORTCODE_CLOSE_ESCAPED,
+    SHORTCODE_OPEN,
+    SHORTCODE_CLOSE,
     UNCLOSED_SPAN
 } TokenType;
 
@@ -79,6 +83,11 @@ typedef struct {
     // run.
     uint8_t num_emphasis_delimiters_left;
 
+    // inside_shortcode stores the count of open shortcodes,
+    // and is used to lex string literals differently from markdown Quoted
+    // nodes
+    uint8_t inside_shortcode;
+
     uint8_t inside_superscript;
     uint8_t inside_subscript;
     uint8_t inside_strikeout;
@@ -93,6 +102,7 @@ static unsigned serialize(Scanner *s, char *buffer) {
     buffer[size++] = (char)s->code_span_delimiter_length;
     buffer[size++] = (char)s->latex_span_delimiter_length;
     buffer[size++] = (char)s->num_emphasis_delimiters_left;
+    buffer[size++] = (char)s->inside_shortcode;
     buffer[size++] = (char)s->inside_superscript;
     buffer[size++] = (char)s->inside_subscript;
     buffer[size++] = (char)s->inside_strikeout;
@@ -116,6 +126,7 @@ static void deserialize(Scanner *s, const char *buffer, unsigned length) {
         s->code_span_delimiter_length = (uint8_t)buffer[size++];
         s->latex_span_delimiter_length = (uint8_t)buffer[size++];
         s->num_emphasis_delimiters_left = (uint8_t)buffer[size++];
+        s->inside_shortcode = (uint8_t)buffer[size++];
         s->inside_superscript = (uint8_t)buffer[size++];
         s->inside_subscript = (uint8_t)buffer[size++];
         s->inside_strikeout = (uint8_t)buffer[size++];
@@ -470,6 +481,52 @@ static bool parse_cite_suppress_author(Scanner *s, TSLexer *lexer,
     return false;
 }
 
+static bool parse_shortcode_open(Scanner *s, TSLexer *lexer,
+                                 const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    if (lexer->lookahead != '{') return false;
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '<' && valid_symbols[SHORTCODE_OPEN]) {
+        lexer->advance(lexer, false);
+        lexer->result_symbol = SHORTCODE_OPEN;
+        lexer->mark_end(lexer);
+        s->inside_shortcode++;
+        return true;
+    } else if (lexer->lookahead == '{') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '<' && valid_symbols[SHORTCODE_OPEN_ESCAPED]) {
+            lexer->advance(lexer, false);
+            lexer->result_symbol = SHORTCODE_OPEN_ESCAPED;
+            lexer->mark_end(lexer);
+            s->inside_shortcode++;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool parse_shortcode_close(Scanner *s, TSLexer *lexer,
+                                  const bool *valid_symbols) {
+    lexer->advance(lexer, false);
+    if (lexer->lookahead != '}') return false;
+    lexer->advance(lexer, false);
+    if (lexer->lookahead != '}') return false;
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '}' && valid_symbols[SHORTCODE_CLOSE_ESCAPED]) {
+        lexer->advance(lexer, false);
+        lexer->result_symbol = SHORTCODE_CLOSE_ESCAPED;
+        lexer->mark_end(lexer);
+        s->inside_shortcode--;
+        return true;
+    } else if (valid_symbols[SHORTCODE_CLOSE]) {
+        lexer->result_symbol = SHORTCODE_CLOSE;
+        lexer->mark_end(lexer);
+        s->inside_shortcode--;
+        return true;
+    }
+    return false;
+}
+
 static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // A normal tree-sitter rule decided that the current branch is invalid and
     // now "requests" an error to stop the branch
@@ -480,16 +537,16 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // Decide which tokens to consider based on the first non-whitespace
     // character
     switch (lexer->lookahead) {
+        case '{':
+            return parse_shortcode_open(s, lexer, valid_symbols);
+        case '>':
+            return parse_shortcode_close(s, lexer, valid_symbols);
         case '@':
             return parse_cite_author_in_text(s, lexer, valid_symbols);
         case '-':
             return parse_cite_suppress_author(s, lexer, valid_symbols);
         case '^':
             return parse_caret(s, lexer, valid_symbols);
-        case '\'':
-            return parse_single_quote(s, lexer, valid_symbols);
-        case '"':
-            return parse_double_quote(s, lexer, valid_symbols);
         case '`':
             // A backtick could mark the beginning or ending of a code span or a
             // fenced code block.
@@ -505,6 +562,23 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             return parse_underscore(s, lexer, valid_symbols);
         case '~':
             return parse_tilde(s, lexer, valid_symbols);
+    }
+
+    // we only parse single and double quotes if we are not inside a shortcode
+    // because those are used for string literals in shortcodes.
+    //
+    // If we are inside a shortcode, we parse single and double quotes as
+    // delimiters of string immediates, instead of normal markdown single and
+    // double quotes.
+    //
+    // this shortcode immediate parsing happens at grammar.js
+    if (!s->inside_shortcode) {
+        switch (lexer->lookahead) {
+            case '\'':
+                return parse_single_quote(s, lexer, valid_symbols);
+            case '"':
+                return parse_double_quote(s, lexer, valid_symbols);
+        }
     }
     return false;
 }
