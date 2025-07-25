@@ -595,6 +595,11 @@ fn make_cite_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
                         panic!("Cite inline should have exactly one citation, found: {:?}", c.citations);
                     }
                     let mut citation = c.citations.pop().unwrap();
+                    if citation.mode == CitationMode::AuthorInText {
+                        // if the mode is AuthorInText, it becomes NormalCitation inside
+                        // a compound cite
+                        citation.mode = CitationMode::NormalCitation;
+                    }
                     citation.prefix = prefix;
                     citation.suffix = suffix;
                     citation

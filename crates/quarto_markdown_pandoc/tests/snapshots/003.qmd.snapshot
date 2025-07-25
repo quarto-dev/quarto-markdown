@@ -1,0 +1,1 @@
+[ Para [Str "Blah", Space, Str "Blah", Space, Cite [Citation { citationId = "knuth1984", citationPrefix = [], citationSuffix = [Str ",", Space, Str "pp", Str ".", Space, Str "33", Str "-", Str "35", Str ",", Space, Str "38", Str "-", Str "39", Space, Str "and", Space, Str "passim"], citationMode = NormalCitation, citationNoteNum = 0, citationHash = 0 }] []] ]

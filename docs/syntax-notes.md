@@ -74,7 +74,11 @@ $ echo '[prefix @c1 suffix; @c2; @c3]' | pandoc -t native
 The content array has Str "[prefix" and Str "@c2;", but the citation entries correctly remove the semicolon and brackets.
 
 Currently, we emit empty content for the Cite node.
-The citation entries themselves are correctly handled.
+The citation entries themselves are handled.
+
+Pandoc "uses some heuristics to separate the locator from the rest of the subject".
+Empirically, what this means is that one of the Str nodes inside the suffix has the entirety of (eg) "pp. 33".
+We don't support that yet.
 
 ### Superscript
 
