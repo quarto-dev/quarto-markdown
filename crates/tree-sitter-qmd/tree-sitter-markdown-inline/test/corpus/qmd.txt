@@ -144,3 +144,22 @@ span with attributes (NB they're parsed as links w/o destination)
       (key_value_specifier
         (key_value_key)
         (key_value_value)))))
+================================================================================
+Footnote reference
+================================================================================
+A note[^another-note] [^2].
+--------------------------------------------------------------------------------
+(inline
+  (text_base)
+  (text_base)
+  (text_base)
+  (note_reference
+    (note_reference_delimiter)
+    (note_reference_id)
+    (note_reference_delimiter))
+  (text_base)
+  (note_reference
+    (note_reference_delimiter)
+    (note_reference_id)
+    (note_reference_delimiter))
+  (text_base))

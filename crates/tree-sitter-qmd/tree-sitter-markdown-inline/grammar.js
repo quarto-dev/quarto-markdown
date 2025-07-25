@@ -260,6 +260,10 @@ module.exports = grammar(add_inline_rules({
 
         shortcode_keyword_param: $ => prec.left(prec(2, seq($.shortcode_name, optional($._whitespace), "=", optional($._whitespace), $._shortcode_value))),
 
+        note_reference: $ => seq(
+            alias('[^', $.note_reference_delimiter),
+            alias(choice($.shortcode_name, $.shortcode_number, $.shortcode_boolean), $.note_reference_id),
+            alias(']', $.note_reference_delimiter)),
 
         // Different kinds of links:
         // * inline links (https://github.github.com/gfm/#inline-link)
@@ -416,6 +420,7 @@ module.exports = grammar(add_inline_rules({
             $.citation,
             $.shortcode,
             $.shortcode_escaped,
+            $.note_reference,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),

@@ -143,6 +143,10 @@
           "named": true
         },
         {
+          "type": "note_reference",
+          "named": true
+        },
+        {
           "type": "numeric_character_reference",
           "named": true
         },
@@ -282,6 +286,10 @@
           "named": true
         },
         {
+          "type": "note_reference",
+          "named": true
+        },
+        {
           "type": "numeric_character_reference",
           "named": true
         },
@@ -379,6 +387,10 @@
         },
         {
           "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "note_reference",
           "named": true
         },
         {
@@ -517,6 +529,10 @@
         },
         {
           "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "note_reference",
           "named": true
         },
         {
@@ -711,6 +727,10 @@
           "named": true
         },
         {
+          "type": "note_reference",
+          "named": true
+        },
+        {
           "type": "numeric_character_reference",
           "named": true
         },
@@ -781,6 +801,30 @@
     }
   },
   {
+    "type": "note_reference",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "note_reference_delimiter",
+          "named": true
+        },
+        {
+          "type": "note_reference_id",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "note_reference_id",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "quoted_span",
     "named": true,
     "fields": {},
@@ -834,6 +878,10 @@
         },
         {
           "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "note_reference",
           "named": true
         },
         {
@@ -1091,6 +1139,10 @@
           "named": true
         },
         {
+          "type": "note_reference",
+          "named": true
+        },
+        {
           "type": "numeric_character_reference",
           "named": true
         },
@@ -1198,6 +1250,10 @@
           "named": true
         },
         {
+          "type": "note_reference",
+          "named": true
+        },
+        {
           "type": "numeric_character_reference",
           "named": true
         },
@@ -1294,6 +1350,10 @@
         },
         {
           "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "note_reference",
           "named": true
         },
         {
@@ -1397,6 +1457,10 @@
         },
         {
           "type": "latex_span",
+          "named": true
+        },
+        {
+          "type": "note_reference",
           "named": true
         },
         {
@@ -1633,6 +1697,10 @@
   },
   {
     "type": "latex_span_delimiter",
+    "named": true
+  },
+  {
+    "type": "note_reference_delimiter",
     "named": true
   },
   {
