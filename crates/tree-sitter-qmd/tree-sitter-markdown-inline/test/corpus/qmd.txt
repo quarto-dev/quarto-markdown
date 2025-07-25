@@ -6,6 +6,7 @@ code cell with id-only attribute
 (inline
   (code_span
     (code_span_delimiter)
+    (code_content)
     (code_span_delimiter)
     (commonmark_attribute
       (id_specifier))))
@@ -14,12 +15,11 @@ code cell with id-only attribute
 code cell with class-only attribute
 ================================================================================
 `code cell with attributes`{.class}
-
 --------------------------------------------------------------------------------
-
 (inline
   (code_span
     (code_span_delimiter)
+    (code_content)
     (code_span_delimiter)
     (commonmark_attribute
       (class_specifier))))
@@ -28,12 +28,11 @@ code cell with class-only attribute
 code cell with attributes
 ================================================================================
 `code cell with attributes`{#id .class}
-
 --------------------------------------------------------------------------------
-
 (inline
   (code_span
     (code_span_delimiter)
+    (code_content)
     (code_span_delimiter)
     (commonmark_attribute
       (id_specifier)
@@ -43,29 +42,28 @@ code cell with attributes
 code cell with attributes
 ================================================================================
 `code cell with attributes`{#id .another-class key=value}
-
 --------------------------------------------------------------------------------
-
 (inline
   (code_span
     (code_span_delimiter)
+    (code_content)
     (code_span_delimiter)
     (commonmark_attribute
       (id_specifier)
       (class_specifier)
-      (key_value_specifier))))
+      (key_value_specifier
+        (key_value_key)
+        (key_value_value)))))
 
 ================================================================================
 raw format
 ================================================================================
-
 `<hello>`{=html}
-
 --------------------------------------------------------------------------------
-
 (inline
   (code_span
     (code_span_delimiter)
+    (code_content)
     (code_span_delimiter)
     (raw_attribute
       (raw_specifier))))
@@ -73,14 +71,12 @@ raw format
 ================================================================================
 inline code cell with language (new syntax)
 ================================================================================
-
 `f(3 ** 4)`{python}
-
 --------------------------------------------------------------------------------
-
 (inline
   (code_span
     (code_span_delimiter)
+    (code_content)
     (code_span_delimiter)
     (language_attribute
       (language))))
@@ -88,62 +84,63 @@ inline code cell with language (new syntax)
 ================================================================================
 inline code cell with spaces (shouldn't count as attribute)
 ================================================================================
-
 `f(3 ** 4)` {python}
-
 --------------------------------------------------------------------------------
-
 (inline
   (code_span
     (code_span_delimiter)
-    (code_span_delimiter)))
+    (code_content)
+    (code_span_delimiter))
+  (text_base)
+  (ERROR
+    (key_value_key)))
 
 ================================================================================
 link with attributes
 ================================================================================
-
 [hello](world){#id .class key=value}
-
 --------------------------------------------------------------------------------
-
 (inline
   (inline_link
-    (link_text)
+    (link_text
+      (text_base))
     (link_destination)
     (commonmark_attribute
       (id_specifier)
       (class_specifier)
-      (key_value_specifier))))
+      (key_value_specifier
+        (key_value_key)
+        (key_value_value)))))
 
 ================================================================================
 image with attributes
 ================================================================================
-
 ![hello](world.png){#id .class key=value}
-
 --------------------------------------------------------------------------------
-
 (inline
   (image
-    (image_description)
+    (image_description
+      (text_base))
     (link_destination)
     (commonmark_attribute
       (id_specifier)
       (class_specifier)
-      (key_value_specifier))))
+      (key_value_specifier
+        (key_value_key)
+        (key_value_value)))))
 
 ================================================================================
 span with attributes (NB they're parsed as links w/o destination)
 ================================================================================
-
 [hello]{#id .class key=value}
-
 --------------------------------------------------------------------------------
-
 (inline
   (inline_link
-    (link_text)
+    (link_text
+      (text_base))
     (commonmark_attribute
       (id_specifier)
       (class_specifier)
-      (key_value_specifier))))
+      (key_value_specifier
+        (key_value_key)
+        (key_value_value)))))
