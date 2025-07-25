@@ -24,6 +24,29 @@ macro_rules! handle_inline_filter {
     };
 }
 
+macro_rules! handle_block_filter {
+    ($variant:ident, $value:ident, $filter_field:ident, $filter:expr) => {
+        if let Some(f) = $filter.$filter_field {
+            return blocks_apply_and_maybe_recurse($value, f, $filter);
+        } else if let Some(f) = $filter.block {
+            return blocks_apply_and_maybe_recurse(
+                crate::pandoc::Block::$variant($value), f, $filter);
+        } else {
+            vec![crate::pandoc::Block::$variant($value)]
+        }
+    };
+    ($variant:ident, $value:ident, $filter_field:ident, $filter:expr, $default:expr) => {
+        if let Some(f) = $filter.$filter_field {
+            return blocks_apply_and_maybe_recurse($value, f, $filter);
+        } else if let Some(f) = $filter.block {
+            return blocks_apply_and_maybe_recurse(
+                crate::pandoc::Block::$variant($value), f, $filter);
+        } else {
+            $default
+        }
+    };
+}
+
 #[derive(Default)]
 pub struct Filter {
     pub inlines: InlineFilterFn<pandoc::Inlines>,
@@ -161,37 +184,17 @@ pub fn topdown_traverse_inline(inline: crate::pandoc::Inline, filter: &Filter) -
 pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> crate::pandoc::Blocks {
     match block {
         crate::pandoc::Block::Paragraph(para) => {
-            if let Some(f) = filter.paragraph {
-                return blocks_apply_and_maybe_recurse(para, f, filter);
-            } 
-            if let Some(f) = filter.block {
-                return blocks_apply_and_maybe_recurse(
-                    crate::pandoc::Block::Paragraph(para), f, filter);
-            }
-            return vec![crate::pandoc::Block::Paragraph(
-                crate::pandoc::Paragraph {
-                    content: topdown_traverse_inlines(para.content, filter),
-                })];
+            handle_block_filter!(Paragraph, para, paragraph, filter, 
+                vec![crate::pandoc::Block::Paragraph(
+                    crate::pandoc::Paragraph {
+                        content: topdown_traverse_inlines(para.content, filter),
+                    })])
         },
         crate::pandoc::Block::CodeBlock(code) => {
-            if let Some(f) = filter.code_block {
-                return blocks_apply_and_maybe_recurse(code, f, filter);
-            }
-            if let Some(f) = filter.block {
-                return blocks_apply_and_maybe_recurse(
-                    crate::pandoc::Block::CodeBlock(code), f, filter);
-            }
-            return vec![crate::pandoc::Block::CodeBlock(code)];
+            handle_block_filter!(CodeBlock, code, code_block, filter)
         },
         crate::pandoc::Block::RawBlock(raw) => {
-            if let Some(f) = filter.raw_block {
-                return blocks_apply_and_maybe_recurse(raw, f, filter);
-            }
-            if let Some(f) = filter.block {
-                return blocks_apply_and_maybe_recurse(
-                    crate::pandoc::Block::RawBlock(raw), f, filter);
-            }
-            return vec![crate::pandoc::Block::RawBlock(raw)];
+            handle_block_filter!(RawBlock, raw, raw_block, filter)
         },
         _ => panic!("Unsupported block type: {:?}", block),
     }

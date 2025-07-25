@@ -751,7 +751,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     }
                 } else if node == "raw_attribute" {
                     match child {
-                        PandocNativeIntermediate::IntermediateRawFormat(format, range) => {
+                        PandocNativeIntermediate::IntermediateRawFormat(format, _) => {
                             raw_format = Some(format);
                         },
                         _ => panic!("Expected RawFormat in raw_attribute, got {:?}", child),
