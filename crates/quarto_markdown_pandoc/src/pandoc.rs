@@ -56,6 +56,10 @@ fn empty_range() -> Range {
     }
 }
 
+fn empty_attr() -> Attr {
+    ("".to_string(), vec![], HashMap::new())
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Pandoc {
     pub blocks: Vec<Block>
@@ -162,6 +166,9 @@ pub struct LineBlock {
 pub struct CodeBlock {
     pub attr: Attr,
     pub text: String,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -723,6 +730,37 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 content: inlines,
             }))
         },
+        "fenced_code_block" => {
+            let mut content: String = String::new();
+            let mut attr: Attr = empty_attr();
+            for (node, child) in children {
+                if node == "code_fence_content" {
+                    match child {
+                        PandocNativeIntermediate::IntermediateBaseText(text, _) => {
+                            content = text;
+                        },
+                        _ => panic!("Expected BaseText in code_fence_content, got {:?}", child),
+                    }
+                } else if node == "commonmark_attribute" {
+                    match child {
+                        PandocNativeIntermediate::IntermediateAttr(a) => {
+                            attr = a;
+                        },
+                        _ => panic!("Expected Attr in commonmark_attribute, got {:?}", child),
+                    }
+                }
+            }
+            let location = node_location(node);
+            // assert that the last character is a newline and then trim only that one
+            assert!(content.ends_with('\n'));
+            content.pop(); // remove the trailing newline
+            return PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
+                attr,
+                text: content,
+                filename: None,
+                range: location,
+            }));
+        },
         "commonmark_attribute" => {
             let mut attr = ("".to_string(), vec![], HashMap::new());
             children.into_iter().for_each(|(node, child)| {
@@ -1052,6 +1090,41 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 Err(_) => panic!("Invalid shortcode_number: {}", value),
             }
         },
+        "code_fence_content" => {
+            let start = node.range().start_byte;
+            let end = node.range().end_byte;
+
+            // This is a code block, we need to extract the content
+            // by removing block_continuation markers
+            let mut current_location = start;
+
+            let mut content = String::new();
+            for (child_node, child) in children {
+                if child_node == "block_continuation" {
+                    match child {
+                        PandocNativeIntermediate::IntermediateUnknown(child_range) => {
+                            let slice_before_continuation = &input_bytes[current_location..child_range.start.offset];
+                            content.push_str(std::str::from_utf8(slice_before_continuation).unwrap());
+                            current_location = child_range.end.offset;
+                        }
+                        _ => {
+                            panic!("Expected IntermediateUnknown in block_continuation, got {:?}", child);
+                        }
+                    }
+                }
+            }
+            // Add the remaining content after the last block_continuation
+            if current_location < end {
+                let slice_after_continuation = &input_bytes[current_location..end];
+                content.push_str(std::str::from_utf8(slice_after_continuation).unwrap());
+            }
+            PandocNativeIntermediate::IntermediateBaseText(
+                content, node_location(node))
+        }
+        // These are marker nodes, we don't need to do anything with it
+        "list_marker_minus" |
+        "block_continuation" |
+        "fenced_code_block_delimiter" |
         "note_reference_delimiter" |
         "shortcode_delimiter" |
         "citation_delimiter" |
@@ -1061,21 +1134,19 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "superscript_delimiter" |
         "subscript_delimiter" |
         "strikeout_delimiter" |
-        "emphasis_delimiter" => {
-            // This is a marker node, we don't need to do anything with it
-            let range = node_location(node);
-            PandocNativeIntermediate::IntermediateUnknown(range)
-        },
+        "emphasis_delimiter" =>
+            PandocNativeIntermediate::IntermediateUnknown(
+                node_location(node)),
         "soft_line_break" => {
             PandocNativeIntermediate::IntermediateInline(Inline::SoftBreak(SoftBreak { 
                 filename: None, 
-                range: node_location(node) 
+                range: node_location(node)
             }))
         },
         "hard_line_break" => {
             PandocNativeIntermediate::IntermediateInline(Inline::LineBreak(LineBreak { 
                 filename: None, 
-                range: node_location(node) 
+                range: node_location(node)
             }))
         },
         "latex_span_delimiter" => {

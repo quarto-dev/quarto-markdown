@@ -4,10 +4,11 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
+use crate::pandoc;
 use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode, Paragraph};
 
 fn write_safe_string(text: &str) -> String {
-    format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\""))
+    format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"))
 }
 
 fn write_native_attr(attr: &Attr) -> String {
@@ -135,15 +136,23 @@ fn write_inline(text: &Inline) -> String {
 fn write_block(block: &Block) -> String {
     match block {
         Block::Paragraph(Paragraph { content }) => {
-            let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
+            let content_str = content
+                .iter()
+                .map(write_inline)
+                .collect::<Vec<_>>()
+                .join(", ");
             format!("Para [{}]", content_str)
+        },
+        Block::CodeBlock(crate::pandoc::CodeBlock { 
+            attr, text, filename: _, range: _ 
+        }) => {
+            format!("CodeBlock {} {}", 
+                write_native_attr(attr), 
+                write_safe_string(text))
         }
         // Block::Header { level, attr, content } => {
         //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
         //     format!("Header {} {} [{}]", level, write_native_attr(attr), content_str)
-        // }
-        // Block::CodeBlock { attr, text } => {
-        //     format!("CodeBlock {} {}", write_native_attr(attr), write_safe_string(text))
         // }
         // Block::Quote { attr, blocks } => {
         //     let blocks_str = blocks.iter().map(write_block).collect::<Vec<_>>().join(", ");

@@ -40,6 +40,11 @@ fn main() {
     
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
+    if !input.ends_with("\n") {
+        eprintln!("(Warning) Adding missing newline to end of input.");
+        // 
+        input.push('\n'); // ensure the input ends with a newline
+    }
 
     let mut parser = MarkdownParser::default();
     let input_bytes = input.as_bytes();
@@ -47,7 +52,6 @@ fn main() {
     let errors = parse_is_good(&tree);
     if !errors.is_empty() {
         let mut cursor = tree.walk();
-        // print_whole_tree(&mut cursor, 0);
         for error in errors {
             cursor.goto_id(error);
             eprintln!("{}", errors::error_message(&mut cursor, &input_bytes));

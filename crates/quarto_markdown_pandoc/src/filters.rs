@@ -56,6 +56,7 @@ pub struct Filter {
     pub note_reference: InlineFilterFn<pandoc::NoteReference>,
 
     pub paragraph: BlockFilterFn<pandoc::Paragraph>,
+    pub code_block: BlockFilterFn<pandoc::CodeBlock>,
 }
 
 fn inlines_apply_and_maybe_recurse<T>(
@@ -163,12 +164,24 @@ pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> c
                 return blocks_apply_and_maybe_recurse(para, f, filter);
             } 
             if let Some(f) = filter.block {
-                return blocks_apply_and_maybe_recurse(crate::pandoc::Block::Paragraph(para), f, filter);
+                return blocks_apply_and_maybe_recurse(
+                    crate::pandoc::Block::Paragraph(para), f, filter);
             }
-            return vec![crate::pandoc::Block::Paragraph(crate::pandoc::Paragraph {
-                content: topdown_traverse_inlines(para.content, filter),
-            })];
+            return vec![crate::pandoc::Block::Paragraph(
+                crate::pandoc::Paragraph {
+                    content: topdown_traverse_inlines(para.content, filter),
+                })];
         },
+        crate::pandoc::Block::CodeBlock(code) => {
+            if let Some(f) = filter.code_block {
+                return blocks_apply_and_maybe_recurse(code, f, filter);
+            }
+            if let Some(f) = filter.block {
+                return blocks_apply_and_maybe_recurse(
+                    crate::pandoc::Block::CodeBlock(code), f, filter);
+            }
+            return vec![crate::pandoc::Block::CodeBlock(code)];
+        }
         _ => panic!("Unsupported block type: {:?}", block),
     }
 }

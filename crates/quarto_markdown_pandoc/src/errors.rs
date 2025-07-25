@@ -24,6 +24,15 @@ enum TreeSitterError {
     UnexpectedNode,
 }
 
+fn node_can_have_empty_text<'a>(
+    cursor: &tree_sitter_qmd::MarkdownCursor<'a>,
+) -> bool {
+    match cursor.node().kind() {
+        "block_continuation" => true,
+        _ => false,
+    }
+}
+
 fn is_error_node<'a>(
     cursor: &tree_sitter_qmd::MarkdownCursor<'a>,
 ) -> Option<TreeSitterError> {
@@ -31,7 +40,7 @@ fn is_error_node<'a>(
         return Some(TreeSitterError::UnexpectedNode);
     }
     let byte_range = cursor.node().byte_range();
-    if byte_range.start == byte_range.end {
+    if byte_range.start == byte_range.end && !node_can_have_empty_text(cursor) {
         return Some(TreeSitterError::MissingNode); // empty node, indicates that tree-sitter inserted a "missing" node?
     }
     return None;
