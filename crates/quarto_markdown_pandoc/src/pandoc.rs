@@ -151,16 +151,25 @@ pub struct Cell {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Plain {
     pub content: Inlines,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Paragraph {
     pub content: Inlines,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LineBlock {
     pub content: Vec<Inlines>,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -176,27 +185,42 @@ pub struct CodeBlock {
 pub struct RawBlock {
     pub format: String,
     pub text: String,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockQuote {
     pub content: Blocks,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OrderedList {
     pub attr: ListAttributes,
     pub content: Vec<Blocks>,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BulletList {
     pub content: Vec<Blocks>,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefinitionList {
     pub content: Vec<(Inlines, Vec<Blocks>)>,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -204,6 +228,9 @@ pub struct Header {
     pub level: usize,
     pub attr: Attr,
     pub content: Inlines,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -220,6 +247,9 @@ pub struct Table {
     pub head: TableHead,
     pub bodies: Vec<TableBody>,
     pub foot: TableFoot,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -227,12 +257,18 @@ pub struct Figure {
     pub attr: Attr,
     pub caption: Caption,
     pub content: Blocks,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Div {
     pub attr: Attr,
     pub content: Blocks,
+
+    pub filename: Option<String>,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -375,45 +411,44 @@ pub struct SoftBreak {
     pub range: Range,
 }
 
-impl SourceLocation for HorizontalRule {
-    fn filename(&self) -> Option<String> {
-        self.filename.clone()
-    }
-    
-    fn range(&self) -> Range {
-        self.range.clone()
-    }
+macro_rules! impl_source_location {
+    ($($type:ty),*) => {
+        $(
+            impl SourceLocation for $type {
+                fn filename(&self) -> Option<String> {
+                    self.filename.clone()
+                }
+                
+                fn range(&self) -> Range {
+                    self.range.clone()
+                }
+            }
+        )*
+    };
 }
 
-impl SourceLocation for Space {
-    fn filename(&self) -> Option<String> {
-        self.filename.clone()
-    }
-    
-    fn range(&self) -> Range {
-        self.range.clone()
-    }
-}
+impl_source_location!(
+    // blocks
+    Plain,
+    Paragraph,
+    LineBlock,
+    CodeBlock,
+    RawBlock,
+    BlockQuote,
+    OrderedList,
+    BulletList,
+    DefinitionList,
+    Header,
+    HorizontalRule,
+    Table,
+    Figure,
+    Div,
 
-impl SourceLocation for LineBreak {
-    fn filename(&self) -> Option<String> {
-        self.filename.clone()
-    }
-    
-    fn range(&self) -> Range {
-        self.range.clone()
-    }
-}
-
-impl SourceLocation for SoftBreak {
-    fn filename(&self) -> Option<String> {
-        self.filename.clone()
-    }
-    
-    fn range(&self) -> Range {
-        self.range.clone()
-    }
-}
+    // inlines
+    Space,
+    LineBreak,
+    SoftBreak
+);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShortcodeArg {
@@ -489,8 +524,9 @@ enum PandocNativeIntermediate {
     IntermediateAttr(Attr),
     IntermediateSection(Vec<Block>),
     IntermediateBlock(Block),
+    IntermediateBlocks(Blocks),
     IntermediateInline(Inline),
-    IntermediateInlines(Vec<Inline>),
+    IntermediateInlines(Inlines),
     IntermediateBaseText(String, Range),
     IntermediateLatexInlineDelimiter(Range),
     IntermediateLatexDisplayDelimiter(Range),
@@ -730,6 +766,9 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             }
             PandocNativeIntermediate::IntermediateBlock(Block::Paragraph(Paragraph {
                 content: inlines,
+
+                filename: None,
+                range: node_location(node),
             }))
         },
         "fenced_code_block" => {
@@ -776,6 +815,8 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 return PandocNativeIntermediate::IntermediateBlock(Block::RawBlock(RawBlock {
                     format,
                     text: content,
+                    filename: None,
+                    range: location,
                 }));
             }
             return PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
@@ -1191,7 +1232,12 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 .map(native_inline)
                 .collect();
             PandocNativeIntermediate::IntermediateInline(Inline::Note(Note {
-                content: vec![Block::Paragraph(Paragraph { content: inlines })]
+                content: vec![Block::Paragraph(Paragraph { 
+                    content: inlines,
+
+                    filename: None,
+                    range: node_location(node),
+                 })]
             }))
         },
         "superscript" => {
@@ -1326,6 +1372,37 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 }
                 _ => panic!("Expected BaseText in latex_span, got {:?}", child),
             }
+        },
+        "list" => {
+            return PandocNativeIntermediate::IntermediateBlock(
+                Block::BulletList(
+                    BulletList {
+                        content: children.into_iter().map(|(node, child)| {
+                            if node == "list_item" {
+                                if let PandocNativeIntermediate::IntermediateBlocks(blocks) = child {
+                                    blocks
+                                } else {
+                                    panic!("Expected Blocks in list_item, got {:?}", child);
+                                }
+                            } else {
+                                panic!("Unexpected node in list: {}", node);
+                            }
+                        }).collect(),
+                        filename: None,
+                        range: node_location(node),
+                    }));
+        },
+        "list_item" => {
+            return PandocNativeIntermediate::IntermediateBlocks(
+                children.into_iter().filter(|(node, _)| {
+                    node == "paragraph"
+                }).map(|(_, child)| {
+                    if let PandocNativeIntermediate::IntermediateBlock(block) = child {
+                        block
+                    } else {
+                        panic!("Expected Block in paragraph, got {:?}", child);
+                    }
+                }).collect());
         },
         "language_attribute" => {
             for (_, child) in children {

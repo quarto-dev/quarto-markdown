@@ -4,8 +4,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc;
-use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode, Paragraph};
+use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode};
 
 fn write_safe_string(text: &str) -> String {
     format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"))
@@ -135,7 +134,15 @@ fn write_inline(text: &Inline) -> String {
 
 fn write_block(block: &Block) -> String {
     match block {
-        Block::Paragraph(Paragraph { content }) => {
+        Block::Plain(crate::pandoc::Plain { content, .. }) => {
+            let content_str = content
+                .iter()
+                .map(write_inline)
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("Plain [{}]", content_str)
+        },
+        Block::Paragraph(crate::pandoc::Paragraph { content, .. }) => {
             let content_str = content
                 .iter()
                 .map(write_inline)
@@ -150,8 +157,16 @@ fn write_block(block: &Block) -> String {
                 write_native_attr(attr), 
                 write_safe_string(text))
         },
-        Block::RawBlock(crate::pandoc::RawBlock { format, text }) => {
+        Block::RawBlock(crate::pandoc::RawBlock { format, text, .. }) => {
             format!("RawBlock (Format {}) {}", write_safe_string(format), write_safe_string(text))
+        },
+        Block::BulletList(crate::pandoc::BulletList { content, .. }) => {
+            let items_str = content
+                .iter()
+                .map(|item| "[".to_string() + &(item.iter().map(write_block).collect::<Vec<_>>().join(", ")) + "]")
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("BulletList [{}]", items_str)
         },
 
         // Block::Header { level, attr, content } => {

@@ -81,6 +81,7 @@ pub struct Filter {
     pub paragraph: BlockFilterFn<pandoc::Paragraph>,
     pub code_block: BlockFilterFn<pandoc::CodeBlock>,
     pub raw_block: BlockFilterFn<pandoc::RawBlock>,
+    pub bullet_list: BlockFilterFn<pandoc::BulletList>,
 }
 
 fn inlines_apply_and_maybe_recurse<T>(
@@ -188,6 +189,8 @@ pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> c
                 vec![crate::pandoc::Block::Paragraph(
                     crate::pandoc::Paragraph {
                         content: topdown_traverse_inlines(para.content, filter),
+                        filename: para.filename,
+                        range: para.range,
                     })])
         },
         crate::pandoc::Block::CodeBlock(code) => {
@@ -195,6 +198,9 @@ pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> c
         },
         crate::pandoc::Block::RawBlock(raw) => {
             handle_block_filter!(RawBlock, raw, raw_block, filter)
+        },
+        crate::pandoc::Block::BulletList(list) => {
+            handle_block_filter!(BulletList, list, bullet_list, filter)
         },
         _ => panic!("Unsupported block type: {:?}", block),
     }
