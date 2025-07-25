@@ -45,12 +45,11 @@
 ```
 
 --------------------------------------------------------------------------------
-
 (document
   (section
     (fenced_code_block
       (fenced_code_block_delimiter)
-      (info_string
+      (language_attribute
         (language))
       (block_continuation)
       (code_fence_content
@@ -58,12 +57,11 @@
       (fenced_code_block_delimiter))
     (fenced_code_block
       (fenced_code_block_delimiter)
-      (info_string)
+      (commonmark_attribute)
       (block_continuation)
       (code_fence_content
         (block_continuation))
       (fenced_code_block_delimiter))))
-
 ================================================================================
 #72 -  Can't create list item after a list item with a newline and indent
 ================================================================================

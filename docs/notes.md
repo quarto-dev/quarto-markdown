@@ -30,15 +30,13 @@ I think quarto_markdown_pandoc should emit special Pandoc AST syntax that separa
 
 # TODO
 
+- Link reference definitions
+
 - Inlines
 
   - `markdown+smart` extension
 
     - question: do we enable/disable this?
-
-  - Process [.... @notes ...] into a single cite
-
-    - this needs to happen in the inline_link pandoc.rs code
 
   - Process noteNum counts, or ignore it and knowingly produce output that doesn't quite match Pandoc?
   
