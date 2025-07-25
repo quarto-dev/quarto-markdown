@@ -500,6 +500,113 @@ fn is_empty_target(target: &Target) -> bool {
     target.0.is_empty() && target.1.is_empty()
 }
 
+fn make_span_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
+    // non-empty targets are never Underline or SmallCaps
+    if !is_empty_target(&target) {
+        return Inline::Link(Link {
+            attr,
+            content,
+            target,
+        });
+    }
+    if attr.1.contains(&"smallcaps".to_string()) {
+        let mut new_attr = attr.clone();
+        new_attr.1 = new_attr.1.into_iter().filter(|s| s != "smallcaps").collect();
+        if is_empty_attr(&new_attr) {
+            return Inline::SmallCaps(SmallCaps { content });
+        }
+        let inner_inline = make_span_inline(new_attr, target, content);
+        return Inline::SmallCaps(SmallCaps { content: vec![inner_inline] });
+    } else if attr.1.contains(&"ul".to_string()) {
+        let mut new_attr = attr.clone();
+        new_attr.1 = new_attr.1.into_iter().filter(|s| s != "ul").collect();
+        if is_empty_attr(&new_attr) {
+            return Inline::Underline(Underline { content });
+        }
+        let inner_inline = make_span_inline(new_attr, target, content);
+        return Inline::Underline(Underline { content: vec![inner_inline] });
+    } else if attr.1.contains(&"underline".to_string()) {
+        let mut new_attr = attr.clone();
+        new_attr.1 = new_attr.1.into_iter().filter(|s| s != "underline").collect();
+        if is_empty_attr(&new_attr) {
+            return Inline::Underline(Underline { content });
+        }
+        let inner_inline = make_span_inline(new_attr, target, content);
+        return Inline::Underline(Underline { content: vec![inner_inline] });
+    }
+
+    return Inline::Span(Span { attr, content });
+}
+
+fn make_cite_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
+    
+    // the traversal here is slightly inefficient because we need
+    // to non-destructively check for the goodness of the content
+    // before deciding to destructively create a Cite
+
+    let is_semicolon = |inline: &Inline| {
+        match &inline {
+            Inline::Str(Str { text }) => text == ";",
+            _ => false,
+        }
+    };
+
+    let is_good_cite = content.split(is_semicolon).all(|slice| {
+        slice.iter().any(|inline| {
+            match inline {
+                Inline::Cite(_) => true,
+                _ => false,
+            }
+        })
+    });
+
+    if !is_good_cite {
+        // if the content is not a good Cite, we backtrack and return a Span
+        return make_span_inline(attr, target, content);
+    }
+
+    // we can now destructively create a Cite inline
+    // from the content.
+
+    // first we split the content along semicolons
+    let citations: Vec<Citation> = content
+        .split(is_semicolon).map(|slice| {
+            let inlines = slice.to_vec();
+            let mut cite: Option<Cite> = None;
+            let mut prefix: Inlines = vec![];
+            let mut suffix: Inlines = vec![];
+
+            // now we build prefix and suffix around a Cite. If there's none, we return None
+            inlines.into_iter().for_each(|inline| {
+                if cite == None {
+                    if let Inline::Cite(c) = inline {
+                        cite = Some(c);
+                    } else {
+                        prefix.push(inline);
+                    }
+                } else {
+                    suffix.push(inline);
+                }
+            });
+            match cite {
+                None => panic!("Cite inline should have at least one citation, found none"),
+                Some(mut c) => {
+                    if c.citations.len() != 1 {
+                        panic!("Cite inline should have exactly one citation, found: {:?}", c.citations);
+                    }
+                    let mut citation = c.citations.pop().unwrap();
+                    citation.prefix = prefix;
+                    citation.suffix = suffix;
+                    citation
+                }
+            }
+        }).collect();
+    return Inline::Cite(Cite {
+        citations,
+        content: vec![],
+    });               
+}
+
 fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeIntermediate)>, input_bytes: &[u8]) -> PandocNativeIntermediate {
 
     let whitespace_re = Regex::new(r"\s+").unwrap();
@@ -709,6 +816,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut attr = ("".to_string(), vec![], HashMap::new());
             let mut target = ("".to_string(), "".to_string());
             let mut content: Vec<Inline> = Vec::new();
+
             for (node, child) in children {
                 match child {
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
@@ -727,46 +835,18 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     _ => panic!("Unexpected child in inline_link: {:?}", child),
                 }
             }
-            fn make_span_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
-                // non-empty targets are never Underline or SmallCaps
-                if !is_empty_target(&target) {
-                    return Inline::Link(Link {
-                        attr,
-                        content,
-                        target,
-                    });
-                }
-                if attr.1.contains(&"smallcaps".to_string()) {
-                    let mut new_attr = (attr.0.clone(), attr.1.clone(), attr.2.clone());
-                    new_attr.1 = new_attr.1.into_iter().filter(|s| s != "smallcaps").collect();
-                    if is_empty_attr(&new_attr) {
-                        return Inline::SmallCaps(SmallCaps { content });
-                    }
-                    let inner_inline = make_span_inline(new_attr, target, content);
-                    return Inline::SmallCaps(SmallCaps { content: vec![inner_inline] });
-                } else if attr.1.contains(&"ul".to_string()) {
-                    let mut new_attr = (attr.0.clone(), attr.1.clone(), attr.2.clone());
-                    new_attr.1 = new_attr.1.into_iter().filter(|s| s != "ul").collect();
-                    if is_empty_attr(&new_attr) {
-                        return Inline::Underline(Underline { content });
-                    }
-                    let inner_inline = make_span_inline(new_attr, target, content);
-                    return Inline::Underline(Underline { content: vec![inner_inline] });
-                } else if attr.1.contains(&"underline".to_string()) {
-                    let mut new_attr = (attr.0.clone(), attr.1.clone(), attr.2.clone());
-                    new_attr.1 = new_attr.1.into_iter().filter(|s| s != "underline").collect();
-                    if is_empty_attr(&new_attr) {
-                        return Inline::Underline(Underline { content });
-                    }
-                    let inner_inline = make_span_inline(new_attr, target, content);
-                    return Inline::Underline(Underline { content: vec![inner_inline] });
-                }
+            let has_citations = content.iter().any(|inline| matches!(inline, Inline::Cite(_)));
 
-                return Inline::Span(Span { attr, content });
-            }
-
+            // an inline link might be a Cite if it has citations, no destination, and no title
+            // and no attributes
+            let is_cite = has_citations && is_empty_target(&target) && is_empty_attr(&attr);
+            
             return PandocNativeIntermediate::IntermediateInline(
-                make_span_inline(attr, target, content)
+                if is_cite { 
+                    make_cite_inline(attr, target, content)
+                } else {
+                    make_span_inline(attr, target, content) 
+                }
             );
         },
         "key_value_specifier" => {

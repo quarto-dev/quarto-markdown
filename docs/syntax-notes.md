@@ -24,6 +24,58 @@ These are desugared into spans and divs in a Rust filter.
 
 ### Cites
 
+Pandoc uses backtracking for its complex cite nodes, and puts strange content into the Cite node. 
+
+Consider this:
+
+```
+$ echo '[prefix @c1 suffix; @c2; @c3]' | pandoc -t native
+[ Para
+    [ Cite
+        [ Citation
+            { citationId = "c1"
+            , citationPrefix = [ Str "prefix" ]
+            , citationSuffix = [ Space , Str "suffix" ]
+            , citationMode = NormalCitation
+            , citationNoteNum = 1
+            , citationHash = 0
+            }
+        , Citation
+            { citationId = "c2"
+            , citationPrefix = []
+            , citationSuffix = []
+            , citationMode = NormalCitation
+            , citationNoteNum = 1
+            , citationHash = 0
+            }
+        , Citation
+            { citationId = "c3"
+            , citationPrefix = []
+            , citationSuffix = []
+            , citationMode = NormalCitation
+            , citationNoteNum = 1
+            , citationHash = 0
+            }
+        ]
+        [ Str "[prefix"
+        , Space
+        , Str "@c1"
+        , Space
+        , Str "suffix;"
+        , Space
+        , Str "@c2;"
+        , Space
+        , Str "@c3]"
+        ]
+    ]
+]
+```
+
+The content array has Str "[prefix" and Str "@c2;", but the citation entries correctly remove the semicolon and brackets.
+
+Currently, we emit empty content for the Cite node.
+The citation entries themselves are correctly handled.
+
 ### Superscript
 
 Superscript in `-f markdown` behaves sort of magically, and I think it involves backtracking. Consider:
@@ -42,7 +94,7 @@ $ echo 'a^a*a^a^a*a^a' | pandoc -t native
 ]
 ```
 
-How does it know to match the carets in the away it does? `-f commonmark+superscript` doesn't support this:
+How does it know to match the carets in the way it does? `-f commonmark+superscript` doesn't support this:
 
 ```
 $ echo 'a^a*a^a^a*a^a' | pandoc -t native -f commonmark+superscript
