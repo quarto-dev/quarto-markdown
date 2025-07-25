@@ -8,6 +8,7 @@
  * This is used to represent the parsed structure of a Quarto Markdown document.
  */
 
+use core::panic;
 use std::collections::HashMap;
 use regex::Regex;
 
@@ -684,6 +685,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
     };
 
     match node.kind() {
+        "language" |
         "note_reference_id" |
         "citation_id_suppress_author" |
         "citation_id_author_in_text" |
@@ -755,6 +757,13 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                             raw_format = Some(format);
                         },
                         _ => panic!("Expected RawFormat in raw_attribute, got {:?}", child),
+                    }
+                } else if node == "language_attribute" {
+                    match child {
+                        PandocNativeIntermediate::IntermediateBaseText(lang, _) => {
+                            attr.1.push(lang); // set the language
+                        },
+                        _ => panic!("Expected BaseText in language_attribute, got {:?}", child),
                     }
                 }
             }
@@ -1317,6 +1326,17 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 }
                 _ => panic!("Expected BaseText in latex_span, got {:?}", child),
             }
+        },
+        "language_attribute" => {
+            for (_, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateBaseText(text, range) => {
+                        return PandocNativeIntermediate::IntermediateBaseText("{".to_string() + &text + "}", range)
+                    }
+                    _ => {}
+                }
+            }
+            panic!("Expected language_attribute to have a language, but found none");
         },
         "raw_attribute" => {
             for (_, child) in children {
