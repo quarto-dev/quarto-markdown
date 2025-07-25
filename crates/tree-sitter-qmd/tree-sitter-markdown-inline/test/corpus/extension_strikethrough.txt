@@ -1,32 +1,36 @@
 ================================================================================
 Example 491 - https://github.github.com/gfm/#example-491
 ================================================================================
-~~Hi~~ Hello, world!
-
+~~Hi~~ Hello, ~there~ world!
 --------------------------------------------------------------------------------
-
 (inline
-  (strikethrough
-    (emphasis_delimiter)
-    (strikethrough
-      (emphasis_delimiter)
-      (emphasis_delimiter))
-    (emphasis_delimiter)))
+  (strikeout
+    (strikeout_delimiter)
+    (text_base)
+    (strikeout_delimiter))
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (subscript
+    (subscript_delimiter)
+    (text_base)
+    (subscript_delimiter))
+  (text_base)
+  (text_base)
+  (text_base))
 
 ================================================================================
-Example 492 - https://github.github.com/gfm/#example-492
+Example 492 - https://github.github.com/gfm/#example-492 (qmd issues error)
 ================================================================================
 This ~~has a
-
-new paragraph~~.
-(This test does not work here because it relies on block structure)
-
 --------------------------------------------------------------------------------
-
 (inline
-  (strikethrough
-    (emphasis_delimiter)
-    (strikethrough
-      (emphasis_delimiter)
-      (emphasis_delimiter))
-    (emphasis_delimiter)))
+  (text_base)
+  (text_base)
+  (strikeout
+    (strikeout_delimiter)
+    (text_base)
+    (text_base)
+    (text_base)
+    (MISSING strikeout_delimiter)))
