@@ -174,19 +174,25 @@ pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> c
 }
 
 pub fn topdown_traverse_inlines(vec: crate::pandoc::Inlines, filter: &Filter) -> crate::pandoc::Inlines {
+    fn walk_vec(
+        vec: crate::pandoc::Inlines,
+        filter: &Filter
+    ) -> crate::pandoc::Inlines {
+        let mut result = vec![];
+        for inline in vec {
+            result.extend(topdown_traverse_inline(inline, filter));
+        }
+        result
+    }
     if let Some(f) = filter.inlines {
         let (inner_result, recurse) = f(vec);
         if !recurse {
             return inner_result;
-        } else {
-            return topdown_traverse_inlines(inner_result, filter);
         }
+        walk_vec(inner_result, filter)
+    } else {
+        walk_vec(vec, filter)
     }
-    let mut result = vec![];
-    for inline in vec {
-        result.extend(topdown_traverse_inline(inline, filter));
-    }
-    result
 }
 
 pub fn topdown_traverse_blocks(vec: crate::pandoc::Blocks, filter: &Filter) -> crate::pandoc::Blocks {

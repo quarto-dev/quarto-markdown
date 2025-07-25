@@ -1341,6 +1341,100 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                 content: vec![],
             })], false)
         }),
+        inlines: Some(|inlines| {
+            let mut result = vec![];
+            // states in this state machine:
+            // 0. normal state, where we just collect inlines
+            // 1. we just saw a valid cite (only one citation, no prefix or suffix)
+            // 2. from 1, we then saw a space
+            // 3. from 2, we then saw a span with only Strs and Spaces.
+            //
+            //    Here, we emit the cite and add the span content to the cite suffix.
+            let mut state = 0;
+            let mut pending_cite: Option<Cite> = None;
+            
+            for inline in inlines {
+                match state {
+                    0 => {
+                        // Normal state - check if we see a valid cite
+                        if let Inline::Cite(cite) = &inline {
+                            if cite.citations.len() == 1 && 
+                               cite.citations[0].prefix.is_empty() && 
+                               cite.citations[0].suffix.is_empty() {
+                                // Valid cite - transition to state 1
+                                state = 1;
+                                pending_cite = Some(cite.clone());
+                            } else {
+                                // Not a simple cite, just add it
+                                result.push(inline);
+                            }
+                        } else {
+                            result.push(inline);
+                        }
+                    },
+                    1 => {
+                        // Just saw a valid cite - check for space
+                        if let Inline::Space(_) = inline {
+                            // Transition to state 2
+                            state = 2;
+                        } else {
+                            // Not a space, emit pending cite and reset
+                            if let Some(cite) = pending_cite.take() {
+                                result.push(Inline::Cite(cite));
+                            }
+                            result.push(inline);
+                            state = 0;
+                        }
+                    },
+                    2 => {
+                        // After cite and space - check for span with only Strs and Spaces
+                        if let Inline::Span(span) = &inline {
+                            // Check if span contains only Str and Space inlines
+                            let is_valid_suffix = span.content.iter().all(|i| {
+                                matches!(i, Inline::Str(_) | Inline::Space(_))
+                            });
+                            
+                            if is_valid_suffix {
+                                // State 3 - merge span content into cite suffix
+                                if let Some(mut cite) = pending_cite.take() {
+                                    // Add span content to the citation's suffix
+                                    cite.citations[0].suffix = span.content.clone();
+                                    result.push(Inline::Cite(cite));
+                                }
+                                state = 0;
+                            } else {
+                                // Invalid span, emit pending cite, space, and span
+                                if let Some(cite) = pending_cite.take() {
+                                    result.push(Inline::Cite(cite));
+                                }
+                                result.push(Inline::Space(Space { filename: None, range: empty_range() }));
+                                result.push(inline);
+                                state = 0;
+                            }
+                        } else {
+                            // Not a span, emit pending cite, space, and current inline
+                            if let Some(cite) = pending_cite.take() {
+                                result.push(Inline::Cite(cite));
+                            }
+                            result.push(Inline::Space(Space { filename: None, range: empty_range() }));
+                            result.push(inline);
+                            state = 0;
+                        }
+                    },
+                    _ => unreachable!("Invalid state: {}", state),
+                }
+            }
+            
+            // Handle any pending cite at the end
+            if let Some(cite) = pending_cite {
+                result.push(Inline::Cite(cite));
+                if state == 2 {
+                    result.push(Inline::Space(Space { filename: None, range: empty_range() }));
+                }
+            }
+            
+            (result, true)
+        }),
         ..Default::default()
     })
 }
