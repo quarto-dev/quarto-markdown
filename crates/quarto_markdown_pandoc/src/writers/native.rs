@@ -149,7 +149,11 @@ fn write_block(block: &Block) -> String {
             format!("CodeBlock {} {}", 
                 write_native_attr(attr), 
                 write_safe_string(text))
-        }
+        },
+        Block::RawBlock(crate::pandoc::RawBlock { format, text }) => {
+            format!("RawBlock (Format {}) {}", write_safe_string(format), write_safe_string(text))
+        },
+
         // Block::Header { level, attr, content } => {
         //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
         //     format!("Header {} {} [{}]", level, write_native_attr(attr), content_str)

@@ -733,6 +733,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         "fenced_code_block" => {
             let mut content: String = String::new();
             let mut attr: Attr = empty_attr();
+            let mut raw_format: Option<String> = None;
             for (node, child) in children {
                 if node == "code_fence_content" {
                     match child {
@@ -748,12 +749,26 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                         },
                         _ => panic!("Expected Attr in commonmark_attribute, got {:?}", child),
                     }
+                } else if node == "raw_attribute" {
+                    match child {
+                        PandocNativeIntermediate::IntermediateRawFormat(format, range) => {
+                            raw_format = Some(format);
+                        },
+                        _ => panic!("Expected RawFormat in raw_attribute, got {:?}", child),
+                    }
                 }
             }
             let location = node_location(node);
             // assert that the last character is a newline and then trim only that one
             assert!(content.ends_with('\n'));
             content.pop(); // remove the trailing newline
+
+            if let Some(format) = raw_format {
+                return PandocNativeIntermediate::IntermediateBlock(Block::RawBlock(RawBlock {
+                    format,
+                    text: content,
+                }));
+            }
             return PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
                 attr,
                 text: content,
