@@ -425,6 +425,12 @@ pub struct Shortcode {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct NoteReference {
+    pub id: String,
+    pub range: Range,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Inline {
     Str(Str),
     Emph(Emph),
@@ -448,7 +454,8 @@ pub enum Inline {
     Span(Span),
 
     // quarto extensions
-    Shortcode(Shortcode)
+    Shortcode(Shortcode),
+    NoteReference(NoteReference)
 }
 
 #[derive(Debug, Clone, PartialEq)]

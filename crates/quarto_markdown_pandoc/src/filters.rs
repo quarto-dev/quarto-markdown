@@ -53,6 +53,7 @@ pub struct Filter {
     pub note: InlineFilterFn<pandoc::Note>,
     pub span: InlineFilterFn<pandoc::Span>,
     pub shortcode: InlineFilterFn<pandoc::Shortcode>,
+    pub note_reference: InlineFilterFn<pandoc::NoteReference>,
 
     pub paragraph: BlockFilterFn<pandoc::Paragraph>,
 }
@@ -148,6 +149,9 @@ pub fn topdown_traverse_inline(inline: crate::pandoc::Inline, filter: &Filter) -
         // quarto extensions
         crate::pandoc::Inline::Shortcode(shortcode) => {
             handle_inline_filter!(Shortcode, shortcode, shortcode, filter)
+        },
+        crate::pandoc::Inline::NoteReference(note_ref) => {
+            handle_inline_filter!(NoteReference, note_ref, note_reference, filter)
         },
     }
 }

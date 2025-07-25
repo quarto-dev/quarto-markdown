@@ -1,6 +1,14 @@
 /*
  * traversals.rs
+ * 
  * Copyright (c) 2025 Posit, PBC
+ * 
+ * traversal helpers for tree-sitter-qmd's MarkdownCursor.
+ * 
+ * We can't use tree-sitter walking APIs directly because it involves
+ * a mix of block and inline parsers that are handled by
+ * two separate tree-sitter grammars.
+ * 
  */
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
