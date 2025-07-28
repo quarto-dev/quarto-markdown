@@ -208,6 +208,14 @@ fn write_block(block: &Block) -> String {
                 .join(", ");
             format!("BlockQuote [{}]", content_str)
         },
+        Block::Div(crate::pandoc::Div { attr, content, .. }) => {
+            let content_str = content
+                .iter()
+                .map(write_block)
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("Div {} [{}]", write_native_attr(attr), content_str)
+        },
         // Block::Header { level, attr, content } => {
         //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
         //     format!("Header {} {} [{}]", level, write_native_attr(attr), content_str)

@@ -327,6 +327,25 @@
     "fields": {},
     "children": {
       "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "key_value_key",
+          "named": true
+        },
+        {
+          "type": "key_value_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "key_value_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
       "required": false,
       "types": [
         {
@@ -801,6 +820,14 @@
     "named": false
   },
   {
+    "type": "\\\"",
+    "named": false
+  },
+  {
+    "type": "\\'",
+    "named": false
+  },
+  {
     "type": "]",
     "named": false
   },
@@ -858,6 +885,10 @@
   },
   {
     "type": "id_specifier",
+    "named": true
+  },
+  {
+    "type": "key_value_key",
     "named": true
   },
   {

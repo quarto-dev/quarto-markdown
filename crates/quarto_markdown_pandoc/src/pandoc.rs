@@ -1511,6 +1511,18 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 node_location(node), list_attr
             );
         },
+        "info_string" => {
+            for (_, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateBaseText(text, _) => {
+                        return PandocNativeIntermediate::IntermediateAttr(
+                            ("".to_string(), vec![text], HashMap::new()));
+                    }
+                    _ => {}
+                }
+            }
+            panic!("Expected info_string to have a string, but found none");
+        },
         "language_attribute" => {
             for (_, child) in children {
                 match child {
@@ -1550,7 +1562,28 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                     range: node_location(node),
                 })
             )
-        }
+        },
+        "fenced_div_block" => {
+            let mut attr: Attr = ("".to_string(), vec![], HashMap::new());
+            let mut content: Vec<Block> = Vec::new();
+            for (_, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateAttr(a) => {
+                        attr = a;
+                    }
+                    PandocNativeIntermediate::IntermediateBlock(block) => {
+                        content.push(block);
+                    },
+                    _ => panic!("Unexpected child in fenced_div_block: {:?}", child),
+                }
+            }
+            return PandocNativeIntermediate::IntermediateBlock(Block::Div(Div {
+                attr,
+                content,
+                filename: None,
+                range: node_location(node),
+            }));
+        },
         _ => {
             eprintln!("Warning: Unhandled node kind: {}", node.kind());
             let range = node_location(node);
