@@ -45,11 +45,35 @@ I think quarto_markdown_pandoc should emit special Pandoc AST syntax that separa
 
 - blocks
 
+  Missing from spec:
+
   - note definitions
 
-  - all tests
+  Missing from grammar:
 
+  - LineBlock
+
+  Missing from tree-sitter -> pandoc:
+
+  - BlockQuote
+
+  - 
+  
 - Filter for note definition/note reference resolution
 
   - I actually think this should happen at quarto-cli
+
+## Quirks
+
+### Lists
+
+The tree-sitter-qmd block parser interprets lists with different markers
+as separate lists, while Pandoc interprets them as a single list.
+
+In this, tree-sitter-qmd matches Commonmark instead of Pandoc `markdown`.
+  
+https://github.github.com/gfm/#lists
+
+The Commonmark parser and GFM spec only allow singleparen ordered lists
+and only allow decimal lists. We follow that as well here.
 

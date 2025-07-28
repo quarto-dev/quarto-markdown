@@ -4,7 +4,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Attr, Block, Citation, Inline, MathType, Pandoc, QuoteType, CitationMode};
+use crate::pandoc::{Attr, Block, Citation, CitationMode, Inline, ListNumberDelim, MathType, Pandoc, QuoteType};
 
 fn write_safe_string(text: &str) -> String {
     format!("\"{}\"", text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"))
@@ -132,6 +132,26 @@ fn write_inline(text: &Inline) -> String {
     }
 }
 
+fn write_list_number_delim(delim: &crate::pandoc::ListNumberDelim) -> String {
+    match delim {
+        ListNumberDelim::Period => "Period".to_string(),
+        ListNumberDelim::OneParen => "OneParen".to_string(),
+        ListNumberDelim::TwoParens => "TwoParens".to_string(),
+        ListNumberDelim::Default => "Period".to_string(), // Is this supposed to be the default?
+    }
+}
+
+fn write_list_number_style(style: &crate::pandoc::ListNumberStyle) -> String {
+    match style {
+        crate::pandoc::ListNumberStyle::Decimal => "Decimal".to_string(),
+        crate::pandoc::ListNumberStyle::LowerAlpha => "LowerAlpha".to_string(),
+        crate::pandoc::ListNumberStyle::UpperAlpha => "UpperAlpha".to_string(),
+        crate::pandoc::ListNumberStyle::LowerRoman => "LowerRoman".to_string(),
+        crate::pandoc::ListNumberStyle::UpperRoman => "UpperRoman".to_string(),
+        crate::pandoc::ListNumberStyle::Default => "Decimal".to_string(), // Is this supposed to be the default?
+    }
+}
+
 fn write_block(block: &Block) -> String {
     match block {
         Block::Plain(crate::pandoc::Plain { content, .. }) => {
@@ -168,6 +188,18 @@ fn write_block(block: &Block) -> String {
                 .join(", ");
             format!("BulletList [{}]", items_str)
         },
+        Block::OrderedList(crate::pandoc::OrderedList { content, attr, .. }) => {
+            let (number, style, delim) = attr;
+            let items_str = content
+                .iter()
+                .map(|item| "[".to_string() + &(item.iter().map(write_block).collect::<Vec<_>>().join(", ")) + "]")
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("OrderedList ({}, {}, {}) [{}]", 
+                number, 
+                write_list_number_style(style), 
+                write_list_number_delim(delim), items_str)
+        },
 
         // Block::Header { level, attr, content } => {
         //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
@@ -197,5 +229,5 @@ fn write_block(block: &Block) -> String {
 }
 
 pub fn write(pandoc: &Pandoc) -> String {
-    String::from("[ ") + &pandoc.blocks.iter().map(write_block).collect::<Vec<_>>().join(" ") + " ]"
+    String::from("[ ") + &pandoc.blocks.iter().map(write_block).collect::<Vec<_>>().join(", ") + " ]"
 }

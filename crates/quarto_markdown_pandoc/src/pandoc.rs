@@ -534,7 +534,8 @@ enum PandocNativeIntermediate {
     IntermediateRawFormat(String, Range),
     IntermediateShortcodeArg(ShortcodeArg, Range),
     IntermediateUnknown(Range),
-    IntermediateListItem(Blocks, Range),
+    IntermediateListItem(Blocks, Range, Option<ListAttributes>),
+    IntermediateOrderedListMarker(usize, Range),
 }
 
 fn is_empty_attr(attr: &Attr) -> bool {
@@ -1163,8 +1164,22 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             PandocNativeIntermediate::IntermediateBaseText(
                 content, node_location(node))
         }
+        "list_marker_parenthesis" |
+        "list_marker_dot" => {
+            // we need to extract the marker number
+            let marker_text = node
+                .utf8_text(input_bytes).unwrap()
+                .trim_end()
+                .trim_end_matches('.').trim_end_matches(')').to_string();
+            let marker_number: usize = marker_text.parse().unwrap_or_else(|_| {
+                panic!("Invalid list marker number: {}", marker_text)
+            });
+            PandocNativeIntermediate::IntermediateOrderedListMarker(marker_number, node_location(node))
+        }
         // These are marker nodes, we don't need to do anything with it
         "list_marker_minus" |
+        "list_marker_star" |
+        "list_marker_plus" |
         "block_continuation" |
         "fenced_code_block_delimiter" |
         "note_reference_delimiter" |
@@ -1357,14 +1372,36 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             let mut has_loose_item = false;
             let mut last_para_range: Option<Range> = None;
             let mut list_items: Vec<Blocks> = Vec::new();
+            let mut is_ordered_list: Option<ListAttributes> = None;
 
             for (node, child) in children {
+                if node == "list_marker_parenthesis" || node == "list_marker_dot" {
+                    // this is an ordered list, so we need to set the flag
+                    let PandocNativeIntermediate::IntermediateOrderedListMarker(marker_number, _) = child else {
+                        panic!("Expected OrderedListMarker in list, got {:?}", child);
+                    };
+
+                    is_ordered_list = Some((marker_number, ListNumberStyle::Decimal, match node.as_str() {
+                        "list_marker_parenthesis" => ListNumberDelim::OneParen,
+                        "list_marker_dot" => ListNumberDelim::Period,
+                        _ => panic!("Unexpected list marker node: {}", node),
+                    }));
+                }
+                
                 if node != "list_item" {
                     panic!("Expected list_item in list, got {}", node);
                 }
-                let PandocNativeIntermediate::IntermediateListItem(blocks, child_range) = child else {
+                let PandocNativeIntermediate::IntermediateListItem(blocks, child_range, ordered_list) = child else {
                     panic!("Expected Blocks in list_item, got {:?}", child);
                 };
+                if is_ordered_list == None {
+                    match ordered_list {
+                        attr @ Some(_) => {
+                            is_ordered_list = attr
+                        },
+                        _ => {}
+                    }
+                }
 
                 // is the last item loose? Check the last paragraph range
                 if let Some(ref last_range) = last_para_range {
@@ -1404,21 +1441,14 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 list_items.push(blocks);
             }
 
-            if has_loose_item {
-                // the AST representation of a loost bullet list is
+            let content = if has_loose_item { 
+                // the AST representation of a loose bullet list is
                 // the same as what we've been building, so just return it
-                return PandocNativeIntermediate::IntermediateBlock(
-                    Block::BulletList(BulletList {
-                        content: list_items,
-                        filename: None,
-                        range: node_location(node),
-                    }));
-            };
-            // turn list into tight list by replacing eligible Paragraph nodes
-            // Plain nodes.
-            return PandocNativeIntermediate::IntermediateBlock(
-                Block::BulletList(BulletList {
-                    content: list_items.into_iter().map(|mut blocks| {
+                list_items 
+            } else {
+                // turn list into tight list by replacing eligible Paragraph nodes
+                // Plain nodes.
+                list_items.into_iter().map(|mut blocks| {
                         if blocks.len() != 1 {
                             return blocks;
                         }
@@ -1432,22 +1462,52 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                             filename: filename,
                             range: range,
                         })]
-                    }).collect(),
-                    filename: None,
-                    range: node_location(node),
-                }));
+                    }).collect()
+            };
+
+            match is_ordered_list {
+                Some(attr) => {
+                    PandocNativeIntermediate::IntermediateBlock(Block::OrderedList(OrderedList {
+                        attr,
+                        content,
+                        filename: None,
+                        range: node_location(node),
+                    }))
+                },
+                None => {
+                    PandocNativeIntermediate::IntermediateBlock(Block::BulletList(BulletList {
+                        content,
+                        filename: None,
+                        range: node_location(node),
+                    }))
+                }
+            }
         },
         "list_item" => {
-            return PandocNativeIntermediate::IntermediateListItem(
-                children.into_iter().filter(|(_, child)| {
+            let mut list_attr: Option<ListAttributes> = None;
+            let children = children.into_iter().filter(|(node, child)| {
+                    if node == "list_marker_dot" || node == "list_marker_parenthesis" {
+                        // this is an ordered list, so we need to set the flag
+                        let PandocNativeIntermediate::IntermediateOrderedListMarker(marker_number, _) = child else {
+                            panic!("Expected OrderedListMarker in list_item, got {:?}", child);
+                        };
+                        list_attr = Some((*marker_number, ListNumberStyle::Decimal, match node.as_str() {
+                            "list_marker_parenthesis" => ListNumberDelim::OneParen,
+                            "list_marker_dot" => ListNumberDelim::Period,
+                            _ => panic!("Unexpected list marker node: {}", node),
+                        }));
+                        return false; // skip the marker node
+                    } 
                     matches!(child, PandocNativeIntermediate::IntermediateBlock(_))
                 }).map(|(_, child)| {
                     let PandocNativeIntermediate::IntermediateBlock(block) = child else {
                         panic!("Expected Block in paragraph, got {:?}", child);
                     };
                     block
-                }).collect(),
-                node_location(node)
+                }).collect();
+            return PandocNativeIntermediate::IntermediateListItem(
+                children,
+                node_location(node), list_attr
             );
         },
         "language_attribute" => {
