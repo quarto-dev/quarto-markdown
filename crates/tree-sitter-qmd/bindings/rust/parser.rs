@@ -351,6 +351,20 @@ impl MarkdownParser {
             let mut range = node.range();
             let mut ranges = Vec::new();
             if tree_cursor.goto_first_child() {
+                let child_range = tree_cursor.node().range();
+                // repeating this logic to handle the first child
+                // is cleaner than refactoring while into
+                // loop because rust doesn't support do while
+                if tree_cursor.node().is_named() {
+                    ranges.push(Range {
+                        start_byte: range.start_byte,
+                        start_point: range.start_point,
+                        end_byte: child_range.start_byte,
+                        end_point: child_range.start_point,
+                    });
+                    range.start_byte = child_range.end_byte;
+                    range.start_point = child_range.end_point;
+                }
                 while tree_cursor.goto_next_sibling() {
                     if !tree_cursor.node().is_named() {
                         continue;

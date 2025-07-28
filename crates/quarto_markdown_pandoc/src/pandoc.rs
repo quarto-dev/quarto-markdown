@@ -1177,6 +1177,7 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             PandocNativeIntermediate::IntermediateOrderedListMarker(marker_number, node_location(node))
         }
         // These are marker nodes, we don't need to do anything with it
+        "block_quote_marker" |
         "list_marker_minus" |
         "list_marker_star" |
         "list_marker_plus" |
@@ -1533,6 +1534,23 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             }
             panic!("Expected raw_attribute to have a format, but found none");
         },
+        "block_quote" => {
+            PandocNativeIntermediate::IntermediateBlock(
+                Block::BlockQuote(BlockQuote {
+                    content: children
+                        .into_iter()
+                        .filter(|(node, _)| node != "block_quote_marker")
+                        .map(|(_, child)| {
+                            let PandocNativeIntermediate::IntermediateBlock(block) = child else {
+                                panic!("Expected Block in block_quote, got {:?}", child);
+                            };
+                            block
+                        }).collect(),
+                    filename: None,
+                    range: node_location(node),
+                })
+            )
+        }
         _ => {
             eprintln!("Warning: Unhandled node kind: {}", node.kind());
             let range = node_location(node);

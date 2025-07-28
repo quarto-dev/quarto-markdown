@@ -83,6 +83,7 @@ pub struct Filter {
     pub raw_block: BlockFilterFn<pandoc::RawBlock>,
     pub bullet_list: BlockFilterFn<pandoc::BulletList>,
     pub ordered_list: BlockFilterFn<pandoc::OrderedList>,
+    pub block_quote: BlockFilterFn<pandoc::BlockQuote>,
 }
 
 fn inlines_apply_and_maybe_recurse<T>(
@@ -205,6 +206,9 @@ pub fn topdown_traverse_block(block: crate::pandoc::Block, filter: &Filter) -> c
         },
         crate::pandoc::Block::OrderedList(list) => {
             handle_block_filter!(OrderedList, list, ordered_list, filter)
+        },
+        crate::pandoc::Block::BlockQuote(quote) => {
+            handle_block_filter!(BlockQuote, quote, block_quote, filter)
         },
         _ => panic!("Unsupported block type: {:?}", block),
     }

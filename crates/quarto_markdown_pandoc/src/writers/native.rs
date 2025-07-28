@@ -200,7 +200,14 @@ fn write_block(block: &Block) -> String {
                 write_list_number_style(style), 
                 write_list_number_delim(delim), items_str)
         },
-
+        Block::BlockQuote(crate::pandoc::BlockQuote { content, .. }) => {
+            let content_str = content
+                .iter()
+                .map(write_block)
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("BlockQuote [{}]", content_str)
+        },
         // Block::Header { level, attr, content } => {
         //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
         //     format!("Header {} {} [{}]", level, write_native_attr(attr), content_str)
