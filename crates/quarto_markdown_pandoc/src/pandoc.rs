@@ -534,6 +534,7 @@ enum PandocNativeIntermediate {
     IntermediateRawFormat(String, Range),
     IntermediateShortcodeArg(ShortcodeArg, Range),
     IntermediateUnknown(Range),
+    IntermediateListItem(Blocks, Range),
 }
 
 fn is_empty_attr(attr: &Attr) -> bool {
@@ -671,8 +672,6 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
         let value = node_text();
         if value.starts_with('"') && value.ends_with('"') {
             let value = value[1..value.len()-1].to_string();
-            println!("Unescaping double quotes in value: {}", value);
-            println!("unescaped: {}", escaped_double_quote_re.replace_all(&value, "\""));
             PandocNativeIntermediate::IntermediateBaseText(
                 escaped_double_quote_re.replace_all(&value, "\"").to_string(),
                 location
@@ -1317,21 +1316,19 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
                 }).collect();
             assert!(inlines.len() == 1, "Expected exactly one inline in code_span, got {}", inlines.len());
             let (_, child) = inlines.remove(0);
-            match child {
-                PandocNativeIntermediate::IntermediateBaseText(text, _) => {
-                    if let Some(raw) = is_raw {
-                        PandocNativeIntermediate::IntermediateInline(Inline::RawInline(RawInline {
-                            format: raw,
-                            text,
-                        }))
-                    } else {
-                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
-                            attr,
-                            text,
-                        }))
-                    }
-                }
-                _ => panic!("Expected BaseText in code_span, got {:?}", child),
+            let PandocNativeIntermediate::IntermediateBaseText(text, _) = child else {
+                panic!("Expected BaseText in code_span, got {:?}", child);
+            };
+            if let Some(raw) = is_raw {
+                PandocNativeIntermediate::IntermediateInline(Inline::RawInline(RawInline {
+                    format: raw,
+                    text,
+                }))
+            } else {
+                PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
+                    attr,
+                    text,
+                }))
             }
         },
         "latex_span" => {
@@ -1374,35 +1371,108 @@ fn native_visitor(node: &tree_sitter::Node, children: Vec<(String, PandocNativeI
             }
         },
         "list" => {
-            return PandocNativeIntermediate::IntermediateBlock(
-                Block::BulletList(
-                    BulletList {
-                        content: children.into_iter().map(|(node, child)| {
-                            if node == "list_item" {
-                                if let PandocNativeIntermediate::IntermediateBlocks(blocks) = child {
-                                    blocks
-                                } else {
-                                    panic!("Expected Blocks in list_item, got {:?}", child);
-                                }
-                            } else {
-                                panic!("Unexpected node in list: {}", node);
-                            }
-                        }).collect(),
+            // a list is loose if it has at least one loose item
+            // an item is loose if 
+            //   - it has more than one paragraph in the list 
+            //   - it is a single paragraph with space between it and the next
+            //     beginning of list item. There must be a next item for this to be true
+            //     but the next item might not itself be a paragraph.
+
+            let mut has_loose_item = false;
+            let mut last_para_range: Option<Range> = None;
+            let mut list_items: Vec<Blocks> = Vec::new();
+
+            for (node, child) in children {
+                if node != "list_item" {
+                    panic!("Expected list_item in list, got {}", node);
+                }
+                let PandocNativeIntermediate::IntermediateListItem(blocks, child_range) = child else {
+                    panic!("Expected Blocks in list_item, got {:?}", child);
+                };
+
+                // is the last item loose? Check the last paragraph range
+                if let Some(ref last_range) = last_para_range {
+                    if last_range.end.row != child_range.start.row {
+                        // if the last paragraph ends on a different line than the current item starts,
+                        // then the last item was loose, mark it
+                        has_loose_item = true;
+                    }
+                }
+
+                // is this item definitely loose?
+                if blocks.iter().filter(|block| {
+                    if let Block::Paragraph(_) = block { true }
+                    else { false }
+                }).count() > 1 {
+                    has_loose_item = true;
+
+                    // technically, we don't need to worry about
+                    // last paragraph range after setting has_loose_item,
+                    // but we do it in case we want to use it later
+                    last_para_range = None;
+                    list_items.push(blocks);
+                    continue;
+                }
+                
+                // is this item possibly loose?
+                if blocks.len() == 1 {
+                    if let Some(Block::Paragraph(para)) = blocks.first() {
+                        // yes, so store the range and wait to finish the check on
+                        // next item
+                        last_para_range = Some(para.range.clone());
+                    } else {
+                        // if the first block is not a paragraph, it's not loose
+                        last_para_range = None;
+                    }
+                }
+                list_items.push(blocks);
+            }
+
+            if has_loose_item {
+                // the AST representation of a loost bullet list is
+                // the same as what we've been building, so just return it
+                return PandocNativeIntermediate::IntermediateBlock(
+                    Block::BulletList(BulletList {
+                        content: list_items,
                         filename: None,
                         range: node_location(node),
                     }));
+            };
+            // turn list into tight list by replacing eligible Paragraph nodes
+            // Plain nodes.
+            return PandocNativeIntermediate::IntermediateBlock(
+                Block::BulletList(BulletList {
+                    content: list_items.into_iter().map(|mut blocks| {
+                        if blocks.len() != 1 {
+                            return blocks;
+                        }
+                        let first = blocks.pop().unwrap();
+                        let Block::Paragraph(Paragraph { content, filename, range }) = first 
+                        else {
+                            return vec![first];
+                        };
+                        vec![Block::Plain(Plain {
+                            content: content,
+                            filename: filename,
+                            range: range,
+                        })]
+                    }).collect(),
+                    filename: None,
+                    range: node_location(node),
+                }));
         },
         "list_item" => {
-            return PandocNativeIntermediate::IntermediateBlocks(
-                children.into_iter().filter(|(node, _)| {
-                    node == "paragraph"
+            return PandocNativeIntermediate::IntermediateListItem(
+                children.into_iter().filter(|(_, child)| {
+                    matches!(child, PandocNativeIntermediate::IntermediateBlock(_))
                 }).map(|(_, child)| {
-                    if let PandocNativeIntermediate::IntermediateBlock(block) = child {
-                        block
-                    } else {
+                    let PandocNativeIntermediate::IntermediateBlock(block) = child else {
                         panic!("Expected Block in paragraph, got {:?}", child);
-                    }
-                }).collect());
+                    };
+                    block
+                }).collect(),
+                node_location(node)
+            );
         },
         "language_attribute" => {
             for (_, child) in children {
