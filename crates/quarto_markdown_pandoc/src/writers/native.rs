@@ -152,6 +152,30 @@ fn write_list_number_style(style: &crate::pandoc::ListNumberStyle) -> String {
     }
 }
 
+fn write_short_caption(caption: &Option<Vec<Inline>>) -> String {
+    match caption {
+        Some(text) => write_inlines(text),
+        None => "Nothing".to_string(),
+    }
+}
+
+fn write_long_caption(caption: &Option<Vec<Block>>) -> String {
+    match caption {
+        Some(blocks) => "[ ".to_string() + &(
+            blocks.iter().map(write_block).collect::<Vec<_>>().join(", ")) + 
+            " ]",
+        None => "Nothing".to_string(),
+    }
+}
+
+fn write_caption(caption: &crate::pandoc::Caption) -> String {
+    format!(
+        "(Caption {} {})",
+        write_short_caption(&caption.short),
+        write_long_caption(&caption.long)
+    )
+}
+
 fn write_block(block: &Block) -> String {
     match block {
         Block::Plain(crate::pandoc::Plain { content, .. }) => {
@@ -215,6 +239,15 @@ fn write_block(block: &Block) -> String {
                 .collect::<Vec<_>>()
                 .join(", ");
             format!("Div {} [{}]", write_native_attr(attr), content_str)
+        },
+        Block::Figure(crate::pandoc::Figure { attr, caption, content, .. }) => {
+            let content_str = content
+                .iter()
+                .map(write_block)
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("Figure {} {} [{}]", 
+                write_native_attr(attr), write_caption(caption), content_str)
         },
         // Block::Header { level, attr, content } => {
         //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");

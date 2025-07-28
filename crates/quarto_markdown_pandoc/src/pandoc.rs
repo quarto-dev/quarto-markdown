@@ -1669,7 +1669,50 @@ fn shortcode_to_span(shortcode: Shortcode) -> Span {
 }
 
 pub fn desugar(doc: Pandoc) -> Pandoc {
-    topdown_traverse(doc, &Filter {        
+    topdown_traverse(doc, &Filter {
+        paragraph: Some(|para| {
+            if para.content.len() != 1 {
+                return (vec![Block::Paragraph(para)], true);
+            }
+            let first = para.content.first().unwrap();
+            let Inline::Image(image) = first else {
+                return (vec![Block::Paragraph(para)], true);
+            };
+            /*
+                pub struct Image {
+                    pub attr: Attr,
+                    pub content: Inlines,
+                    pub target: Target,
+                }
+             */
+            if image.content.is_empty() {
+                return (vec![Block::Paragraph(para)], true);
+            }
+
+            let figure_attr: Attr = (image.attr.0.clone(), vec![], HashMap::new());
+            let image_attr: Attr = ("".to_string(), image.attr.1.clone(), image.attr.2.clone());
+            let mut new_image = image.clone();
+            new_image.attr = image_attr;
+            // FIXME all source location is broken here
+            let figure = Block::Figure(Figure {
+                attr: figure_attr,
+                caption: Caption {
+                    short: None,
+                    long: Some(vec![Block::Plain(Plain {
+                        content: image.content.clone(),
+                        filename: None,
+                        range: empty_range(),
+                    })])
+                },
+                content: vec![Block::Plain(Plain { 
+                    content: vec![Inline::Image(new_image)],
+                    filename: None,
+                    range: empty_range()} )],
+                filename: None,
+                range: empty_range(),
+            });
+            (vec![figure], true)
+        }),
         shortcode: Some(|shortcode| {
             (vec![Inline::Span(shortcode_to_span(shortcode))], false)
         }),
