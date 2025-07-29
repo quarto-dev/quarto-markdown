@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use regex::Regex;
 
 use crate::traversals::bottomup_traverse_concrete_tree;
-use crate::filters::{topdown_traverse, Filter};
+use crate::filters::{topdown_traverse, Filter, FilterReturn::FilterResult, FilterReturn::Unchanged};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Location {
@@ -500,6 +500,50 @@ pub enum Inline {
     Shortcode(Shortcode),
     NoteReference(NoteReference)
 }
+
+pub trait AsInline {
+    fn as_inline(self) -> Inline;
+}
+macro_rules! impl_as_inline {
+    ($($type:ident),*) => {
+        $(
+            impl AsInline for $type {
+                fn as_inline(self) -> Inline {
+                    Inline::$type(self)
+                }
+            }
+        )*
+    };
+}
+impl AsInline for Inline {
+    fn as_inline(self) -> Inline {
+        self
+    }
+}
+impl_as_inline!(
+    Str,
+    Emph,
+    Underline,
+    Strong,
+    Strikeout,
+    Superscript,
+    Subscript,
+    SmallCaps,
+    Quoted,
+    Cite,
+    Code,
+    Space,
+    SoftBreak,
+    LineBreak,
+    Math,
+    RawInline,
+    Link,
+    Image,
+    Note,
+    Span,
+    Shortcode,
+    NoteReference
+);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Citation {
@@ -1670,23 +1714,18 @@ fn shortcode_to_span(shortcode: Shortcode) -> Span {
 
 pub fn desugar(doc: Pandoc) -> Pandoc {
     topdown_traverse(doc, &Filter {
+
+        // attempt to desugar single-image paragraphs into figures
         paragraph: Some(|para| {
             if para.content.len() != 1 {
-                return (vec![Block::Paragraph(para)], true);
+                return Unchanged(para);
             }
             let first = para.content.first().unwrap();
             let Inline::Image(image) = first else {
-                return (vec![Block::Paragraph(para)], true);
+                return Unchanged(para);
             };
-            /*
-                pub struct Image {
-                    pub attr: Attr,
-                    pub content: Inlines,
-                    pub target: Target,
-                }
-             */
             if image.content.is_empty() {
-                return (vec![Block::Paragraph(para)], true);
+                return Unchanged(para);
             }
 
             let figure_attr: Attr = (image.attr.0.clone(), vec![], HashMap::new());
@@ -1694,7 +1733,7 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
             let mut new_image = image.clone();
             new_image.attr = image_attr;
             // FIXME all source location is broken here
-            let figure = Block::Figure(Figure {
+            FilterResult(vec![Block::Figure(Figure {
                 attr: figure_attr,
                 caption: Caption {
                     short: None,
@@ -1710,16 +1749,15 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                     range: empty_range()} )],
                 filename: None,
                 range: empty_range(),
-            });
-            (vec![figure], true)
+            })], true)
         }),
         shortcode: Some(|shortcode| {
-            (vec![Inline::Span(shortcode_to_span(shortcode))], false)
+            FilterResult(vec![Inline::Span(shortcode_to_span(shortcode))], false)
         }),
         note_reference: Some(|note_ref| {
             let mut kv = HashMap::new();
             kv.insert("reference-id".to_string(), note_ref.id);
-            (vec![Inline::Span(Span {
+            FilterResult(vec![Inline::Span(Span {
                 attr: ("".to_string(), vec!["quarto-note-reference".to_string()], kv),
                 content: vec![],
             })], false)
@@ -1816,7 +1854,7 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                 }
             }
             
-            (result, true)
+            FilterResult(result, true)
         }),
         ..Default::default()
     })
