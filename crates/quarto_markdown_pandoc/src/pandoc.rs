@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use regex::Regex;
 
 use crate::traversals::bottomup_traverse_concrete_tree;
-use crate::filters::{topdown_traverse, Filter};
+use crate::filters::{topdown_traverse, Filter, FilterReturn::FilterResult};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Location {
@@ -1671,12 +1671,12 @@ fn shortcode_to_span(shortcode: Shortcode) -> Span {
 pub fn desugar(doc: Pandoc) -> Pandoc {
     topdown_traverse(doc, &Filter {        
         shortcode: Some(|shortcode| {
-            (vec![Inline::Span(shortcode_to_span(shortcode))], false)
+            FilterResult(vec![Inline::Span(shortcode_to_span(shortcode))], false)
         }),
         note_reference: Some(|note_ref| {
             let mut kv = HashMap::new();
             kv.insert("reference-id".to_string(), note_ref.id);
-            (vec![Inline::Span(Span {
+            FilterResult(vec![Inline::Span(Span {
                 attr: ("".to_string(), vec!["quarto-note-reference".to_string()], kv),
                 content: vec![],
             })], false)
@@ -1773,7 +1773,7 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                 }
             }
             
-            (result, true)
+            FilterResult(result, true)
         }),
         ..Default::default()
     })
