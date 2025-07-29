@@ -189,7 +189,7 @@ impl<'a> MarkdownCursor<'a> {
 
     pub fn id(&self) -> (bool, usize) {
         match &self.inline_cursor {
-            Some(cursor) => (true, cursor.node().id()), 
+            Some(cursor) => (true, cursor.node().id()),
             None => (false, self.block_cursor.node().id()),
         }
     }
@@ -216,7 +216,7 @@ impl<'a> MarkdownCursor<'a> {
     }
 
     /// Move this cursor to the node with the given id.
-    /// 
+    ///
     /// takes time O(n) to find the node, where n is the number of nodes in the tree.
     pub fn goto_id(&mut self, id: (bool, usize)) -> bool {
         self.goto_top();
@@ -316,10 +316,8 @@ impl MarkdownParser {
         parser
             .set_language(block_language)
             .expect("Could not load block grammar");
-        let block_tree = parser.parse_with_options(
-            callback, 
-            old_tree.map(|tree| &tree.block_tree),
-            None)?;
+        let block_tree =
+            parser.parse_with_options(callback, old_tree.map(|tree| &tree.block_tree), None)?;
         let (mut inline_trees, mut inline_indices) = if let Some(old_tree) = old_tree {
             let len = old_tree.inline_trees.len();
             (Vec::with_capacity(len), HashMap::with_capacity(len))
@@ -386,7 +384,7 @@ impl MarkdownParser {
             let inline_tree = parser.parse_with_options(
                 callback,
                 old_tree.and_then(|old_tree| old_tree.inline_trees.get(i)),
-                None
+                None,
             )?;
             inline_trees.push(inline_tree);
             inline_indices.insert(node.id(), i);

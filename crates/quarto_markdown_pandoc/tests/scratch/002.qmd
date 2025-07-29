@@ -1,0 +1,16 @@
+- A span [
+    that crosses lines]{#id}.
+
+Sigh.
+
+- element
+- another element
+- another element
+
+Then
+
+- element
+
+- another element
+
+- another element

@@ -3,8 +3,8 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-pub mod traversals;
 pub mod errors;
-pub mod pandoc;
-pub mod writers;
 pub mod filters;
+pub mod pandoc;
+pub mod traversals;
+pub mod writers;

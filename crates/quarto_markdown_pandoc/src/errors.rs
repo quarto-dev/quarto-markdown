@@ -10,32 +10,28 @@
 // two separate tree-sitter parsers, one for inline content
 // and one for block content, and the standard traverser only
 // keeps one inline cursor in memory at a time.
-// 
-// This means we can't easily keep copies of the cursors around, 
-// and we hack around it by using the cursor id to identify nodes 
+//
+// This means we can't easily keep copies of the cursors around,
+// and we hack around it by using the cursor id to identify nodes
 // in the tree, and build clones that way. The main problem with
 // this solution is that cursor cloning requires walking the tree
 // and can take O(n) time.
 
-use tree_sitter_qmd::{MarkdownTree};
+use tree_sitter_qmd::MarkdownTree;
 
 enum TreeSitterError {
     MissingNode,
     UnexpectedNode,
 }
 
-fn node_can_have_empty_text<'a>(
-    cursor: &tree_sitter_qmd::MarkdownCursor<'a>,
-) -> bool {
+fn node_can_have_empty_text<'a>(cursor: &tree_sitter_qmd::MarkdownCursor<'a>) -> bool {
     match cursor.node().kind() {
         "block_continuation" => true,
         _ => false,
     }
 }
 
-fn is_error_node<'a>(
-    cursor: &tree_sitter_qmd::MarkdownCursor<'a>,
-) -> Option<TreeSitterError> {
+fn is_error_node<'a>(cursor: &tree_sitter_qmd::MarkdownCursor<'a>) -> Option<TreeSitterError> {
     if cursor.node().kind() == "ERROR" {
         return Some(TreeSitterError::UnexpectedNode);
     }
@@ -72,10 +68,7 @@ pub fn parse_is_good<'a>(tree: &'a MarkdownTree) -> Vec<(bool, usize)> {
     errors
 }
 
-pub fn error_message(
-    error: &mut tree_sitter_qmd::MarkdownCursor,
-    input_bytes: &[u8],
-) -> String {
+pub fn error_message(error: &mut tree_sitter_qmd::MarkdownCursor, input_bytes: &[u8]) -> String {
     // assert!(error.goto_parent());
     // assert!(error.goto_first_child());
 
@@ -97,7 +90,7 @@ pub fn error_message(
                     error.node().start_position().column,
                 );
             }
-        } 
+        }
     }
     assert!(false, "No error message available for this node");
     return String::new(); // unreachable

@@ -3,7 +3,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Pandoc};
+use crate::pandoc::Pandoc;
 use serde_json::{json, Value};
 
 // this is unfinished

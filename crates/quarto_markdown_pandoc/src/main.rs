@@ -3,14 +3,14 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
+use clap::Parser;
 use std::io::{self, Read};
 use tree_sitter_qmd::MarkdownParser;
-use clap::Parser;
 
-mod traversals;
 mod errors;
-mod pandoc;
 mod filters;
+mod pandoc;
+mod traversals;
 mod writers;
 use errors::parse_is_good;
 
@@ -31,24 +31,26 @@ fn print_whole_tree(cursor: &mut tree_sitter_qmd::MarkdownCursor) {
         } else {
             depth -= 1;
         }
-        true  // continue traversing
+        true // continue traversing
     });
 }
 
 fn main() {
     let args = Args::parse();
-    
+
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
     if !input.ends_with("\n") {
         eprintln!("(Warning) Adding missing newline to end of input.");
-        // 
+        //
         input.push('\n'); // ensure the input ends with a newline
     }
 
     let mut parser = MarkdownParser::default();
     let input_bytes = input.as_bytes();
-    let tree = parser.parse(&input_bytes, None).expect("Failed to parse input");
+    let tree = parser
+        .parse(&input_bytes, None)
+        .expect("Failed to parse input");
     let errors = parse_is_good(&tree);
     if !errors.is_empty() {
         let mut cursor = tree.walk();
@@ -61,7 +63,7 @@ fn main() {
 
     print_whole_tree(&mut tree.walk());
 
-    let pandoc = pandoc::treesitter_to_pandoc(&tree, &input_bytes);    
+    let pandoc = pandoc::treesitter_to_pandoc(&tree, &input_bytes);
     let output = match args.to.as_str() {
         "json" => writers::json::write(&pandoc),
         "native" => writers::native::write(&pandoc),
