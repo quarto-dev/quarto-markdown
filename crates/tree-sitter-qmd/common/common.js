@@ -111,25 +111,25 @@ module.exports.rules = {
     ),
     raw_specifier: $ => /=[a-zA-Z_][a-zA-Z0-9_-]*/,
     _commonmark_whitespace: $ => /[ \t]+/,
-    raw_attribute: $ => seq(
+    raw_attribute: $ => prec(2, seq(
       "{",
       optional($._commonmark_whitespace),
       $.raw_specifier,
       optional($._commonmark_whitespace),
       "}"
-    ),
+    )),
     commonmark_name: $ => token(prec(1, /[a-zA-Z_][a-zA-Z0-9_\-.]*/)),
     id_specifier: $ => /[#][a-zA-Z0-9_\-.]+/,
     class_specifier: $ => /[.][a-zA-Z0-9_\-][a-zA-Z0-9_\-.]+/,
 
-    commonmark_attribute: $ => prec.dynamic(2, seq(
+    commonmark_attribute: $ => prec(3, prec.dynamic(2, seq(
       "{",
       optional($._commonmark_whitespace),
       repeat(seq($.id_specifier, optional($._commonmark_whitespace))),
       repeat(seq($.class_specifier, optional($._commonmark_whitespace))),
       repeat(seq(alias($._attribute, $.key_value_specifier), optional($._commonmark_whitespace))),
       "}"
-    )),
+    ))),
     language_attribute: $ => prec.dynamic(1, seq(
       "{",
       alias($.commonmark_name, $.language),

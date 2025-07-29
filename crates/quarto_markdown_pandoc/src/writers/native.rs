@@ -390,10 +390,24 @@ fn write_block(block: &Block) -> String {
                 content_str
             )
         }
-        // Block::Header { level, attr, content } => {
-        //     let content_str = content.iter().map(write_inline).collect::<Vec<_>>().join(", ");
-        //     format!("Header {} {} [{}]", level, write_native_attr(attr), content_str)
-        // }
+        Block::Header(crate::pandoc::Header {
+            level,
+            attr,
+            content,
+            ..
+        }) => {
+            let content_str = content
+                .iter()
+                .map(write_inline)
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!(
+                "Header {} {} [{}]",
+                level,
+                write_native_attr(attr),
+                content_str
+            )
+        }
         // Block::Quote { attr, blocks } => {
         //     let blocks_str = blocks.iter().map(write_block).collect::<Vec<_>>().join(", ");
         //     format!("Quote {} [{}]", write_native_attr(attr), blocks_str)

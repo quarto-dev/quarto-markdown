@@ -102,36 +102,42 @@ module.exports = grammar({
         _atx_heading1: $ => prec(1, seq(
             $.atx_h1_marker,
             optional($._atx_heading_content),
+            optional(alias($._qmd_attribute, $.attribute)),
             $._newline
         )),
         _atx_heading2: $ => prec(1, seq(
             $.atx_h2_marker,
             optional($._atx_heading_content),
+            optional(alias($._qmd_attribute, $.attribute)),
             $._newline
         )),
         _atx_heading3: $ => prec(1, seq(
             $.atx_h3_marker,
             optional($._atx_heading_content),
+            optional(alias($._qmd_attribute, $.attribute)),
             $._newline
         )),
         _atx_heading4: $ => prec(1, seq(
             $.atx_h4_marker,
             optional($._atx_heading_content),
+            optional(alias($._qmd_attribute, $.attribute)),
             $._newline
         )),
         _atx_heading5: $ => prec(1, seq(
             $.atx_h5_marker,
             optional($._atx_heading_content),
+            optional(alias($._qmd_attribute, $.attribute)),
             $._newline
         )),
         _atx_heading6: $ => prec(1, seq(
             $.atx_h6_marker,
             optional($._atx_heading_content),
+            optional(alias($._qmd_attribute, $.attribute)),
             $._newline
         )),
         _atx_heading_content: $ => prec(1, seq(
             optional($._whitespace),
-            field('heading_content', alias($._line, $.inline))
+            field('heading_content', alias($._atx_heading_line, $.inline))
         )),
 
         // A setext heading. The underlines are currently handled by the external scanner but maybe
@@ -332,6 +338,9 @@ module.exports = grammar({
         ),
         // Some symbols get parsed as single tokens so that html blocks get detected properly
         _line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":"])))),
+
+        // disallow { in atx headings to parse attributes
+        _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":", "{"])))),
         _word: $ => new RegExp('[^' + PUNCTUATION_CHARACTERS_REGEX + ' \\t\\n\\r]+'),
         // The external scanner emits some characters that should just be ignored.
         _whitespace: $ => /[ \t]+/,

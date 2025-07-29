@@ -13,7 +13,7 @@ use regex::Regex;
 use std::collections::HashMap;
 
 use crate::filters::{
-    topdown_traverse, Filter, FilterReturn::FilterResult, FilterReturn::Unchanged,
+    Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,
 };
 use crate::traversals::bottomup_traverse_concrete_tree;
 
@@ -898,6 +898,23 @@ fn native_visitor(
                 filename: None,
                 range: location,
             }));
+        }
+        "attribute" => {
+            for (node, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateAttr(attr) => {
+                        if node == "commonmark_attribute" {
+                            return PandocNativeIntermediate::IntermediateAttr(attr);
+                        } else if node == "raw_attribute" {
+                            panic!("Unexpected raw attribute in attribute: {:?}", attr);
+                        } else {
+                            panic!("Unexpected attribute node: {}", node);
+                        }
+                    }
+                    _ => panic!("Unexpected child in attribute: {:?}", child),
+                }
+            }
+            panic!("No commonmark_attribute found in attribute node");
         }
         "commonmark_attribute" => {
             let mut attr = ("".to_string(), vec![], HashMap::new());
@@ -1801,6 +1818,47 @@ fn native_visitor(
                 range: node_location(node),
             }));
         }
+        "atx_heading" => {
+            let mut level = 0;
+            let mut content: Vec<Inline> = Vec::new();
+            let mut attr: Attr = ("".to_string(), vec![], HashMap::new());
+            for (node, child) in children {
+                if node == "atx_h1_marker" {
+                    level = 1;
+                } else if node == "atx_h2_marker" {
+                    level = 2;
+                } else if node == "atx_h3_marker" {
+                    level = 3;
+                } else if node == "atx_h4_marker" {
+                    level = 4;
+                } else if node == "atx_h5_marker" {
+                    level = 5;
+                } else if node == "atx_h6_marker" {
+                    level = 6;
+                } else if node == "inline" {
+                    if let PandocNativeIntermediate::IntermediateInlines(inlines) = child {
+                        content.extend(inlines);
+                    } else {
+                        panic!("Expected Inlines in atx_heading, got {:?}", child);
+                    }
+                } else if node == "attribute" {
+                    if let PandocNativeIntermediate::IntermediateAttr(inner_attr) = child {
+                        attr = inner_attr;
+                    } else {
+                        panic!("Expected Attr in attribute, got {:?}", child);
+                    }
+                } else {
+                    eprintln!("Warning: Unhandled node kind in atx_heading: {}", node);
+                }
+            }
+            PandocNativeIntermediate::IntermediateBlock(Block::Header(Header {
+                level,
+                attr,
+                content,
+                filename: None,
+                range: node_location(node),
+            }))
+        }
         _ => {
             eprintln!("Warning: Unhandled node kind: {}", node.kind());
             let range = node_location(node);
@@ -1913,6 +1971,22 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
     topdown_traverse(
         doc,
         &Filter {
+            // remove trailing space from header if it has an attribute
+            header: Some(|mut header| {
+                if &header.attr == &empty_attr() {
+                    return Unchanged(header);
+                }
+                let is_last_space = header
+                    .content
+                    .last()
+                    .map_or(false, |v| matches!(v, Inline::Space(_)));
+                if !is_last_space {
+                    return Unchanged(header);
+                }
+                // remove the last space
+                header.content.pop();
+                FilterResult(vec![Block::Header(header)], true)
+            }),
             // attempt to desugar single-image paragraphs into figures
             paragraph: Some(|para| {
                 if para.content.len() != 1 {
