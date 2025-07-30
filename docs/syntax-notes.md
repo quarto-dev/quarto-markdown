@@ -32,6 +32,7 @@ Quarto Markdown supports the following syntax:
 ````
 
 Reader raw blocks of the form `{<READER}` desugared into regular raw blocks of the form `{=pandoc-reader:READER}`.
+This syntax effectively bypasses Quarto Markdown's syntax, and provides authors with an escape hatch into specific features in Pandoc readers.
 
 ## Pandoc syntax quirks
 
@@ -170,3 +171,26 @@ Quarto Markdown is designed to be efficiently parseable (via `tree-sitter` gramm
 `tree-sitter` is (mostly) a LALR(1) parser, which means it needs to decide rules based on 1-token lookahead.
 We don't see how to do distinguish pipe tables and line blocks with fixed lookahead.
 We also don't see line blocks commonly used in the wild (they don't exist in CommonMark, for example).
+
+### Definition lists
+
+tl;dr: Quarto Markdown will not support Pandoc DefinitionList parsing.
+
+Definition lists offer the same problem.
+There's no way to know that the following construct isn't a paragraph followed by something else without parsing the entire paragraph first:
+
+- ```
+  A term
+  
+  :    a definition
+  ```
+
+  This is a definition list.
+
+- ```
+  A term
+  ```
+
+  This is a paragraph.
+
+We will also not support definition lists directly.
