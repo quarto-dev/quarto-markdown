@@ -148,7 +148,7 @@ module.exports = grammar(add_inline_rules({
         // in the block grammar and that will be called latex_block
         latex_span: $ => seq(
             alias($._latex_span_start, $.latex_span_delimiter),
-            alias(repeat(choice($._text_base, '[', ']', $._soft_line_break, $.backslash_escape)), $.latex_content),
+            alias(repeat(choice(/[^$\n\\]+/, '[', ']', /[\\]./, $._soft_line_break, $.backslash_escape)), $.latex_content),
             alias($._latex_span_close, $.latex_span_delimiter),
         ),
 

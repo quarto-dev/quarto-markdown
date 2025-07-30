@@ -34,6 +34,8 @@ I think quarto_markdown_pandoc should emit special Pandoc AST syntax that separa
 
 - Inlines
 
+  - TODO I'm pretty sure hard code spans like `` foo` `` are broken.
+
   - `markdown+smart` extension
 
     - question: do we enable/disable this?

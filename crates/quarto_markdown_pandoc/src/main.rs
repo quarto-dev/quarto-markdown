@@ -11,6 +11,7 @@ mod errors;
 mod filters;
 mod pandoc;
 mod traversals;
+mod utils;
 mod writers;
 use errors::parse_is_good;
 
