@@ -107,9 +107,12 @@ module.exports.rules = {
     _qmd_attribute: $ => choice(
       $.language_attribute,
       $.raw_attribute,
+      $.reader_attribute,
       $.commonmark_attribute
     ),
-    raw_specifier: $ => /=[a-zA-Z_][a-zA-Z0-9_-]*/,
+    // we also allow "<" in the raw specifier,
+    // which is a Quarto-specific extension to allow "custom readers"
+    raw_specifier: $ => /[<=][a-zA-Z_][a-zA-Z0-9_-]*/,
     _commonmark_whitespace: $ => /[ \t]+/,
     raw_attribute: $ => prec(2, seq(
       "{",

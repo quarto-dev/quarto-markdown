@@ -6,7 +6,7 @@ We aim to be largely compatible with Pandoc's `markdown` and `Commonmark` format
 
 ## Syntax extensions
 
-Syntax extensions are handled by [desugaring](https://cs.brown.edu/courses/cs173/2012/book/Desugaring_as_a_Language_Feature.html).
+Syntax extensions are handled by [desugaring](https://cs.brown.edu/courses/cs173/2012/book/Desugaring_as_a_Language_Feature.html) into regular Pandoc AST nodes.
 
 ### Shortcodes
 
@@ -19,6 +19,19 @@ We parse footnotes differently from Pandoc.
 We use NoteReference (Inline) and NoteDefinition (block) nodes.
 These are desugared into spans and divs in a Rust filter.
 
+### Reader raw blocks
+
+Quarto Markdown supports the following syntax:
+
+````
+```{<pandoc}
+| This will become a line block
+| Line blocks are not supported by Quarto Markdown but
+| can be supported via this fallback syntax
+```
+````
+
+Reader raw blocks of the form `{<READER}` desugared into regular raw blocks of the form `{=pandoc-reader:READER}`.
 
 ## Pandoc syntax quirks
 
@@ -113,3 +126,47 @@ $ echo 'a^a*a^a^a*a^a' | pandoc -t native -f commonmark+superscript
 ```
 
 This inconsistency gives me moral space for our parser to be inconsistent here as well.
+
+### Line Blocks
+
+tl;dr: Quarto Markdown will not support Pandoc LineBlock parsing.
+
+Pandoc supports ["line blocks"](https://pandoc.org/demo/example33/8.6-line-blocks.html), syntax like this:
+
+```
+| The limerick packs laughs anatomical
+| In space that is quite economical.
+|    But the good ones I've seen
+|    So seldom are clean
+| And the clean ones so seldom are comical
+```
+
+The AST type is `LineBlock [[Inline]]` (each line in the line block is a list of `Inline`).
+Unfortunately, this syntax interacts very badly with pipe tables under any fixed lookahead parsing strategy.
+Consider:
+
+- ```
+  | This is a line block
+  | No problem, right?
+  ```
+
+  This is a line block.
+
+- ```
+  | This is still a line block |
+  | -
+  ```
+
+  This is a line block.
+
+- ```
+  | Oh, oh no |
+  | - |
+  ```
+  
+  This is a table.
+
+Quarto Markdown is designed to be efficiently parseable (via `tree-sitter` grammars).
+`tree-sitter` is (mostly) a LALR(1) parser, which means it needs to decide rules based on 1-token lookahead.
+We don't see how to do distinguish pipe tables and line blocks with fixed lookahead.
+We also don't see line blocks commonly used in the wild (they don't exist in CommonMark, for example).

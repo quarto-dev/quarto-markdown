@@ -1979,6 +1979,8 @@ fn shortcode_to_span(shortcode: Shortcode) -> Span {
 }
 
 pub fn desugar(doc: Pandoc) -> Pandoc {
+    let raw_reader_format_specifier = Regex::new(r"<(?P<reader>.+)").unwrap();
+
     topdown_traverse(
         doc,
         &Filter {
@@ -2056,6 +2058,22 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                     false,
                 )
             }),
+
+            // desugar reader raw blocks into RawBlock nodes
+            // raw_block: Some(|raw_block| {
+            //     let Some(captures) = raw_reader_format_specifier.captures(&raw_block.text) else {
+            //         return Unchanged(raw_block);
+            //     };
+            //     return FilterResult(
+            //         vec![Block::RawBlock(RawBlock {
+            //             format: "pandoc-reader:".to_string() + captures["reader"],
+            //             ..raw_block
+            //         })],
+            //         false,
+            //     );
+            // }),
+
+            // desugar complex citations into a compound Cite node
             inlines: Some(|inlines| {
                 let mut result = vec![];
                 // states in this state machine:
