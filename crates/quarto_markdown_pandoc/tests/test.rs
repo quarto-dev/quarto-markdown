@@ -171,12 +171,12 @@ fn test_json_writer() {
         has_good_pandoc_version(),
         "Pandoc version is not suitable for testing"
     );
-    
+
     for entry in glob("tests/writers/json/*.md").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
                 let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
-                
+
                 // Parse with our parser
                 let mut parser = MarkdownParser::default();
                 let input_bytes = markdown.as_bytes();
@@ -185,7 +185,7 @@ fn test_json_writer() {
                     .expect("Failed to parse input");
                 let pandoc = treesitter_to_pandoc(&tree, input_bytes);
                 let our_json = writers::json::write(&pandoc);
-                
+
                 // Get Pandoc's output
                 let output = Command::new("pandoc")
                     .arg("-t")
@@ -195,15 +195,19 @@ fn test_json_writer() {
                     .arg(&path)
                     .output()
                     .expect("Failed to execute pandoc");
-                
+
                 let pandoc_json = String::from_utf8(output.stdout).expect("Invalid UTF-8");
-                
+
                 // Parse both JSON outputs to compare
-                let our_value: serde_json::Value = serde_json::from_str(&our_json).expect("Failed to parse our JSON");
-                let pandoc_value: serde_json::Value = serde_json::from_str(&pandoc_json).expect("Failed to parse Pandoc JSON");
-                
-                assert_eq!(our_value, pandoc_value, 
-                    "JSON outputs don't match for file {}.\nOurs:\n{}\nPandoc's:\n{}", 
+                let our_value: serde_json::Value =
+                    serde_json::from_str(&our_json).expect("Failed to parse our JSON");
+                let pandoc_value: serde_json::Value =
+                    serde_json::from_str(&pandoc_json).expect("Failed to parse Pandoc JSON");
+
+                assert_eq!(
+                    our_value,
+                    pandoc_value,
+                    "JSON outputs don't match for file {}.\nOurs:\n{}\nPandoc's:\n{}",
                     path.display(),
                     serde_json::to_string_pretty(&our_value).unwrap(),
                     serde_json::to_string_pretty(&pandoc_value).unwrap()
