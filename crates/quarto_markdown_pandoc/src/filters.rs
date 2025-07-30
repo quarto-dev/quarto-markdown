@@ -508,7 +508,6 @@ pub fn topdown_traverse_block(block: Block, filter: &Filter) -> Blocks {
         Block::HorizontalRule(hr) => {
             handle_block_filter!(HorizontalRule, hr, horizontal_rule, filter)
         }
-        _ => panic!("Unsupported block type: {:?}", block),
     }
 }
 
