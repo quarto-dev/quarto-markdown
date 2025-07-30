@@ -3,6 +3,8 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
+use paste::paste;
+
 use crate::pandoc::{self, AsInline, Block, Blocks, Inline, Inlines};
 
 // filters are destructive and take ownership of the input
@@ -12,12 +14,11 @@ pub enum FilterReturn<T, U> {
     FilterResult(U, bool), // (new content, should recurse)
 }
 
-type InlineFilterFn<T> = fn(T) -> FilterReturn<T, Inlines>;
-type BlockFilterFn<T> = fn(T) -> FilterReturn<T, Blocks>;
+type InlineFilterFn<T> = Box<dyn Fn(T) -> FilterReturn<T, Inlines>>;
+type BlockFilterFn<T> = Box<dyn Fn(T) -> FilterReturn<T, Blocks>>;
 type InlineFilterField<T> = Option<InlineFilterFn<T>>;
 type BlockFilterField<T> = Option<BlockFilterFn<T>>;
 
-#[derive(Default)]
 pub struct Filter {
     pub inlines: InlineFilterField<Inlines>,
     pub blocks: BlockFilterField<Blocks>,
@@ -64,14 +65,148 @@ pub struct Filter {
     pub horizontal_rule: BlockFilterField<pandoc::HorizontalRule>,
 }
 
+impl Default for Filter {
+    fn default() -> Self {
+        Filter {
+            inlines: None,
+            blocks: None,
+            inline: None,
+            block: None,
+
+            str: None,
+            emph: None,
+            underline: None,
+            strong: None,
+            strikeout: None,
+            superscript: None,
+            subscript: None,
+            small_caps: None,
+            quoted: None,
+            cite: None,
+            code: None,
+            space: None,
+            soft_break: None,
+            line_break: None,
+            math: None,
+            raw_inline: None,
+            link: None,
+            image: None,
+            note: None,
+            span: None,
+            shortcode: None,
+            note_reference: None,
+
+            paragraph: None,
+            plain: None,
+            code_block: None,
+            raw_block: None,
+            bullet_list: None,
+            ordered_list: None,
+            block_quote: None,
+            div: None,
+            figure: None,
+            line_block: None,
+            definition_list: None,
+            header: None,
+            table: None,
+            horizontal_rule: None,
+        }
+    }
+}
+
+impl Filter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_inlines<F>(mut self, f: F) -> Self
+    where
+        F: Fn(Inlines) -> FilterReturn<Inlines, Inlines> + 'static,
+    {
+        self.inlines = Some(Box::new(f));
+        self
+    }
+
+    pub fn with_blocks<F>(mut self, f: F) -> Self
+    where
+        F: Fn(Blocks) -> FilterReturn<Blocks, Blocks> + 'static,
+    {
+        self.blocks = Some(Box::new(f));
+        self
+    }
+}
+
+macro_rules! define_filter_with_methods {
+    ($return:ident, $($field:ident),* $(,)?) => {
+        impl Filter {
+
+            $(
+                paste::paste! {
+                    pub fn [<with_ $field>]<F>(mut self, filter: F) -> Self
+                    where
+                        F: Fn(pandoc::[<$field:camel>]) -> FilterReturn<pandoc::[<$field:camel>], $return> + 'static,
+                    {
+                        self.$field = Some(Box::new(filter));
+                        self
+                    }
+                }
+            )*
+        }
+    };
+}
+
+define_filter_with_methods!(
+    Inlines,
+    str,
+    emph,
+    underline,
+    strong,
+    strikeout,
+    superscript,
+    subscript,
+    small_caps,
+    quoted,
+    cite,
+    code,
+    space,
+    soft_break,
+    line_break,
+    math,
+    raw_inline,
+    link,
+    image,
+    note,
+    span,
+    shortcode,
+    note_reference
+);
+
+define_filter_with_methods!(
+    Blocks,
+    plain,
+    paragraph,
+    line_block,
+    code_block,
+    raw_block,
+    block_quote,
+    ordered_list,
+    bullet_list,
+    definition_list,
+    header,
+    horizontal_rule,
+    table,
+    figure,
+    div
+);
+
 // Macro to generate repetitive match arms
 // Macro to reduce repetition in filter logic
 macro_rules! handle_inline_filter {
     ($variant:ident, $value:ident, $filter_field:ident, $filter:expr) => {
-        if let Some(f) = $filter.$filter_field {
-            return inlines_apply_and_maybe_recurse($value, f, $filter);
-        } else if let Some(f) = $filter.inline {
-            return inlines_apply_and_maybe_recurse($value.as_inline(), f, $filter);
+        if let Some(f) = &$filter.$filter_field {
+            return inlines_apply_and_maybe_recurse!($value, f, $filter);
+        } else if let Some(f) = &$filter.inline {
+            return inlines_apply_and_maybe_recurse!($value.as_inline(), f, $filter);
         } else {
             vec![traverse_inline_structure(Inline::$variant($value), $filter)]
         }
@@ -80,10 +215,10 @@ macro_rules! handle_inline_filter {
 
 macro_rules! handle_block_filter {
     ($variant:ident, $value:ident, $filter_field:ident, $filter:expr) => {
-        if let Some(f) = $filter.$filter_field {
-            return blocks_apply_and_maybe_recurse($value, f, $filter);
-        } else if let Some(f) = $filter.block {
-            return blocks_apply_and_maybe_recurse(Block::$variant($value), f, $filter);
+        if let Some(f) = &$filter.$filter_field {
+            return blocks_apply_and_maybe_recurse!($value, f, $filter);
+        } else if let Some(f) = &$filter.block {
+            return blocks_apply_and_maybe_recurse!(Block::$variant($value), f, $filter);
         } else {
             vec![traverse_block_structure(Block::$variant($value), $filter)]
         }
@@ -358,38 +493,34 @@ impl BlockFilterableStructure for Block {
     }
 }
 
-fn inlines_apply_and_maybe_recurse<T: InlineFilterableStructure>(
-    item: T,
-    filter_fn: InlineFilterFn<T>,
-    filter: &Filter,
-) -> Inlines {
-    match filter_fn(item) {
-        FilterReturn::Unchanged(inline) => vec![inline.filter_structure(filter)],
-        FilterReturn::FilterResult(new_content, recurse) => {
-            if !recurse {
-                new_content
-            } else {
-                topdown_traverse_inlines(new_content, filter)
+macro_rules! inlines_apply_and_maybe_recurse {
+    ($item:expr, $filter_fn:expr, $filter:expr) => {
+        match $filter_fn($item) {
+            FilterReturn::Unchanged(inline) => vec![inline.filter_structure($filter)],
+            FilterReturn::FilterResult(new_content, recurse) => {
+                if !recurse {
+                    new_content
+                } else {
+                    topdown_traverse_inlines(new_content, $filter)
+                }
             }
         }
-    }
+    };
 }
 
-fn blocks_apply_and_maybe_recurse<T: BlockFilterableStructure>(
-    item: T,
-    filter_fn: BlockFilterFn<T>,
-    filter: &Filter,
-) -> Blocks {
-    match filter_fn(item) {
-        FilterReturn::Unchanged(block) => vec![block.filter_structure(filter)],
-        FilterReturn::FilterResult(new_content, recurse) => {
-            if !recurse {
-                new_content
-            } else {
-                topdown_traverse_blocks(new_content, filter)
+macro_rules! blocks_apply_and_maybe_recurse {
+    ($item:expr, $filter_fn:expr, $filter:expr) => {
+        match $filter_fn($item) {
+            FilterReturn::Unchanged(block) => vec![block.filter_structure($filter)],
+            FilterReturn::FilterResult(new_content, recurse) => {
+                if !recurse {
+                    new_content
+                } else {
+                    topdown_traverse_blocks(new_content, $filter)
+                }
             }
         }
-    }
+    };
 }
 
 pub fn topdown_traverse_inline(inline: Inline, filter: &Filter) -> Inlines {
@@ -519,7 +650,7 @@ pub fn topdown_traverse_inlines(vec: Inlines, filter: &Filter) -> Inlines {
         }
         result
     }
-    match filter.inlines {
+    match &filter.inlines {
         None => walk_vec(vec, filter),
         Some(f) => match f(vec) {
             FilterReturn::Unchanged(inlines) => walk_vec(inlines, filter),
@@ -752,7 +883,7 @@ pub fn topdown_traverse_blocks(vec: Blocks, filter: &Filter) -> Blocks {
         }
         result
     }
-    match filter.blocks {
+    match &filter.blocks {
         None => walk_vec(vec, filter),
         Some(f) => match f(vec) {
             FilterReturn::Unchanged(blocks) => walk_vec(blocks, filter),
