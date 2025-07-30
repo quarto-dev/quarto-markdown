@@ -17,6 +17,62 @@ use crate::filters::{
 };
 use crate::traversals::bottomup_traverse_concrete_tree;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Block {
+    Plain(Plain),
+    Paragraph(Paragraph),
+    LineBlock(LineBlock),
+    CodeBlock(CodeBlock),
+    RawBlock(RawBlock),
+    BlockQuote(BlockQuote),
+    OrderedList(OrderedList),
+    BulletList(BulletList),
+    DefinitionList(DefinitionList),
+    Header(Header),
+    HorizontalRule(HorizontalRule),
+    Table(Table),
+    Figure(Figure),
+    Div(Div),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Inline {
+    Str(Str),
+    Emph(Emph),
+    Underline(Underline),
+    Strong(Strong),
+    Strikeout(Strikeout),
+    Superscript(Superscript),
+    Subscript(Subscript),
+    SmallCaps(SmallCaps),
+    Quoted(Quoted),
+    Cite(Cite),
+    Code(Code),
+    Space(Space),
+    SoftBreak(SoftBreak),
+    LineBreak(LineBreak),
+    Math(Math),
+    RawInline(RawInline),
+    Link(Link),
+    Image(Image),
+    Note(Note),
+    Span(Span),
+
+    // quarto extensions
+    Shortcode(Shortcode),
+    NoteReference(NoteReference),
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Pandoc {
+    pub blocks: Vec<Block>, // eventually, meta:
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Source location tracking
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Location {
     pub offset: usize,
@@ -71,10 +127,6 @@ fn empty_attr() -> Attr {
     ("".to_string(), vec![], HashMap::new())
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct Pandoc {
-    pub blocks: Vec<Block>, // eventually, meta:
-}
 pub type Attr = (String, Vec<String>, HashMap<String, String>);
 
 pub type Blocks = Vec<Block>;
@@ -280,24 +332,6 @@ pub struct Div {
     pub range: Range,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Block {
-    Plain(Plain),
-    Paragraph(Paragraph),
-    LineBlock(LineBlock),
-    CodeBlock(CodeBlock),
-    RawBlock(RawBlock),
-    BlockQuote(BlockQuote),
-    OrderedList(OrderedList),
-    BulletList(BulletList),
-    DefinitionList(DefinitionList),
-    Header(Header),
-    HorizontalRule(HorizontalRule),
-    Table(Table),
-    Figure(Figure),
-    Div(Div),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum QuoteType {
     SingleQuote,
@@ -484,34 +518,6 @@ pub struct Shortcode {
 pub struct NoteReference {
     pub id: String,
     pub range: Range,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Inline {
-    Str(Str),
-    Emph(Emph),
-    Underline(Underline),
-    Strong(Strong),
-    Strikeout(Strikeout),
-    Superscript(Superscript),
-    Subscript(Subscript),
-    SmallCaps(SmallCaps),
-    Quoted(Quoted),
-    Cite(Cite),
-    Code(Code),
-    Space(Space),
-    SoftBreak(SoftBreak),
-    LineBreak(LineBreak),
-    Math(Math),
-    RawInline(RawInline),
-    Link(Link),
-    Image(Image),
-    Note(Note),
-    Span(Span),
-
-    // quarto extensions
-    Shortcode(Shortcode),
-    NoteReference(NoteReference),
 }
 
 pub trait AsInline {
