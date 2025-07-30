@@ -587,7 +587,6 @@ enum PandocNativeIntermediate {
     IntermediateAttr(Attr),
     IntermediateSection(Vec<Block>),
     IntermediateBlock(Block),
-    IntermediateBlocks(Blocks),
     IntermediateInline(Inline),
     IntermediateInlines(Inlines),
     IntermediateBaseText(String, Range),
