@@ -3,7 +3,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{Attr, Block, Citation, CitationMode, Inline, Inlines, Pandoc};
+use crate::pandoc::{Attr, Block, Caption, CitationMode, Inline, Inlines, ListAttributes, Pandoc};
 use crate::utils::autoid;
 use serde_json::{Value, json};
 
@@ -138,8 +138,90 @@ fn write_inlines(inlines: &Inlines) -> Value {
     json!(inlines.iter().map(write_inline).collect::<Vec<_>>())
 }
 
+fn write_list_attributes(attr: &ListAttributes) -> Value {
+    let number_style = match attr.1 {
+        crate::pandoc::ListNumberStyle::Decimal => json!({"t": "Decimal"}),
+        crate::pandoc::ListNumberStyle::LowerAlpha => json!({"t": "LowerAlpha"}),
+        crate::pandoc::ListNumberStyle::UpperAlpha => json!({"t": "UpperAlpha"}),
+        crate::pandoc::ListNumberStyle::LowerRoman => json!({"t": "LowerRoman"}),
+        crate::pandoc::ListNumberStyle::UpperRoman => json!({"t": "UpperRoman"}),
+        crate::pandoc::ListNumberStyle::Default => json!({"t": "Default"}),
+    };
+    let number_delimiter = match attr.2 {
+        crate::pandoc::ListNumberDelim::Period => json!({"t": "Period"}),
+        crate::pandoc::ListNumberDelim::OneParen => json!({"t": "OneParen"}),
+        crate::pandoc::ListNumberDelim::TwoParens => json!({"t": "TwoParens"}),
+        crate::pandoc::ListNumberDelim::Default => json!({"t": "Default"}),
+    };
+    json!([attr.0, number_style, number_delimiter])
+}
+
+fn write_blockss(blockss: &[Vec<Block>]) -> Value {
+    json!(
+        blockss
+            .iter()
+            .map(|blocks| blocks.iter().map(write_block).collect::<Vec<_>>())
+            .collect::<Vec<_>>()
+    )
+}
+
+fn write_caption(caption: &Caption) -> Value {
+    json!([
+        &caption.short.as_ref().map(|s| write_inlines(&s)),
+        &caption.long.as_ref().map(|l| write_blocks(&l)),
+    ])
+}
+
 fn write_block(block: &Block) -> Value {
     match block {
+        Block::Figure(figure) => json!({
+            "t": "Figure",
+            "c": [
+                write_attr(&figure.attr),
+                write_caption(&figure.caption),
+                write_blocks(&figure.content)
+            ]
+        }),
+        Block::DefinitionList(deflist) => json!({
+            "t": "DefinitionList",
+            "c": deflist.content
+                .iter()
+                .map(|(term, definition)| {
+                    json!([
+                        write_inlines(term),
+                        write_blockss(&definition),
+                    ])
+                })
+                .collect::<Vec<_>>()
+        }),
+        Block::OrderedList(orderedlist) => json!({
+            "t": "OrderedList",
+            "c": [
+                write_list_attributes(&orderedlist.attr),
+                write_blockss(&orderedlist.content),
+            ]
+        }),
+        Block::RawBlock(raw) => json!({
+            "t": "RawBlock",
+            "c": [raw.format.clone(), raw.text.clone()]
+        }),
+        Block::HorizontalRule(_) => json!({
+            "t": "HorizontalRule"
+        }),
+        Block::Table(_) => panic!("unimplemented block: Table"),
+
+        Block::Div(div) => json!({
+            "t": "Div",
+            "c": [write_attr(&div.attr), write_blocks(&div.content)]
+        }),
+        Block::BlockQuote(quote) => json!({
+            "t": "BlockQuote",
+            "c": write_blocks(&quote.content)
+        }),
+        Block::LineBlock(lineblock) => json!({
+            "t": "LineBlock",
+            "c": lineblock.content.iter().map(write_inlines).collect::<Vec<_>>()
+        }),
         Block::Paragraph(para) => json!({
             "t": "Para",
             "c": write_inlines(&para.content)
@@ -165,10 +247,6 @@ fn write_block(block: &Block) -> Value {
         Block::BulletList(bulletlist) => json!({
             "t": "BulletList",
             "c": bulletlist.content.iter().map(|blocks| blocks.iter().map(write_block).collect::<Vec<_>>()).collect::<Vec<_>>()
-        }),
-        _ => json!({
-            "t": "Para",
-            "c": [{"t": "Str", "c": "[unimplemented block]"}]
         }),
     }
 }
