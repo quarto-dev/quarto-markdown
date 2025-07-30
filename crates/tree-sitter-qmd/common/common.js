@@ -107,7 +107,6 @@ module.exports.rules = {
     _qmd_attribute: $ => choice(
       $.language_attribute,
       $.raw_attribute,
-      $.reader_attribute,
       $.commonmark_attribute
     ),
     // we also allow "<" in the raw specifier,

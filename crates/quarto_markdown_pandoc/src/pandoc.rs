@@ -1080,10 +1080,17 @@ fn native_visitor(
         "raw_specifier" => {
             // like code_content but skipping first character
             let raw = node_text();
-            PandocNativeIntermediate::IntermediateBaseText(
-                raw[1..].to_string(),
-                node_location(node),
-            )
+            if raw.chars().nth(0) == Some('<') {
+                PandocNativeIntermediate::IntermediateBaseText(
+                    "pandoc-reader:".to_string() + &raw[1..],
+                    node_location(node),
+                )
+            } else {
+                PandocNativeIntermediate::IntermediateBaseText(
+                    raw[1..].to_string(),
+                    node_location(node),
+                )
+            }
         }
         "emphasis" => {
             let inlines: Vec<Inline> = children
@@ -2158,24 +2165,20 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
             }
 
             FilterResult(result, true)
+        })
+        .with_raw_block(move |raw_block| {
+            let Some(captures) = raw_reader_format_specifier.captures(&raw_block.text) else {
+                return Unchanged(raw_block);
+            };
+            return FilterResult(
+                vec![Block::RawBlock(RawBlock {
+                    format: "pandoc-reader:".to_string() + &captures["reader"],
+                    ..raw_block
+                })],
+                false,
+            );
         });
     topdown_traverse(doc, &filter)
-    // &Filter {
-    // desugar reader raw blocks into RawBlock nodes
-    // raw_block: Some(|raw_block| {
-    //     let Some(captures) = raw_reader_format_specifier.captures(&raw_block.text) else {
-    //         return Unchanged(raw_block);
-    //     };
-    //     return FilterResult(
-    //         vec![Block::RawBlock(RawBlock {
-    //             format: "pandoc-reader:".to_string() + captures["reader"],
-    //             ..raw_block
-    //         })],
-    //         false,
-    //     );
-    // }),
-    // desugar complex citations into a compound Cite node
-    // )
 }
 
 pub fn treesitter_to_pandoc(tree: &tree_sitter_qmd::MarkdownTree, input_bytes: &[u8]) -> Pandoc {

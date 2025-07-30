@@ -1464,7 +1464,7 @@
     },
     "raw_specifier": {
       "type": "PATTERN",
-      "value": "=[a-zA-Z_][a-zA-Z0-9_-]*"
+      "value": "[<=][a-zA-Z_][a-zA-Z0-9_-]*"
     },
     "_commonmark_whitespace": {
       "type": "PATTERN",

@@ -2596,10 +2596,11 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 5:
       if (lookahead == '#') ADVANCE(11);
       if (lookahead == '.') ADVANCE(10);
-      if (lookahead == '=') ADVANCE(9);
       if (lookahead == '}') ADVANCE(20);
       if (lookahead == '\t' ||
           lookahead == ' ') ADVANCE(17);
+      if (lookahead == '<' ||
+          lookahead == '=') ADVANCE(9);
       if (('A' <= lookahead && lookahead <= 'Z') ||
           lookahead == '_' ||
           ('a' <= lookahead && lookahead <= 'z')) ADVANCE(22);
