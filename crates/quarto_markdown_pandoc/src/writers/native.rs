@@ -408,6 +408,7 @@ fn write_block(block: &Block) -> String {
                 content_str
             )
         }
+        Block::HorizontalRule(crate::pandoc::HorizontalRule { .. }) => "HorizontalRule".to_string(),
         // Block::Quote { attr, blocks } => {
         //     let blocks_str = blocks.iter().map(write_block).collect::<Vec<_>>().join(", ");
         //     format!("Quote {} [{}]", write_native_attr(attr), blocks_str)

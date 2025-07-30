@@ -1,0 +1,5 @@
+How do horizontal rules work?
+
+---
+
+Will this do the right thing?

@@ -55,8 +55,6 @@ I think quarto_markdown_pandoc should emit special Pandoc AST syntax that separa
 
   Missing from tree-sitter -> pandoc:
 
-  - BlockQuote
-
   - 
   
 - Filter for note definition/note reference resolution

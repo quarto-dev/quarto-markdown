@@ -1859,6 +1859,12 @@ fn native_visitor(
                 range: node_location(node),
             }))
         }
+        "thematic_break" => {
+            PandocNativeIntermediate::IntermediateBlock(Block::HorizontalRule(HorizontalRule {
+                filename: None,
+                range: node_location(node),
+            }))
+        }
         _ => {
             eprintln!("Warning: Unhandled node kind: {}", node.kind());
             let range = node_location(node);

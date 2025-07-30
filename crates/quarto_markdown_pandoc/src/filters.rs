@@ -17,6 +17,53 @@ type BlockFilterFn<T> = fn(T) -> FilterReturn<T, Blocks>;
 type InlineFilterField<T> = Option<InlineFilterFn<T>>;
 type BlockFilterField<T> = Option<BlockFilterFn<T>>;
 
+#[derive(Default)]
+pub struct Filter {
+    pub inlines: InlineFilterField<Inlines>,
+    pub blocks: BlockFilterField<Blocks>,
+
+    pub inline: InlineFilterField<Inline>,
+    pub block: BlockFilterField<Block>,
+
+    pub str: InlineFilterField<pandoc::Str>,
+    pub emph: InlineFilterField<pandoc::Emph>,
+    pub underline: InlineFilterField<pandoc::Underline>,
+    pub strong: InlineFilterField<pandoc::Strong>,
+    pub strikeout: InlineFilterField<pandoc::Strikeout>,
+    pub superscript: InlineFilterField<pandoc::Superscript>,
+    pub subscript: InlineFilterField<pandoc::Subscript>,
+    pub small_caps: InlineFilterField<pandoc::SmallCaps>,
+    pub quoted: InlineFilterField<pandoc::Quoted>,
+    pub cite: InlineFilterField<pandoc::Cite>,
+    pub code: InlineFilterField<pandoc::Code>,
+    pub space: InlineFilterField<pandoc::Space>,
+    pub soft_break: InlineFilterField<pandoc::SoftBreak>,
+    pub line_break: InlineFilterField<pandoc::LineBreak>,
+    pub math: InlineFilterField<pandoc::Math>,
+    pub raw_inline: InlineFilterField<pandoc::RawInline>,
+    pub link: InlineFilterField<pandoc::Link>,
+    pub image: InlineFilterField<pandoc::Image>,
+    pub note: InlineFilterField<pandoc::Note>,
+    pub span: InlineFilterField<pandoc::Span>,
+    pub shortcode: InlineFilterField<pandoc::Shortcode>,
+    pub note_reference: InlineFilterField<pandoc::NoteReference>,
+
+    pub paragraph: BlockFilterField<pandoc::Paragraph>,
+    pub plain: BlockFilterField<pandoc::Plain>,
+    pub code_block: BlockFilterField<pandoc::CodeBlock>,
+    pub raw_block: BlockFilterField<pandoc::RawBlock>,
+    pub bullet_list: BlockFilterField<pandoc::BulletList>,
+    pub ordered_list: BlockFilterField<pandoc::OrderedList>,
+    pub block_quote: BlockFilterField<pandoc::BlockQuote>,
+    pub div: BlockFilterField<pandoc::Div>,
+    pub figure: BlockFilterField<pandoc::Figure>,
+    pub line_block: BlockFilterField<pandoc::LineBlock>,
+    pub definition_list: BlockFilterField<pandoc::DefinitionList>,
+    pub header: BlockFilterField<pandoc::Header>,
+    pub table: BlockFilterField<pandoc::Table>,
+    pub horizontal_rule: BlockFilterField<pandoc::HorizontalRule>,
+}
+
 // Macro to generate repetitive match arms
 // Macro to reduce repetition in filter logic
 macro_rules! handle_inline_filter {
@@ -311,52 +358,6 @@ impl BlockFilterableStructure for Block {
     }
 }
 
-#[derive(Default)]
-pub struct Filter {
-    pub inlines: InlineFilterField<Inlines>,
-    pub blocks: BlockFilterField<Blocks>,
-
-    pub inline: InlineFilterField<Inline>,
-    pub block: BlockFilterField<Block>,
-
-    pub str: InlineFilterField<pandoc::Str>,
-    pub emph: InlineFilterField<pandoc::Emph>,
-    pub underline: InlineFilterField<pandoc::Underline>,
-    pub strong: InlineFilterField<pandoc::Strong>,
-    pub strikeout: InlineFilterField<pandoc::Strikeout>,
-    pub superscript: InlineFilterField<pandoc::Superscript>,
-    pub subscript: InlineFilterField<pandoc::Subscript>,
-    pub small_caps: InlineFilterField<pandoc::SmallCaps>,
-    pub quoted: InlineFilterField<pandoc::Quoted>,
-    pub cite: InlineFilterField<pandoc::Cite>,
-    pub code: InlineFilterField<pandoc::Code>,
-    pub space: InlineFilterField<pandoc::Space>,
-    pub soft_break: InlineFilterField<pandoc::SoftBreak>,
-    pub line_break: InlineFilterField<pandoc::LineBreak>,
-    pub math: InlineFilterField<pandoc::Math>,
-    pub raw_inline: InlineFilterField<pandoc::RawInline>,
-    pub link: InlineFilterField<pandoc::Link>,
-    pub image: InlineFilterField<pandoc::Image>,
-    pub note: InlineFilterField<pandoc::Note>,
-    pub span: InlineFilterField<pandoc::Span>,
-    pub shortcode: InlineFilterField<pandoc::Shortcode>,
-    pub note_reference: InlineFilterField<pandoc::NoteReference>,
-
-    pub paragraph: BlockFilterField<pandoc::Paragraph>,
-    pub plain: BlockFilterField<pandoc::Plain>,
-    pub code_block: BlockFilterField<pandoc::CodeBlock>,
-    pub raw_block: BlockFilterField<pandoc::RawBlock>,
-    pub bullet_list: BlockFilterField<pandoc::BulletList>,
-    pub ordered_list: BlockFilterField<pandoc::OrderedList>,
-    pub block_quote: BlockFilterField<pandoc::BlockQuote>,
-    pub div: BlockFilterField<pandoc::Div>,
-    pub figure: BlockFilterField<pandoc::Figure>,
-    pub line_block: BlockFilterField<pandoc::LineBlock>,
-    pub definition_list: BlockFilterField<pandoc::DefinitionList>,
-    pub header: BlockFilterField<pandoc::Header>,
-    pub table: BlockFilterField<pandoc::Table>,
-}
-
 fn inlines_apply_and_maybe_recurse<T: InlineFilterableStructure>(
     item: T,
     filter_fn: InlineFilterFn<T>,
@@ -503,6 +504,9 @@ pub fn topdown_traverse_block(block: Block, filter: &Filter) -> Blocks {
         }
         Block::Table(table) => {
             handle_block_filter!(Table, table, table, filter)
+        }
+        Block::HorizontalRule(hr) => {
+            handle_block_filter!(HorizontalRule, hr, horizontal_rule, filter)
         }
         _ => panic!("Unsupported block type: {:?}", block),
     }
