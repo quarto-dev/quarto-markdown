@@ -21,7 +21,11 @@ fn unit_test_simple_qmd_parses() {
             .expect("Failed to parse input");
         println!(
             "{}",
-            writers::native::write(&treesitter_to_pandoc(&tree, &input_bytes))
+            writers::native::write(&treesitter_to_pandoc(
+                &mut std::io::sink(),
+                &tree,
+                &input_bytes
+            ))
         );
         assert!(true, "Parsed successfully");
     }
@@ -59,6 +63,7 @@ fn matches_pandoc_markdown_reader(input: &str) -> bool {
         return true; // Skip test if pandoc version is not suitable
     }
     let ast = writers::native::write(&treesitter_to_pandoc(
+        &mut std::io::sink(),
         &MarkdownParser::default()
             .parse(input.as_bytes(), None)
             .unwrap(),
@@ -74,6 +79,7 @@ fn matches_pandoc_commonmark_reader(input: &str) -> bool {
         return true; // Skip test if pandoc version is not suitable
     }
     let ast = writers::native::write(&treesitter_to_pandoc(
+        &mut std::io::sink(),
         &MarkdownParser::default()
             .parse(input.as_bytes(), None)
             .unwrap(),
@@ -142,6 +148,7 @@ fn unit_test_snapshots() {
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 let snapshot_path = path.with_extension("qmd.snapshot");
                 let ast = writers::native::write(&treesitter_to_pandoc(
+                    &mut std::io::sink(),
                     &MarkdownParser::default()
                         .parse(input.as_bytes(), None)
                         .unwrap(),
@@ -183,7 +190,7 @@ fn test_json_writer() {
                 let tree = parser
                     .parse(input_bytes, None)
                     .expect("Failed to parse input");
-                let pandoc = treesitter_to_pandoc(&tree, input_bytes);
+                let pandoc = treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes);
                 let our_json = writers::json::write(&pandoc);
 
                 // Get Pandoc's output
