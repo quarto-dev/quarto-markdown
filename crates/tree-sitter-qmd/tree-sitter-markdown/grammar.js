@@ -201,11 +201,11 @@ module.exports = grammar({
         code_fence_content: $ => repeat1(choice($._newline, $._line)),
 
         // QMD CHANGES
-        // we support a much more strict set of infostrings, namely the ones that Pandoc appears to support
-        // punctuation is not allowed in the info string (braces are allowed at the beginning, but are parsed as pandoc attributes)
+        // we support a stricter set of infostrings, namely the ones that Pandoc appears to support
+        // We do not allow curly braces in the content of the infostring (which pandoc does)
         // https://pandoc.org/MANUAL.html#extension-fenced_code_attributes
 
-        info_string: $ => alias($._word, $.language),
+        info_string: $ => alias(/[^{}\s]+/, $.language),
         // language: $ => prec.right(repeat1(choice($._word, common.punctuation_without($, ['{', '}', ',']), $.backslash_escape, $.entity_reference, $.numeric_character_reference))),
 
         // A paragraph. The parsing tactic for deciding when a paragraph ends is as follows:

@@ -3218,8 +3218,8 @@
     "info_string": {
       "type": "ALIAS",
       "content": {
-        "type": "SYMBOL",
-        "name": "_word"
+        "type": "PATTERN",
+        "value": "[^{}\\s]+"
       },
       "named": true,
       "value": "language"
