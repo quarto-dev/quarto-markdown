@@ -1987,9 +1987,51 @@ fn shortcode_to_span(shortcode: Shortcode) -> Span {
     }
 }
 
+fn trim_inlines(inlines: Inlines) -> (Inlines, bool) {
+    let mut result: Inlines = Vec::new();
+    let mut at_start = true;
+    let mut space_run: Inlines = Vec::new();
+    let mut changed = false;
+    for inline in inlines {
+        match &inline {
+            Inline::Space(_) if at_start => {
+                // skip leading spaces
+                changed = true;
+                continue;
+            }
+            Inline::Space(_) => {
+                // collect spaces
+                space_run.push(inline);
+                continue;
+            }
+            _ => {
+                result.extend(space_run.drain(..));
+                result.push(inline);
+                at_start = false;
+            }
+        }
+    }
+    if space_run.len() > 0 {
+        changed = true;
+    }
+    (result, changed)
+}
+
 pub fn desugar(doc: Pandoc) -> Pandoc {
     let raw_reader_format_specifier = Regex::new(r"<(?P<reader>.+)").unwrap();
     let filter = Filter::new()
+        .with_superscript(|mut superscript| {
+            let (content, changed) = trim_inlines(superscript.content);
+            if !changed {
+                return Unchanged(Superscript {
+                    content,
+                    ..superscript
+                });
+            } else {
+                superscript.content = content;
+                FilterResult(vec![Inline::Superscript(superscript)], true)
+            }
+        })
         // remove trailing space from header if it has an attribute
         .with_header(|mut header| {
             if &header.attr == &empty_attr() {

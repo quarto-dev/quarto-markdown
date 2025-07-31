@@ -3,8 +3,6 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use paste::paste;
-
 use crate::pandoc::{self, AsInline, Block, Blocks, Inline, Inlines};
 
 // filters are destructive and take ownership of the input
@@ -127,13 +125,13 @@ impl Filter {
         self
     }
 
-    pub fn with_blocks<F>(mut self, f: F) -> Self
-    where
-        F: Fn(Blocks) -> FilterReturn<Blocks, Blocks> + 'static,
-    {
-        self.blocks = Some(Box::new(f));
-        self
-    }
+    // pub fn with_blocks<F>(mut self, f: F) -> Self
+    // where
+    //     F: Fn(Blocks) -> FilterReturn<Blocks, Blocks> + 'static,
+    // {
+    //     self.blocks = Some(Box::new(f));
+    //     self
+    // }
 }
 
 macro_rules! define_filter_with_methods {

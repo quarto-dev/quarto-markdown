@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /*
  * main.rs
  * Copyright (c) 2025 Posit, PBC
