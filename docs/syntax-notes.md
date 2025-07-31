@@ -194,3 +194,10 @@ There's no way to know that the following construct isn't a paragraph followed b
   This is a paragraph.
 
 We will also not support definition lists directly.
+
+### Superscript + note vs span ambiguity
+
+Consider `^[footnote-or-span]{.class}^`. `^[` denotes both the start of a footnote and potentially the combination of a superscript block with a span; this parse is ambiguous.
+
+Quarto-markdown's parser prefers the footnote interpretation. In case an immediately nested span is needed, use a space between `^` and `[`.
+Superscript nodes with leading spaces are disallowed in Pandoc, but Quarto-markdown will trim spaces.

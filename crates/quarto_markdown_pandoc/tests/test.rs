@@ -250,7 +250,6 @@ fn test_json_writer() {
 }
 
 #[test]
-
 fn test_disallowed_in_qmd_fails() {
     let mut file_count = 0;
     for entry in glob("tests/pandoc-differences/disallowed-in-qmd/*.qmd")
@@ -283,4 +282,27 @@ fn test_disallowed_in_qmd_fails() {
         file_count > 0,
         "No files found in tests/pandoc-differences/disallowed-in-qmd directory"
     );
+}
+
+#[test]
+fn test_do_not_smoke() {
+    let mut file_count = 0;
+    for entry in glob("tests/smoke/*.qmd").expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
+
+                // Parse with our parser
+                let mut parser = MarkdownParser::default();
+                let input_bytes = markdown.as_bytes();
+                let tree = parser
+                    .parse(input_bytes, None)
+                    .expect("Failed to parse input");
+                treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes);
+                file_count += 1;
+            }
+            Err(e) => panic!("Error reading glob entry: {}", e),
+        }
+    }
+    assert!(file_count > 0, "No files found in tests/smoke directory");
 }
