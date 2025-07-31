@@ -2650,7 +2650,8 @@ Example 153 - https://github.github.com/gfm/#example-153 (qmd: no we won't)
     (indented_code_block)))
 
 ================================================================================
-Example 154 - https://github.github.com/gfm/#example-154
+Example 154 - https://github.github.com/gfm/#example-154 (qmd: no we won't)
+:skip
 ================================================================================
 Foo
 <div>
@@ -2800,7 +2801,8 @@ Example 160 - https://github.github.com/gfm/#example-160 (qmd: no we won't)
     (html_block)))
 
 ================================================================================
-Example 161 - https://github.github.com/gfm/#example-161
+Example 161 - https://github.github.com/gfm/#example-161 (link refs)
+:skip
 ================================================================================
 [foo]: /url "title"
 
@@ -2818,7 +2820,8 @@ Example 161 - https://github.github.com/gfm/#example-161
       (inline))))
 
 ================================================================================
-Example 162 - https://github.github.com/gfm/#example-162
+Example 162 - https://github.github.com/gfm/#example-162 (link refs)
+:skip
 ================================================================================
    [foo]:
       /url
@@ -2838,7 +2841,8 @@ Example 162 - https://github.github.com/gfm/#example-162
       (inline))))
 
 ================================================================================
-Example 163 - https://github.github.com/gfm/#example-163
+Example 163 - https://github.github.com/gfm/#example-163 (link refs)
+:skip
 ================================================================================
 [Foo*bar\]]:my_(url) 'title (with parens)'
 
@@ -2857,7 +2861,8 @@ Example 163 - https://github.github.com/gfm/#example-163
       (inline))))
 
 ================================================================================
-Example 164 - https://github.github.com/gfm/#example-164
+Example 164 - https://github.github.com/gfm/#example-164 (link refs)
+:skip
 ================================================================================
 [Foo bar]:
 <my url>
@@ -2877,7 +2882,8 @@ Example 164 - https://github.github.com/gfm/#example-164
       (inline))))
 
 ================================================================================
-Example 165 - https://github.github.com/gfm/#example-165
+Example 165 - https://github.github.com/gfm/#example-165 (link refs)
+:skip
 ================================================================================
 [foo]: /url '
 title
@@ -2899,7 +2905,8 @@ line2
       (inline))))
 
 ================================================================================
-Example 166 - https://github.github.com/gfm/#example-166
+Example 166 - https://github.github.com/gfm/#example-166 (link refs)
+:skip
 ================================================================================
 [foo]: /url 'title
 
@@ -2919,7 +2926,8 @@ with blank line'
       (inline))))
 
 ================================================================================
-Example 167 - https://github.github.com/gfm/#example-167
+Example 167 - https://github.github.com/gfm/#example-167 (link refs)
+:skip
 ================================================================================
 [foo]:
 /url
@@ -2937,7 +2945,8 @@ Example 167 - https://github.github.com/gfm/#example-167
       (inline))))
 
 ================================================================================
-Example 168 - https://github.github.com/gfm/#example-168
+Example 168 - https://github.github.com/gfm/#example-168 (link refs)
+:skip
 ================================================================================
 [foo]:
 
@@ -2953,7 +2962,8 @@ Example 168 - https://github.github.com/gfm/#example-168
       (inline))))
 
 ================================================================================
-Example 169 - https://github.github.com/gfm/#example-169
+Example 169 - https://github.github.com/gfm/#example-169 (link refs)
+:skip
 ================================================================================
 [foo]: <>
 
@@ -2970,7 +2980,8 @@ Example 169 - https://github.github.com/gfm/#example-169
       (inline))))
 
 ================================================================================
-Example 170 - https://github.github.com/gfm/#example-170
+Example 170 - https://github.github.com/gfm/#example-170 (link refs)
+:skip
 ================================================================================
 [foo]: <bar>(baz)
 
@@ -2986,7 +2997,8 @@ Example 170 - https://github.github.com/gfm/#example-170
       (inline))))
 
 ================================================================================
-Example 171 - https://github.github.com/gfm/#example-171
+Example 171 - https://github.github.com/gfm/#example-171 (link refs)
+:skip
 ================================================================================
 [foo]: /url\bar\*baz "foo\"bar\baz"
 
@@ -3006,7 +3018,8 @@ Example 171 - https://github.github.com/gfm/#example-171
       (inline))))
 
 ================================================================================
-Example 172 - https://github.github.com/gfm/#example-172
+Example 172 - https://github.github.com/gfm/#example-172 (link refs)
+:skip
 ================================================================================
 [foo]
 
@@ -3023,7 +3036,8 @@ Example 172 - https://github.github.com/gfm/#example-172
       (link_destination))))
 
 ================================================================================
-Example 173 - https://github.github.com/gfm/#example-173
+Example 173 - https://github.github.com/gfm/#example-173 (link refs)
+:skip
 ================================================================================
 [foo]
 
@@ -3044,7 +3058,8 @@ Example 173 - https://github.github.com/gfm/#example-173
       (link_destination))))
 
 ================================================================================
-Example 174 - https://github.github.com/gfm/#example-174
+Example 174 - https://github.github.com/gfm/#example-174 (link refs)
+:skip
 ================================================================================
 [FOO]: /url
 
@@ -3061,7 +3076,8 @@ Example 174 - https://github.github.com/gfm/#example-174
       (inline))))
 
 ================================================================================
-Example 175 - https://github.github.com/gfm/#example-175
+Example 175 - https://github.github.com/gfm/#example-175 (link refs)
+:skip
 ================================================================================
 [ΑΓΩ]: /φου
 
@@ -3078,7 +3094,8 @@ Example 175 - https://github.github.com/gfm/#example-175
       (inline))))
 
 ================================================================================
-Example 176 - https://github.github.com/gfm/#example-176
+Example 176 - https://github.github.com/gfm/#example-176 (link refs)
+:skip
 ================================================================================
 [foo]: /url
 
@@ -3091,7 +3108,8 @@ Example 176 - https://github.github.com/gfm/#example-176
       (link_destination))))
 
 ================================================================================
-Example 177 - https://github.github.com/gfm/#example-177
+Example 177 - https://github.github.com/gfm/#example-177 (link refs)
+:skip
 ================================================================================
 [
 foo
@@ -3109,7 +3127,8 @@ bar
       (inline))))
 
 ================================================================================
-Example 178 - https://github.github.com/gfm/#example-178
+Example 178 - https://github.github.com/gfm/#example-178 (link refs)
+:skip
 ================================================================================
 [foo]: /url "title" ok
 
@@ -3121,7 +3140,8 @@ Example 178 - https://github.github.com/gfm/#example-178
       (inline))))
 
 ================================================================================
-Example 179 - https://github.github.com/gfm/#example-179
+Example 179 - https://github.github.com/gfm/#example-179 (link refs)
+:skip
 ================================================================================
 [foo]: /url
 "title" ok
@@ -3137,7 +3157,8 @@ Example 179 - https://github.github.com/gfm/#example-179
       (inline))))
 
 ================================================================================
-Example 180 - https://github.github.com/gfm/#example-180
+Example 180 - https://github.github.com/gfm/#example-180 (link refs)
+:skip
 ================================================================================
     [foo]: /url "title"
 
@@ -3152,7 +3173,8 @@ Example 180 - https://github.github.com/gfm/#example-180
       (inline))))
 
 ================================================================================
-Example 181 - https://github.github.com/gfm/#example-181
+Example 181 - https://github.github.com/gfm/#example-181 (link refs)
+:skip
 ================================================================================
 ```
 [foo]: /url
@@ -3174,7 +3196,8 @@ Example 181 - https://github.github.com/gfm/#example-181
       (inline))))
 
 ================================================================================
-Example 182 - https://github.github.com/gfm/#example-182
+Example 182 - https://github.github.com/gfm/#example-182 (link refs)
+:skip
 ================================================================================
 Foo
 [bar]: /baz
@@ -3191,7 +3214,8 @@ Foo
       (inline))))
 
 ================================================================================
-Example 183 - https://github.github.com/gfm/#example-183
+Example 183 - https://github.github.com/gfm/#example-183 (link refs)
+:skip
 ================================================================================
 # [Foo]
 [foo]: /url
@@ -3213,7 +3237,8 @@ Example 183 - https://github.github.com/gfm/#example-183
         (inline)))))
 
 ================================================================================
-Example 184 - https://github.github.com/gfm/#example-184
+Example 184 - https://github.github.com/gfm/#example-184 (link refs)
+:skip
 ================================================================================
 [foo]: /url
 bar
@@ -3235,7 +3260,8 @@ bar
       (inline))))
 
 ================================================================================
-Example 185 - https://github.github.com/gfm/#example-185
+Example 185 - https://github.github.com/gfm/#example-185 (link refs)
+:skip
 ================================================================================
 [foo]: /url
 =
@@ -3252,7 +3278,8 @@ Example 185 - https://github.github.com/gfm/#example-185
       (inline))))
 
 ================================================================================
-Example 186 - https://github.github.com/gfm/#example-186
+Example 186 - https://github.github.com/gfm/#example-186 (link refs)
+:skip
 ================================================================================
 [foo]: /foo-url "foo"
 [bar]: /bar-url
@@ -3282,7 +3309,8 @@ Example 186 - https://github.github.com/gfm/#example-186
       (inline))))
 
 ================================================================================
-Example 187 - https://github.github.com/gfm/#example-187
+Example 187 - https://github.github.com/gfm/#example-187 (link refs)
+:skip
 ================================================================================
 [foo]
 
@@ -3301,7 +3329,8 @@ Example 187 - https://github.github.com/gfm/#example-187
         (link_destination)))))
 
 ================================================================================
-Example 188 - https://github.github.com/gfm/#example-188
+Example 188 - https://github.github.com/gfm/#example-188 (link refs)
+:skip
 ================================================================================
 [foo]: /url
 
@@ -5441,7 +5470,8 @@ Example 296 - https://github.github.com/gfm/#example-296
           (inline))))))
 
 ================================================================================
-Example 297 - https://github.github.com/gfm/#example-297
+Example 297 - https://github.github.com/gfm/#example-297 (link refs)
+:skip
 ================================================================================
 - a
 - b
@@ -5774,7 +5804,8 @@ Example 315 - https://github.github.com/gfm/#example-315
       (fenced_code_block_delimiter))))
 
 ================================================================================
-Example 319 - https://github.github.com/gfm/#example-319
+Example 319 - https://github.github.com/gfm/#example-319 (link refs)
+:skip
 ================================================================================
 [foo]
 
@@ -5816,7 +5847,8 @@ foo
       (fenced_code_block_delimiter))))
 
 ================================================================================
-Example 329 - https://github.github.com/gfm/#example-329
+Example 329 - https://github.github.com/gfm/#example-329 (link refs)
+:skip
 ================================================================================
 [foo]
 

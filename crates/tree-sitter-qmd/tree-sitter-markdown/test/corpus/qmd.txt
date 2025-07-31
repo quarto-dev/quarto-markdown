@@ -36,7 +36,9 @@ print(1)
       (commonmark_attribute
         (id_specifier)
         (class_specifier)
-        (key_value_specifier))
+        (key_value_specifier
+          (key_value_key)
+          (key_value_value)))
       (block_continuation)
       (code_fence_content
         (block_continuation))
