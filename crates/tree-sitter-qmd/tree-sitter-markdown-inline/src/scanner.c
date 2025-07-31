@@ -444,7 +444,7 @@ static bool parse_underscore(Scanner *s, TSLexer *lexer,
     return false;
 }
 
-static bool parse_cite_author_in_text(Scanner *s, TSLexer *lexer,
+static bool parse_cite_author_in_text(Scanner *_, TSLexer *lexer,
                                       const bool *valid_symbols) {
     lexer->advance(lexer, false);
     if (lexer->lookahead == '{' && valid_symbols[CITE_AUTHOR_IN_TEXT_WITH_OPEN_BRACKET]) {
@@ -462,7 +462,7 @@ static bool parse_cite_author_in_text(Scanner *s, TSLexer *lexer,
     return false;
 }
 
-static bool parse_cite_suppress_author(Scanner *s, TSLexer *lexer,
+static bool parse_cite_suppress_author(Scanner *_, TSLexer *lexer,
                                        const bool *valid_symbols) {
     lexer->advance(lexer, false);
     if (lexer->lookahead == '@') {
