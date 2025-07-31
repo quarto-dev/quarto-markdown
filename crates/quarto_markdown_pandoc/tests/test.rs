@@ -4,6 +4,7 @@
  */
 
 use glob::glob;
+use quarto_markdown_pandoc::errors::parse_is_good;
 use quarto_markdown_pandoc::pandoc::treesitter_to_pandoc;
 use quarto_markdown_pandoc::writers;
 use std::io::Write;
@@ -100,6 +101,7 @@ fn unit_test_corpus_matches_pandoc_markdown() {
         has_good_pandoc_version(),
         "Pandoc version is not suitable for testing"
     );
+    let mut file_count = 0;
     for entry in
         glob("tests/pandoc-match-corpus/markdown/*.qmd").expect("Failed to read glob pattern")
     {
@@ -111,10 +113,15 @@ fn unit_test_corpus_matches_pandoc_markdown() {
                     "File {} does not match pandoc markdown reader",
                     path.display()
                 );
+                file_count += 1;
             }
             Err(e) => panic!("Error reading glob entry: {}", e),
         }
     }
+    assert!(
+        file_count > 0,
+        "No files found in tests/pandoc-match-corpus/markdown directory"
+    );
 }
 
 #[test]
@@ -123,6 +130,7 @@ fn unit_test_corpus_matches_pandoc_commonmark() {
         has_good_pandoc_version(),
         "Pandoc version is not suitable for testing"
     );
+    let mut file_count = 0;
     for entry in
         glob("tests/pandoc-match-corpus/commonmark/*.qmd").expect("Failed to read glob pattern")
     {
@@ -134,14 +142,20 @@ fn unit_test_corpus_matches_pandoc_commonmark() {
                     "File {} does not match pandoc commonmark reader",
                     path.display()
                 );
+                file_count += 1;
             }
             Err(e) => panic!("Error reading glob entry: {}", e),
         }
     }
+    assert!(
+        file_count > 0,
+        "No files found in tests/pandoc-match-corpus/commonmark directory"
+    );
 }
 
 #[test]
 fn unit_test_snapshots() {
+    let mut file_count = 0;
     for entry in glob("tests/snapshots/*.qmd").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
@@ -166,10 +180,15 @@ fn unit_test_snapshots() {
                     "Snapshot mismatch for file {}",
                     path.display()
                 );
+                file_count += 1;
             }
             Err(e) => panic!("Error reading glob entry: {}", e),
         }
     }
+    assert!(
+        file_count > 0,
+        "No files found in tests/snapshots directory"
+    );
 }
 
 #[test]
@@ -178,7 +197,7 @@ fn test_json_writer() {
         has_good_pandoc_version(),
         "Pandoc version is not suitable for testing"
     );
-
+    let mut file_count = 0;
     for entry in glob("tests/writers/json/*.md").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
@@ -219,8 +238,49 @@ fn test_json_writer() {
                     serde_json::to_string_pretty(&our_value).unwrap(),
                     serde_json::to_string_pretty(&pandoc_value).unwrap()
                 );
+                file_count += 1;
             }
             Err(e) => panic!("Error reading glob entry: {}", e),
         }
     }
+    assert!(
+        file_count > 0,
+        "No files found in tests/writers/json directory"
+    );
+}
+
+#[test]
+
+fn test_disallowed_in_qmd_fails() {
+    let mut file_count = 0;
+    for entry in glob("tests/pandoc-differences/disallowed-in-qmd/*.qmd")
+        .expect("Failed to read glob pattern")
+    {
+        match entry {
+            Ok(path) => {
+                let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
+
+                // Parse with our parser
+                let mut parser = MarkdownParser::default();
+                let input_bytes = markdown.as_bytes();
+                let tree = parser
+                    .parse(input_bytes, None)
+                    .expect("Failed to parse input");
+
+                let errors = parse_is_good(&tree);
+                if errors.is_empty() {
+                    panic!(
+                        "File {} contains disallowed syntax but no parse errors were reported",
+                        path.display()
+                    );
+                }
+                file_count += 1;
+            }
+            Err(e) => panic!("Error reading glob entry: {}", e),
+        }
+    }
+    assert!(
+        file_count > 0,
+        "No files found in tests/pandoc-differences/disallowed-in-qmd directory"
+    );
 }
