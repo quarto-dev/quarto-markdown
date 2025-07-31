@@ -62,8 +62,12 @@ pub enum Inline {
     Span(Span),
 
     // quarto extensions
+    // after desugaring, these nodes should not appear in a document
     Shortcode(Shortcode),
     NoteReference(NoteReference),
+    // this is used to represent commonmark attributes in the document in places
+    // where they are not directly attached to a block, like in headings and tables
+    Attr(Attr),
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -562,7 +566,8 @@ impl_as_inline!(
     Note,
     Span,
     Shortcode,
-    NoteReference
+    NoteReference,
+    Attr
 );
 
 #[derive(Debug, Clone, PartialEq)]
@@ -779,6 +784,13 @@ fn native_visitor<T: Write>(
                 Inline::Str(Str { text })
             }
         }
+        // as a special inline, we need to allow commonmark attributes
+        // to show up in the document, so we can appropriately attach attributes
+        // to headings and tables (through their captions) as needed
+        //
+        // see tests/cursed/002.qmd for why this cannot be parsed directly in
+        // the block grammar.
+        PandocNativeIntermediate::IntermediateAttr(attr) => Inline::Attr(attr),
         _ => panic!("Expected Inline, got {:?} {:?}", node, child),
     };
     let native_inlines = |children| {
@@ -1822,7 +1834,14 @@ fn native_visitor<T: Write>(
                     PandocNativeIntermediate::IntermediateBlock(block) => {
                         content.push(block);
                     }
-                    _ => panic!("Unexpected child in fenced_div_block: {:?}", child),
+                    _ => {
+                        writeln!(
+                            buf,
+                            "Warning: Unhandled node kind in fenced_div_block: {:?}",
+                            child
+                        )
+                        .unwrap();
+                    }
                 }
             }
             return PandocNativeIntermediate::IntermediateBlock(Block::Div(Div {
@@ -2032,20 +2051,21 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                 FilterResult(vec![Inline::Superscript(superscript)], true)
             }
         })
-        // remove trailing space from header if it has an attribute
+        // add attribute to headers that have them.
         .with_header(|mut header| {
-            if &header.attr == &empty_attr() {
-                return Unchanged(header);
-            }
-            let is_last_space = header
+            let is_last_attr = header
                 .content
                 .last()
-                .map_or(false, |v| matches!(v, Inline::Space(_)));
-            if !is_last_space {
+                .map_or(false, |v| matches!(v, Inline::Attr(_)));
+            if !is_last_attr {
                 return Unchanged(header);
             }
-            // remove the last space
-            header.content.pop();
+
+            let Some(Inline::Attr(attr)) = header.content.pop() else {
+                panic!("shouldn't happen, header should have an attribute at this point");
+            };
+            header.attr = attr;
+            header.content = trim_inlines(header.content).0;
             FilterResult(vec![Block::Header(header)], true)
         })
         // attempt to desugar single-image paragraphs into figures

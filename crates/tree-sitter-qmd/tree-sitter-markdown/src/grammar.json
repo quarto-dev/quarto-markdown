@@ -2992,7 +2992,7 @@
         },
         {
           "type": "PATTERN",
-          "value": ":::+\\n"
+          "value": ":::+[ ]*\\n"
         }
       ]
     },
@@ -4099,6 +4099,10 @@
                     {
                       "type": "STRING",
                       "value": "`"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "{"
                     },
                     {
                       "type": "STRING",

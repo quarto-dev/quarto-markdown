@@ -46,6 +46,7 @@ pub struct Filter {
     pub span: InlineFilterField<pandoc::Span>,
     pub shortcode: InlineFilterField<pandoc::Shortcode>,
     pub note_reference: InlineFilterField<pandoc::NoteReference>,
+    pub attr: InlineFilterField<pandoc::Attr>,
 
     pub paragraph: BlockFilterField<pandoc::Paragraph>,
     pub plain: BlockFilterField<pandoc::Plain>,
@@ -108,6 +109,7 @@ impl Default for Filter {
             header: None,
             table: None,
             horizontal_rule: None,
+            attr: None,
         }
     }
 }
@@ -176,7 +178,7 @@ define_filter_with_methods!(
     note,
     span,
     shortcode,
-    note_reference
+    note_reference,
 );
 
 define_filter_with_methods!(
@@ -247,7 +249,8 @@ impl_inline_filterable_terminal!(
     Math,
     RawInline,
     Shortcode,
-    NoteReference
+    NoteReference,
+    Attr
 );
 
 macro_rules! impl_inline_filterable_simple {
@@ -589,6 +592,9 @@ pub fn topdown_traverse_inline(inline: Inline, filter: &Filter) -> Inlines {
         }
         Inline::NoteReference(note_ref) => {
             handle_inline_filter!(NoteReference, note_ref, note_reference, filter)
+        }
+        Inline::Attr(attr) => {
+            handle_inline_filter!(Attr, attr, attr, filter)
         }
     }
 }

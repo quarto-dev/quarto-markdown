@@ -92,8 +92,9 @@ inline code cell with spaces (shouldn't count as attribute)
     (code_content)
     (code_span_delimiter))
   (text_base)
-  (ERROR
-    (key_value_key)))
+  (commonmark_attribute
+    (ERROR
+      (key_value_key))))
 
 ================================================================================
 link with attributes

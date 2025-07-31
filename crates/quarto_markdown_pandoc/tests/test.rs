@@ -107,6 +107,7 @@ fn unit_test_corpus_matches_pandoc_markdown() {
     {
         match entry {
             Ok(path) => {
+                eprintln!("Opening file: {}", path.display());
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 assert!(
                     matches_pandoc_markdown_reader(&input),
@@ -136,6 +137,7 @@ fn unit_test_corpus_matches_pandoc_commonmark() {
     {
         match entry {
             Ok(path) => {
+                eprintln!("Opening file: {}", path.display());
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 assert!(
                     matches_pandoc_commonmark_reader(&input),
@@ -159,6 +161,7 @@ fn unit_test_snapshots() {
     for entry in glob("tests/snapshots/*.qmd").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
+                eprintln!("Opening file: {}", path.display());
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 let snapshot_path = path.with_extension("qmd.snapshot");
                 let ast = writers::native::write(&treesitter_to_pandoc(
@@ -201,6 +204,7 @@ fn test_json_writer() {
     for entry in glob("tests/writers/json/*.md").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
+                eprintln!("Opening file: {}", path.display());
                 let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
 
                 // Parse with our parser
@@ -257,6 +261,7 @@ fn test_disallowed_in_qmd_fails() {
     {
         match entry {
             Ok(path) => {
+                eprintln!("Opening file: {}", path.display());
                 let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
 
                 // Parse with our parser
@@ -290,6 +295,7 @@ fn test_do_not_smoke() {
     for entry in glob("tests/smoke/*.qmd").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
+                eprintln!("Opening file: {}", path.display());
                 let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
 
                 // Parse with our parser

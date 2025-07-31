@@ -421,6 +421,7 @@ module.exports = grammar(add_inline_rules({
             $.shortcode,
             $.shortcode_escaped,
             $.note_reference,
+            $.commonmark_attribute,
 
             // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
             // alias($._html_tag, $.html_tag),

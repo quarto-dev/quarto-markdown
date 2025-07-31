@@ -171,7 +171,7 @@ module.exports = grammar({
           // 2025-03-05 note: I needed to add a newline, I think, so that the parser didn't get confused with the opening div regexp.
           //   this is going to probably hurt when I need to add support for comments everywhere, and comments
           //   starting at the end of the ::: line won't work.
-          new RegExp(":::+\n"),
+          new RegExp(":::+[ ]*\n"),
         ),
         // A fenced code block. Fenced code blocks are mainly handled by the external scanner. In
         // case of backtick code blocks the external scanner also checks that the info string is
@@ -340,7 +340,7 @@ module.exports = grammar({
         _line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":"])))),
 
         // disallow { in atx headings to parse attributes
-        _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":", "{"])))),
+        _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":"])))),
         _word: $ => new RegExp('[^' + PUNCTUATION_CHARACTERS_REGEX + ' \\t\\n\\r]+'),
         // The external scanner emits some characters that should just be ignored.
         _whitespace: $ => /[ \t]+/,

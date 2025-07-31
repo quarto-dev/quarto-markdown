@@ -107,6 +107,10 @@
           "named": true
         },
         {
+          "type": "commonmark_attribute",
+          "named": true
+        },
+        {
           "type": "email_autolink",
           "named": true
         },
@@ -254,6 +258,10 @@
           "named": true
         },
         {
+          "type": "commonmark_attribute",
+          "named": true
+        },
+        {
           "type": "email_autolink",
           "named": true
         },
@@ -355,6 +363,10 @@
         },
         {
           "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "commonmark_attribute",
           "named": true
         },
         {
@@ -493,6 +505,10 @@
         },
         {
           "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "commonmark_attribute",
           "named": true
         },
         {
@@ -699,6 +715,10 @@
           "named": true
         },
         {
+          "type": "commonmark_attribute",
+          "named": true
+        },
+        {
           "type": "email_autolink",
           "named": true
         },
@@ -842,6 +862,10 @@
         },
         {
           "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "commonmark_attribute",
           "named": true
         },
         {
@@ -1107,6 +1131,10 @@
           "named": true
         },
         {
+          "type": "commonmark_attribute",
+          "named": true
+        },
+        {
           "type": "email_autolink",
           "named": true
         },
@@ -1211,6 +1239,10 @@
         },
         {
           "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "commonmark_attribute",
           "named": true
         },
         {
@@ -1321,6 +1353,10 @@
           "named": true
         },
         {
+          "type": "commonmark_attribute",
+          "named": true
+        },
+        {
           "type": "email_autolink",
           "named": true
         },
@@ -1425,6 +1461,10 @@
         },
         {
           "type": "code_span",
+          "named": true
+        },
+        {
+          "type": "commonmark_attribute",
           "named": true
         },
         {

@@ -128,7 +128,7 @@ fn write_inline(inline: &Inline) -> Value {
                 })
             }).collect::<Vec<_>>()
         }),
-        Inline::Shortcode(_) | Inline::NoteReference(_) => {
+        Inline::Shortcode(_) | Inline::NoteReference(_) | Inline::Attr(_) => {
             panic!("Unsupported inline type: {:?}", inline)
         }
     }

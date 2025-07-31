@@ -1,0 +1,1 @@
+There's a trailing space at the closing fenced div here.

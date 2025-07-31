@@ -1,0 +1,5 @@
+The following construct explains why we cannot parse header attributes in the block grammar.
+Note the block_delimiter `> ` that would be visible in the stream.
+
+> # a header with attributes on the next line {
+>   .a-class}
