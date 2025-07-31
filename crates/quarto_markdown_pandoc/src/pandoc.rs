@@ -11,6 +11,7 @@
 use core::panic;
 use regex::Regex;
 use std::collections::HashMap;
+use std::io::Write;
 
 use crate::filters::{
     Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,
@@ -732,7 +733,8 @@ fn make_cite_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
     });
 }
 
-fn native_visitor(
+fn native_visitor<T: Write>(
+    buf: &mut T,
     node: &tree_sitter::Node,
     children: Vec<(String, PandocNativeIntermediate)>,
     input_bytes: &[u8],
@@ -1071,7 +1073,7 @@ fn native_visitor(
                             panic!("Found key_value_value without a preceding key_value_key");
                         }
                     } else {
-                        eprintln!("Unexpected key_value_specifier node: {}", node);
+                        writeln!(buf, "Unexpected key_value_specifier node: {}", node).unwrap();
                     }
                 }
             }
@@ -1277,7 +1279,7 @@ fn native_visitor(
                         result.insert(name.clone(), arg);
                     }
                     _ => {
-                        eprintln!("Warning: Unhandled node kind: {}", node);
+                        writeln!(buf, "Warning: Unhandled node kind: {}", node).unwrap();
                     }
                 }
             }
@@ -1860,7 +1862,7 @@ fn native_visitor(
                         panic!("Expected Attr in attribute, got {:?}", child);
                     }
                 } else {
-                    eprintln!("Warning: Unhandled node kind in atx_heading: {}", node);
+                    writeln!(buf, "Warning: Unhandled node kind in atx_heading: {}", node).unwrap();
                 }
             }
             PandocNativeIntermediate::IntermediateBlock(Block::Header(Header {
@@ -1878,7 +1880,7 @@ fn native_visitor(
             }))
         }
         _ => {
-            eprintln!("Warning: Unhandled node kind: {}", node.kind());
+            writeln!(buf, "Warning: Unhandled node kind: {}", node.kind()).unwrap();
             let range = node_location(node);
             PandocNativeIntermediate::IntermediateUnknown(range)
         }
@@ -2181,9 +2183,16 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
     topdown_traverse(doc, &filter)
 }
 
-pub fn treesitter_to_pandoc(tree: &tree_sitter_qmd::MarkdownTree, input_bytes: &[u8]) -> Pandoc {
-    let result =
-        bottomup_traverse_concrete_tree(&mut tree.walk(), &mut native_visitor, &input_bytes);
+pub fn treesitter_to_pandoc<T: Write>(
+    buf: &mut T,
+    tree: &tree_sitter_qmd::MarkdownTree,
+    input_bytes: &[u8],
+) -> Pandoc {
+    let result = bottomup_traverse_concrete_tree(
+        &mut tree.walk(),
+        &mut |node, children, input_bytes| native_visitor(buf, node, children, input_bytes),
+        &input_bytes,
+    );
     let (_, PandocNativeIntermediate::IntermediatePandoc(pandoc)) = result else {
         panic!("Expected Pandoc, got {:?}", result)
     };
