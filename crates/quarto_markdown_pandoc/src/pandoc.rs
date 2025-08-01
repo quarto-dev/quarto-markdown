@@ -1898,6 +1898,16 @@ fn native_visitor<T: Write>(
                 range: node_location(node),
             }))
         }
+        "backslash_escape" => {
+            // This is a backslash escape, we need to extract the content
+            // by removing the backslash
+            let text = node.utf8_text(input_bytes).unwrap();
+            if text.len() < 2 || !text.starts_with('\\') {
+                panic!("Invalid backslash escape: {}", text);
+            }
+            let content = &text[1..]; // remove the leading backslash
+            PandocNativeIntermediate::IntermediateBaseText(content.to_string(), node_location(node))
+        }
         _ => {
             writeln!(buf, "Warning: Unhandled node kind: {}", node.kind()).unwrap();
             let range = node_location(node);
