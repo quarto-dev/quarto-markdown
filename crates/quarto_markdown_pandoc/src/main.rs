@@ -84,6 +84,7 @@ fn main() {
         .parse(&input_bytes, None)
         .expect("Failed to parse input");
     let errors = parse_is_good(&tree);
+    print_whole_tree(&mut tree.walk(), &mut output_stream);
     if !errors.is_empty() {
         let mut cursor = tree.walk();
         for error in errors {
@@ -93,7 +94,6 @@ fn main() {
         return;
     }
 
-    print_whole_tree(&mut tree.walk(), &mut output_stream);
     let pandoc = pandoc::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes);
     let output = match args.to.as_str() {
         "json" => writers::json::write(&pandoc),

@@ -17,7 +17,7 @@ tree-sitter-qmd         = { path = "./crates/tree-sitter-qmd" }
 tests_macros = { path = "./crates/tests_macros" }
 
 tracing                 = { version = "0.1.40", default-features = false, features = ["std"] }
-tree-sitter             = { version = "0.25.3" }
+tree-sitter             = { version = "0.25.8" }
 insta                   = "1.40.0"
 serde                   = "1.0.215"
 serde_json              = "1.0.132"

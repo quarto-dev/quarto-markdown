@@ -1,7 +1,7 @@
 [package]
 authors.workspace      = true
 categories.workspace   = true
-description            = "Quarto Markdown grammar for tree-sitter"
+description            = "Quarto tree-sitter grammar for Markdown"
 edition.workspace      = true
 homepage.workspace     = true
 keywords.workspace     = true

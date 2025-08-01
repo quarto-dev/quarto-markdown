@@ -604,6 +604,7 @@ enum PandocNativeIntermediate {
     IntermediateUnknown(Range),
     IntermediateListItem(Blocks, Range, Option<ListAttributes>),
     IntermediateOrderedListMarker(usize, Range),
+    IntermediateMetadataString(String, Range),
 }
 
 fn is_empty_attr(attr: &Attr) -> bool {
@@ -832,27 +833,45 @@ fn native_visitor<T: Write>(
         "document" => {
             let mut blocks: Vec<Block> = Vec::new();
             children.into_iter().for_each(|(_, child)| {
-                if let PandocNativeIntermediate::IntermediateBlock(block) = child {
-                    blocks.push(block);
-                } else if let PandocNativeIntermediate::IntermediateSection(section) = child {
-                    blocks.extend(section);
-                } else {
-                    panic!("Expected block or section, got {:?}", child);
+                match child {
+                    PandocNativeIntermediate::IntermediateBlock(block) => blocks.push(block),
+                    PandocNativeIntermediate::IntermediateSection(section) => {
+                        blocks.extend(section);
+                    }
+                    PandocNativeIntermediate::IntermediateMetadataString(text, range) => {
+                        // for now we assume it's metadata and emit it as a rawblock
+                        blocks.push(Block::RawBlock(RawBlock {
+                            format: "quarto_minus_metadata".to_string(),
+                            text,
+                            filename: None,
+                            range: range,
+                        }));
+                    }
+                    _ => panic!("Expected Block or Section, got {:?}", child),
                 }
             });
             PandocNativeIntermediate::IntermediatePandoc(Pandoc { blocks })
         }
         "section" => {
-            let blocks = children
-                .into_iter()
-                .map(|(_, child)| {
-                    if let PandocNativeIntermediate::IntermediateBlock(block) = child {
-                        block
-                    } else {
-                        panic!("Expected Block, got {:?}", child);
+            let mut blocks: Vec<Block> = Vec::new();
+            children.into_iter().for_each(|(_, child)| {
+                match child {
+                    PandocNativeIntermediate::IntermediateBlock(block) => blocks.push(block),
+                    PandocNativeIntermediate::IntermediateSection(section) => {
+                        blocks.extend(section);
                     }
-                })
-                .collect();
+                    PandocNativeIntermediate::IntermediateMetadataString(text, range) => {
+                        // for now we assume it's metadata and emit it as a rawblock
+                        blocks.push(Block::RawBlock(RawBlock {
+                            format: "quarto_minus_metadata".to_string(),
+                            text,
+                            filename: None,
+                            range: range,
+                        }));
+                    }
+                    _ => panic!("Expected Block or Section, got {:?}", child),
+                }
+            });
             PandocNativeIntermediate::IntermediateSection(blocks)
         }
         "paragraph" => {
@@ -1907,6 +1926,13 @@ fn native_visitor<T: Write>(
             }
             let content = &text[1..]; // remove the leading backslash
             PandocNativeIntermediate::IntermediateBaseText(content.to_string(), node_location(node))
+        }
+        "minus_metadata" => {
+            let text = node.utf8_text(input_bytes).unwrap();
+            PandocNativeIntermediate::IntermediateMetadataString(
+                text.to_string(),
+                node_location(node),
+            )
         }
         _ => {
             writeln!(buf, "Warning: Unhandled node kind: {}", node.kind()).unwrap();

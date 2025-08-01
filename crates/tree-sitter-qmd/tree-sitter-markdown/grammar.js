@@ -337,10 +337,8 @@ module.exports = grammar({
             optional($.block_continuation)
         ),
         // Some symbols get parsed as single tokens so that html blocks get detected properly
-        _line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":"])))),
-
-        // disallow { in atx headings to parse attributes
-        _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [":"])))),
+        _line:             $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),
+        _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),
         _word: $ => new RegExp('[^' + PUNCTUATION_CHARACTERS_REGEX + ' \\t\\n\\r]+'),
         // The external scanner emits some characters that should just be ignored.
         _whitespace: $ => /[ \t]+/,
