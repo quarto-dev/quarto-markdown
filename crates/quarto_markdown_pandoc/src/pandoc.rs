@@ -915,6 +915,11 @@ fn native_visitor<T: Write>(
                         panic!("Expected BaseText in language_attribute, got {:?}", child)
                     };
                     attr.1.push(lang); // set the language
+                } else if node == "info_string" {
+                    let PandocNativeIntermediate::IntermediateAttr(inner_attr) = child else {
+                        panic!("Expected Attr in info_string, got {:?}", child)
+                    };
+                    attr = inner_attr;
                 }
             }
             let location = node_location(node);
