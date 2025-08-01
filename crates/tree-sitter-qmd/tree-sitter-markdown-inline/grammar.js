@@ -13,7 +13,6 @@ const common = require('../common/common');
 // maginuted of these values should be increased in the future
 const PRECEDENCE_LEVEL_EMPHASIS = 1;
 const PRECEDENCE_LEVEL_LINK = 10;
-const PRECEDENCE_LEVEL_HTML = 100;
 
 // Punctuation characters as specified in
 // https://github.github.com/gfm/#ascii-punctuation-character
@@ -96,8 +95,6 @@ module.exports = grammar(add_inline_rules({
     ],
     // More conflicts are defined in `add_inline_rules`
     conflicts: $ => [
-
-        [$._html_comment, $._text_base],
 
         [$._link_text_non_empty, $._inline_element],
         [$._link_text_non_empty, $._inline_element_no_star],
@@ -345,42 +342,6 @@ module.exports = grammar(add_inline_rules({
         email_autolink: $ =>
             /<[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*>/,
 
-        // Raw html. As with html blocks we do not emit additional information as this is best done
-        // by a proper html tree-sitter grammar.
-        //
-        // https://github.github.com/gfm/#raw-html
-        _html_comment: $ => prec.dynamic(PRECEDENCE_LEVEL_HTML, seq(
-            '<!--',
-            optional(seq(
-                choice(
-                    $._word,
-                    $._whitespace,
-                    $._soft_line_break,
-                    common.punctuation_without($, ['-', '>']),
-                    seq(
-                        '-',
-                        common.punctuation_without($, ['>']),
-                    )
-                ),
-                repeat(prec.right(choice(
-                    $._word,
-                    $._whitespace,
-                    $._soft_line_break,
-                    common.punctuation_without($, ['-']),
-                    seq(
-                        '-',
-                        choice(
-                            $._word,
-                            $._whitespace,
-                            $._soft_line_break,
-                            common.punctuation_without($, ['-']),
-                        )
-                    )
-                ))),
-            )),
-            '-->'
-        )),
-
         // A hard line break.
         //
         // https://github.github.com/gfm/#hard-line-breaks
@@ -423,8 +384,6 @@ module.exports = grammar(add_inline_rules({
             $.note_reference,
             $.commonmark_attribute,
 
-            // QMD CHANGE: WE DO NOT ALLOW HTML TAGS OUTSIDE OF RAW HTML INLINES AND BLOCKS            
-            // alias($._html_tag, $.html_tag),
             alias($._text_base, $.text_base),
             common.EXTENSION_TAGS ? $.tag : choice(),
             $._unclosed_span,
