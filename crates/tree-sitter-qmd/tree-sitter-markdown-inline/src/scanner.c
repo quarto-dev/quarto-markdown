@@ -50,6 +50,16 @@ static bool is_punctuation(char chr) {
            (chr >= '[' && chr <= '`') || (chr >= '{' && chr <= '~');
 }
 
+static bool is_lookahead_line_end(TSLexer *lexer) {
+    return lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
+           lexer->eof(lexer);
+}
+
+static bool is_lookahead_whitespace(TSLexer *lexer) {
+    return lexer->lookahead == ' ' || lexer->lookahead == '\t' ||
+           is_lookahead_line_end(lexer);
+}
+
 // State bitflags used with `Scanner.state`
 
 // TODO
@@ -209,7 +219,7 @@ static bool parse_single_quote(Scanner *s, TSLexer *lexer, const bool *valid_sym
         lexer->result_symbol = SINGLE_QUOTE_CLOSE;
         return true;
     }
-    if (valid_symbols[SINGLE_QUOTE_OPEN]) {
+    if (valid_symbols[SINGLE_QUOTE_OPEN] && !is_lookahead_whitespace(lexer)) {
         s->inside_single_quote = 1;
         lexer->result_symbol = SINGLE_QUOTE_OPEN;
         return true;
@@ -347,8 +357,6 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
         star_count++;
         lexer->advance(lexer, false);
     }
-    bool line_end = lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
-                    lexer->eof(lexer);
     if (valid_symbols[EMPHASIS_OPEN_STAR] ||
         valid_symbols[EMPHASIS_CLOSE_STAR]) {
         // The desicion made for the first star also counts for all the
@@ -356,8 +364,7 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
         s->num_emphasis_delimiters_left = star_count - 1;
         // Look ahead to the next symbol (after the last star) to find out if it
         // is whitespace punctuation or other.
-        bool next_symbol_whitespace =
-            line_end || lexer->lookahead == ' ' || lexer->lookahead == '\t';
+        bool next_symbol_whitespace = is_lookahead_whitespace(lexer);
         bool next_symbol_punctuation = is_punctuation((char)lexer->lookahead);
         // Information about the last token is in valid_symbols. See grammar.js
         // for these tokens for how this is done.
@@ -410,8 +417,6 @@ static bool parse_underscore(Scanner *s, TSLexer *lexer,
         underscore_count++;
         lexer->advance(lexer, false);
     }
-    bool line_end = lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
-                    lexer->eof(lexer);
     if (valid_symbols[EMPHASIS_OPEN_UNDERSCORE] ||
         valid_symbols[EMPHASIS_CLOSE_UNDERSCORE]) {
         // The desicion made for the first underscore also counts for all the
@@ -419,8 +424,7 @@ static bool parse_underscore(Scanner *s, TSLexer *lexer,
         s->num_emphasis_delimiters_left = underscore_count - 1;
         // Look ahead to the next symbol (after the last underscore) to find out if it
         // is whitespace punctuation or other.
-        bool next_symbol_whitespace =
-            line_end || lexer->lookahead == ' ' || lexer->lookahead == '\t';
+        bool next_symbol_whitespace = is_lookahead_whitespace(lexer);
         bool next_symbol_punctuation = is_punctuation((char)lexer->lookahead);
         // Information about the last token is in valid_symbols. See grammar.js
         // for these tokens for how this is done.
@@ -572,13 +576,11 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // double quotes.
     //
     // this shortcode immediate parsing happens at grammar.js
-    if (!s->inside_shortcode) {
-        switch (lexer->lookahead) {
-            case '\'':
-                return parse_single_quote(s, lexer, valid_symbols);
-            case '"':
-                return parse_double_quote(s, lexer, valid_symbols);
-        }
+    if (!s->inside_shortcode && (valid_symbols[LAST_TOKEN_WHITESPACE] || s->inside_single_quote) && lexer->lookahead == '\'') {
+        return parse_single_quote(s, lexer, valid_symbols);
+    }
+    if (!s->inside_shortcode && (valid_symbols[LAST_TOKEN_WHITESPACE] || s->inside_double_quote) && lexer->lookahead == '"') {
+        return parse_double_quote(s, lexer, valid_symbols);
     }
     return false;
 }

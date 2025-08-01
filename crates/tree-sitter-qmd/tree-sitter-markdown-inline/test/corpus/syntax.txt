@@ -113,3 +113,57 @@ image
       (text_base)
       (text_base))
     (link_destination)))
+================================================================================
+quotes
+================================================================================
+'Hello world'
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (single_quoted_span_delimiter)
+    (text_base)
+    (text_base)
+    (text_base)
+    (single_quoted_span_delimiter)))
+================================================================================
+double quotes
+================================================================================
+"Hello world"
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (double_quoted_span_delimiter)
+    (text_base)
+    (text_base)
+    (text_base)
+    (double_quoted_span_delimiter)))
+================================================================================
+Nested quotes 1
+================================================================================
+'Hello "world"'
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (single_quoted_span_delimiter)
+    (text_base)
+    (text_base)
+    (quoted_span
+      (double_quoted_span_delimiter)
+      (text_base)
+      (double_quoted_span_delimiter))
+    (single_quoted_span_delimiter)))
+================================================================================
+Nested quotes 2
+================================================================================
+"Hello 'world'"
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (double_quoted_span_delimiter)
+    (text_base)
+    (text_base)
+    (quoted_span
+      (single_quoted_span_delimiter)
+      (text_base)
+      (single_quoted_span_delimiter))
+    (double_quoted_span_delimiter)))

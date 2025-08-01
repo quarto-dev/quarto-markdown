@@ -390,7 +390,7 @@ module.exports = grammar(add_inline_rules({
         ))),
         _text_base: $ => choice(
             $._word,
-            common.punctuation_without($, ['[', '{', '}', ']', "'", "@"]),
+            common.punctuation_without($, ['[', '{', '}', ']', "@"]),
             $._whitespace,
         ),
 

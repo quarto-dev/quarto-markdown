@@ -44,3 +44,64 @@ nested through emphasis
     (text_base)
     (text_base)
     (double_quoted_span_delimiter)))
+================================================================================
+single quotes spacing 1
+================================================================================
+' hello world '
+--------------------------------------------------------------------------------
+(inline
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base))
+================================================================================
+single quotes spacing 2
+================================================================================
+What's the deal with John's car?
+--------------------------------------------------------------------------------
+(inline
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base))
+================================================================================
+single quotes spacing 3
+================================================================================
+These are 'quotes'.
+--------------------------------------------------------------------------------
+(inline
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (quoted_span
+    (single_quoted_span_delimiter)
+    (text_base)
+    (single_quoted_span_delimiter))
+  (text_base))
+================================================================================
+single quotes spacing 4
+================================================================================
+'quotes'.
+--------------------------------------------------------------------------------
+(inline
+  (quoted_span
+    (single_quoted_span_delimiter)
+    (text_base)
+    (single_quoted_span_delimiter))
+  (text_base))
