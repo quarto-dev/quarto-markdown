@@ -79,3 +79,57 @@ Hello, world
     (fenced_div_block
       (paragraph
         (inline)))))
+
+================================================================================
+Code block with a colon inside
+================================================================================
+```{python}
+print(1:2)
+```
+--------------------------------------------------------------------------------
+(document
+  (section
+    (fenced_code_block
+      (fenced_code_block_delimiter)
+      (language_attribute
+        (language))
+      (block_continuation)
+      (code_fence_content
+        (block_continuation)))))
+================================================================================
+A header with three colons inside
+================================================================================
+# Header with three colons `:::`
+
+--------------------------------------------------------------------------------
+(document
+  (section
+    (atx_heading
+      (atx_h1_marker)
+      (inline))))
+================================================================================
+A code cell with three colons at the beginning of a line
+================================================================================
+```
+Here is how you use a fenced div:
+
+::: {.cell}
+
+Your content
+
+:::
+```
+--------------------------------------------------------------------------------
+(document
+  (section
+    (fenced_code_block
+      (fenced_code_block_delimiter)
+      (block_continuation)
+      (code_fence_content
+        (block_continuation)
+        (block_continuation)
+        (block_continuation)
+        (block_continuation)
+        (block_continuation)
+        (block_continuation)
+        (block_continuation)))))

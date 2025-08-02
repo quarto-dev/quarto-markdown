@@ -54,6 +54,7 @@ typedef enum {
     PLUS_METADATA,
     PIPE_TABLE_START,
     PIPE_TABLE_LINE_ENDING,
+    // FORCE_CHOMP_THREE_COLONS,
 } TokenType;
 
 // Description of a block on the block stack.
@@ -1325,6 +1326,23 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
         lexer->result_symbol = CLOSE_BLOCK;
         return true;
     }
+
+    // if (valid_symbols[FORCE_CHOMP_COLONS]) {
+    //     // When this symbol is valid, the parser is requesting the scanner
+    //     // to chomp as many colons as it can, which will
+    //     // take precedence over rules that would otherwise
+    //     // process colons one at a time. We use this to
+    //     // stop paragraphs from being continued into fenced div markers
+    //     if (lexer->lookahead == ':') {
+    //         advance(s, lexer);
+    //         while (lexer->lookahead == ':' && !lexer->eof(lexer)) {
+    //             advance(s, lexer);
+    //         }
+    //         lexer->result_symbol = FORCE_CHOMP_COLONS;
+    //         mark_end(s, lexer);
+    //         return true;
+    //     }
+    // }
 
     // if we are at the end of the file and there are still open blocks close
     // them all

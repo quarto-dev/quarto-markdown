@@ -160,7 +160,7 @@ module.exports = grammar({
         //
         // https://github.github.com/gfm/#indented-code-blocks
         indented_code_block: $ => prec.right(seq($._indented_chunk, repeat(choice($._indented_chunk, $._blank_line)))),
-        _indented_chunk: $ => seq($._indented_chunk_start, repeat(choice($._line, $._newline)), $._block_close, optional($.block_continuation)),
+        _indented_chunk: $ => seq($._indented_chunk_start, repeat(choice($._code_line, $._newline)), $._block_close, optional($.block_continuation)),
 
         fenced_div_block: $ => seq(
           new RegExp(":::+"),
@@ -198,7 +198,7 @@ module.exports = grammar({
                 $._block_close,
             ),
         )),
-        code_fence_content: $ => repeat1(choice($._newline, $._line)),
+        code_fence_content: $ => repeat1(choice($._newline, $._code_line)),
 
         // QMD CHANGES
         // we support a stricter set of infostrings, namely the ones that Pandoc appears to support
@@ -337,7 +337,9 @@ module.exports = grammar({
             optional($.block_continuation)
         ),
         // Some symbols get parsed as single tokens so that html blocks get detected properly
-        _line:             $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),
+        _code_line:        $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),
+        _line:             $ => prec.right(seq(prec.right(choice($._word, $._whitespace, common.punctuation_without($, [":"]))),
+                                               prec.right(repeat(choice($._word, $._whitespace, common.punctuation_without($, [])))))),
         _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),
         _word: $ => new RegExp('[^' + PUNCTUATION_CHARACTERS_REGEX + ' \\t\\n\\r]+'),
         // The external scanner emits some characters that should just be ignored.
