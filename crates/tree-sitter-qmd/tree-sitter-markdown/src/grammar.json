@@ -2955,8 +2955,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "PATTERN",
-          "value": ":::+"
+          "type": "SYMBOL",
+          "name": "_fenced_div_start"
         },
         {
           "type": "SYMBOL",
@@ -2980,8 +2980,17 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_newline"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_newline"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_opening_div_state"
+            }
+          ]
         },
         {
           "type": "REPEAT",
@@ -2991,8 +3000,42 @@
           }
         },
         {
-          "type": "PATTERN",
-          "value": ":::+[ ]*\\n"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_fenced_div_end"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_close_block"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_newline"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_eof"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
         }
       ]
     },
@@ -5485,6 +5528,18 @@
     {
       "type": "SYMBOL",
       "name": "_pipe_table_line_ending"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_fenced_div_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_fenced_div_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_opening_div_state"
     }
   ],
   "inline": [],

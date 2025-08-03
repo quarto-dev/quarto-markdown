@@ -54,6 +54,9 @@ typedef enum {
     PLUS_METADATA,
     PIPE_TABLE_START,
     PIPE_TABLE_LINE_ENDING,
+    FENCED_DIV_START,
+    FENCED_DIV_END,
+    OPENING_DIV_STATE,
     // FORCE_CHOMP_THREE_COLONS,
 } TokenType;
 
@@ -86,6 +89,7 @@ typedef enum {
     LIST_ITEM_MAX_INDENTATION,
     FENCED_CODE_BLOCK,
     ANONYMOUS,
+    FENCED_DIV,
 } Block;
 
 // Determines if a character is punctuation as defined by the markdown spec.
@@ -170,6 +174,9 @@ static const bool paragraph_interrupt_symbols[] = {
     false, // PLUS_METADATA,
     true,  // PIPE_TABLE_START,
     false, // PIPE_TABLE_LINE_ENDING,
+    true,  // FENCED_DIV_START,
+    true,  // FENCED_DIV_END,
+    false, // OPENING_DIV_STATE,
 };
 
 // State bitflags used with `Scanner.state`
@@ -393,9 +400,51 @@ static bool match(Scanner *s, TSLexer *lexer, Block block) {
                 return true;
             }
             break;
+        case FENCED_DIV:
         case FENCED_CODE_BLOCK:
         case ANONYMOUS:
             return true;
+    }
+    return false;
+}
+
+static bool parse_fenced_div_marker(Scanner *s, TSLexer *lexer,
+                                    const bool *valid_symbols) {
+    uint8_t level = 0;
+    while (lexer->lookahead == ':') {
+        advance(s, lexer);
+        level++;
+    }
+    mark_end(s, lexer);
+    if (level < 3) {
+        return false;
+    }
+
+    // if this is a valid start of a fenced div marker, then it must be
+    // followed by whitespace and any other non-whitespace character
+    // (a curly brace indicates an attribute, anything else indicates
+    // an infostring)
+    //
+    // otherwise, it can only be a valid marker for the end of a fenced div
+
+    while (!lexer->eof(lexer) && 
+        (lexer->lookahead == ' ' || lexer->lookahead == '\t')) {
+        advance(s, lexer);
+    }
+    if (lexer->eof(lexer) || lexer->lookahead == '\n' || lexer->lookahead == '\r') {
+        if (valid_symbols[FENCED_DIV_END]) {
+            lexer->result_symbol = FENCED_DIV_END;
+            return true;
+        }
+    }
+    if (!lexer->eof(lexer)) {
+        if (valid_symbols[FENCED_DIV_START]) {
+            lexer->result_symbol = FENCED_DIV_START;
+            if (!s->simulate) {
+                push_block(s, FENCED_DIV);
+            }
+            return true;
+        }
     }
     return false;
 }
@@ -1327,23 +1376,6 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
         return true;
     }
 
-    // if (valid_symbols[FORCE_CHOMP_COLONS]) {
-    //     // When this symbol is valid, the parser is requesting the scanner
-    //     // to chomp as many colons as it can, which will
-    //     // take precedence over rules that would otherwise
-    //     // process colons one at a time. We use this to
-    //     // stop paragraphs from being continued into fenced div markers
-    //     if (lexer->lookahead == ':') {
-    //         advance(s, lexer);
-    //         while (lexer->lookahead == ':' && !lexer->eof(lexer)) {
-    //             advance(s, lexer);
-    //         }
-    //         lexer->result_symbol = FORCE_CHOMP_COLONS;
-    //         mark_end(s, lexer);
-    //         return true;
-    //     }
-    // }
-
     // if we are at the end of the file and there are still open blocks close
     // them all
     if (lexer->eof(lexer)) {
@@ -1352,6 +1384,7 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             return true;
         }
         if (s->open_blocks.size > 0) {
+            // printf("EOF block close\n");
             lexer->result_symbol = BLOCK_CLOSE;
             if (!s->simulate)
                 pop_block(s);
@@ -1396,6 +1429,8 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                     return true;
                 }
                 break;
+            case ':':
+                return parse_fenced_div_marker(s, lexer, valid_symbols);
             case '`':
                 // A backtick could mark the beginning or ending of a fenced
                 // code block.
@@ -1474,7 +1509,9 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             return true;
         }
 
-        if (!(s->state & STATE_WAS_SOFT_LINE_BREAK)) {
+        if (!(s->state & STATE_WAS_SOFT_LINE_BREAK) &
+            !valid_symbols[OPENING_DIV_STATE]) {
+            // printf("BLOCK_CLOSE in matching\n");
             lexer->result_symbol = BLOCK_CLOSE;
             pop_block(s);
             if (s->matched == s->open_blocks.size) {

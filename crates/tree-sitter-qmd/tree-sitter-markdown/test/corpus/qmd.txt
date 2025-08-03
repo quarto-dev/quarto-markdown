@@ -47,7 +47,6 @@ print(1)
 ================================================================================
 Fenced divs
 ================================================================================
-
 ::: {}
 
 Hello, world
@@ -55,17 +54,18 @@ Hello, world
 :::
 
 --------------------------------------------------------------------------------
-
 (document
   (section
     (fenced_div_block
+      (block_continuation)
+      (block_continuation)
       (paragraph
-        (inline)))))
-
+        (inline)
+        (block_continuation))
+      (block_continuation))))
 ================================================================================
 Fenced divs with a space at the closing fence
 ================================================================================
-
 ::: {}
 
 Hello, world
@@ -73,13 +73,15 @@ Hello, world
 ::: 
 
 --------------------------------------------------------------------------------
-
 (document
   (section
     (fenced_div_block
+      (block_continuation)
+      (block_continuation)
       (paragraph
-        (inline)))))
-
+        (inline)
+        (block_continuation))
+      (block_continuation))))
 ================================================================================
 Code block with a colon inside
 ================================================================================
@@ -148,25 +150,26 @@ Empty fenced div 1
 ::: {#hello}
 
 :::
-
 --------------------------------------------------------------------------------
 (document
   (section
     (fenced_div_block
       (commonmark_attribute
-        (id_specifier)))))
+        (id_specifier))
+      (block_continuation)
+      (block_continuation))))
 ================================================================================
 Empty fenced div 2
 ================================================================================
 ::: {#hello}
 :::
-
 --------------------------------------------------------------------------------
 (document
   (section
     (fenced_div_block
       (commonmark_attribute
-        (id_specifier)))))
+        (id_specifier))
+      (block_continuation))))
 ================================================================================
 Nested empty fenced divs
 ================================================================================
@@ -174,16 +177,18 @@ Nested empty fenced divs
 ::: {#world}
 :::
 :::
-
 --------------------------------------------------------------------------------
 (document
   (section
     (fenced_div_block
       (commonmark_attribute
         (id_specifier))
+      (block_continuation)
       (fenced_div_block
         (commonmark_attribute
-          (id_specifier))))))
+          (id_specifier))
+        (block_continuation)
+        (block_continuation)))))
 ================================================================================
 A fenced div with a paragraph inside a bulleted list
 ================================================================================
@@ -191,7 +196,6 @@ A fenced div with a paragraph inside a bulleted list
   Hi
 
   :::
-
 --------------------------------------------------------------------------------
 (document
   (section

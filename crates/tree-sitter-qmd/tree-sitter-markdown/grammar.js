@@ -163,15 +163,15 @@ module.exports = grammar({
         _indented_chunk: $ => seq($._indented_chunk_start, repeat(choice($._code_line, $._newline)), $._block_close, optional($.block_continuation)),
 
         fenced_div_block: $ => seq(
-          new RegExp(":::+"),
+          $._fenced_div_start,
           $._whitespace,
           choice($.info_string, $._qmd_attribute, "{}"),
-          $._newline,
+          // we set _opening_div_state here so that the external scanner can
+          // detect where we are and not get confused while looking to close blocks.
+          choice($._newline, $._opening_div_state),
           repeat($._block),
-          // 2025-03-05 note: I needed to add a newline, I think, so that the parser didn't get confused with the opening div regexp.
-          //   this is going to probably hurt when I need to add support for comments everywhere, and comments
-          //   starting at the end of the ::: line won't work.
-          new RegExp(":::+[ ]*\n"),
+          optional(seq($._fenced_div_end, $._close_block, choice($._newline, $._eof))),
+          $._block_close,
         ),
         // A fenced code block. Fenced code blocks are mainly handled by the external scanner. In
         // case of backtick code blocks the external scanner also checks that the info string is
@@ -529,6 +529,10 @@ module.exports = grammar({
 
         $._pipe_table_start,
         $._pipe_table_line_ending,
+
+        $._fenced_div_start,
+        $._fenced_div_end,
+        $._opening_div_state,
     ],
     precedences: $ => [
         [$._setext_heading1, $._block],
