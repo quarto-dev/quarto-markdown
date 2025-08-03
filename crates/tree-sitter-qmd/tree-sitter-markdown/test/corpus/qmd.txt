@@ -142,3 +142,70 @@ A paragraph that starts with a colon
   (section
     (paragraph
       (inline))))
+================================================================================
+Empty fenced div 1
+================================================================================
+::: {#hello}
+
+:::
+
+--------------------------------------------------------------------------------
+(document
+  (section
+    (fenced_div_block
+      (commonmark_attribute
+        (id_specifier)))))
+================================================================================
+Empty fenced div 2
+================================================================================
+::: {#hello}
+:::
+
+--------------------------------------------------------------------------------
+(document
+  (section
+    (fenced_div_block
+      (commonmark_attribute
+        (id_specifier)))))
+================================================================================
+Nested empty fenced divs
+================================================================================
+::: {#hello}
+::: {#world}
+:::
+:::
+
+--------------------------------------------------------------------------------
+(document
+  (section
+    (fenced_div_block
+      (commonmark_attribute
+        (id_specifier))
+      (fenced_div_block
+        (commonmark_attribute
+          (id_specifier))))))
+================================================================================
+A fenced div inside a bulleted list
+================================================================================
+- ::: {#hello}
+  
+  Hi
+  
+  :::
+
+--------------------------------------------------------------------------------
+(document
+  (section
+    (list
+      (list_item
+        (list_marker_minus)
+        (fenced_div_block
+          (commonmark_attribute
+            (id_specifier))
+          (block_continuation)
+          (block_continuation)
+          (paragraph
+            (inline)
+            (block_continuation))
+          (block_continuation))))))
+
