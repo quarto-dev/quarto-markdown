@@ -338,6 +338,11 @@ module.exports = grammar({
         ),
         // Some symbols get parsed as single tokens so that html blocks get detected properly
         _code_line:        $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),
+        
+        // the gymnastics around `:` in _line exist to make the parser reject paragraphs that start with a colon.
+        // Those are technically valid in Markdown, but disallowing them here makes it possible to detect an
+        // accidentally-continued paragraph with a colon that should have been a fenced div marker.
+        // In these cases, users can use \: to escape the first colon.
         _line:             $ => prec.right(seq(prec.right(choice($._word, $._whitespace, common.punctuation_without($, [":"]))),
                                                prec.right(repeat(choice($._word, $._whitespace, common.punctuation_without($, [])))))),
         _atx_heading_line: $ => prec.right(repeat1(choice($._word, $._whitespace, common.punctuation_without($, [])))),

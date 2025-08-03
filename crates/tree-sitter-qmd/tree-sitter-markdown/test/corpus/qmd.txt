@@ -133,3 +133,12 @@ Your content
         (block_continuation)
         (block_continuation)
         (block_continuation)))))
+================================================================================
+A paragraph that starts with a colon
+================================================================================
+\: This is a paragraph that starts with a colon.
+--------------------------------------------------------------------------------
+(document
+  (section
+    (paragraph
+      (inline))))
