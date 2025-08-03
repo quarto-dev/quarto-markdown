@@ -1231,6 +1231,13 @@ fn native_visitor<T: Write>(
             for (node, child) in children {
                 match (node.as_str(), child) {
                     (
+                        "shortcode_naked_string",
+                        PandocNativeIntermediate::IntermediateShortcodeArg(
+                            ShortcodeArg::String(text),
+                            _,
+                        ),
+                    )
+                    | (
                         "shortcode_name",
                         PandocNativeIntermediate::IntermediateShortcodeArg(
                             ShortcodeArg::String(text),
@@ -1280,9 +1287,10 @@ fn native_visitor<T: Write>(
                     ("shortcode_delimiter", _) => {
                         // This is a marker node, we don't need to do anything with it
                     }
-                    (_, child) => panic!(
-                        "Unexpected shortcode_escaped node: {} with child {:?}",
+                    (child_type, child) => panic!(
+                        "Unexpected node in {:?}: {:?} {:?}",
                         node,
+                        child_type,
                         child.clone()
                     ),
                 }
