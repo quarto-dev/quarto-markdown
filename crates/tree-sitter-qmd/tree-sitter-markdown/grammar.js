@@ -166,9 +166,7 @@ module.exports = grammar({
           $._fenced_div_start,
           $._whitespace,
           choice($.info_string, $._qmd_attribute, "{}"),
-          // we set _opening_div_state here so that the external scanner can
-          // detect where we are and not get confused while looking to close blocks.
-          choice($._newline, $._opening_div_state),
+          $._newline,
           repeat($._block),
           optional(seq($._fenced_div_end, $._close_block, choice($._newline, $._eof))),
           $._block_close,
@@ -532,7 +530,6 @@ module.exports = grammar({
 
         $._fenced_div_start,
         $._fenced_div_end,
-        $._opening_div_state,
     ],
     precedences: $ => [
         [$._setext_heading1, $._block],

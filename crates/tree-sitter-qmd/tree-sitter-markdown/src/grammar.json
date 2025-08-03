@@ -2980,17 +2980,8 @@
           ]
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_newline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_opening_div_state"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_newline"
         },
         {
           "type": "REPEAT",
@@ -5536,10 +5527,6 @@
     {
       "type": "SYMBOL",
       "name": "_fenced_div_end"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_opening_div_state"
     }
   ],
   "inline": [],

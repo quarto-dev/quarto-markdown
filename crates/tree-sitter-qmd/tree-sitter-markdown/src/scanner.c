@@ -56,8 +56,6 @@ typedef enum {
     PIPE_TABLE_LINE_ENDING,
     FENCED_DIV_START,
     FENCED_DIV_END,
-    OPENING_DIV_STATE,
-    // FORCE_CHOMP_THREE_COLONS,
 } TokenType;
 
 // Description of a block on the block stack.
@@ -176,7 +174,6 @@ static const bool paragraph_interrupt_symbols[] = {
     false, // PIPE_TABLE_LINE_ENDING,
     true,  // FENCED_DIV_START,
     true,  // FENCED_DIV_END,
-    false, // OPENING_DIV_STATE,
 };
 
 // State bitflags used with `Scanner.state`
@@ -1509,8 +1506,7 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             return true;
         }
 
-        if (!(s->state & STATE_WAS_SOFT_LINE_BREAK) &
-            !valid_symbols[OPENING_DIV_STATE]) {
+        if (!(s->state & STATE_WAS_SOFT_LINE_BREAK)) {
             // printf("BLOCK_CLOSE in matching\n");
             lexer->result_symbol = BLOCK_CLOSE;
             pop_block(s);
