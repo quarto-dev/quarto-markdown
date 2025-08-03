@@ -854,7 +854,10 @@ fn native_visitor<T: Write>(
         }
         "section" => {
             let mut blocks: Vec<Block> = Vec::new();
-            children.into_iter().for_each(|(_, child)| {
+            children.into_iter().for_each(|(node, child)| {
+                if node == "block_continuation" {
+                    return;
+                }
                 match child {
                     PandocNativeIntermediate::IntermediateBlock(block) => blocks.push(block),
                     PandocNativeIntermediate::IntermediateSection(section) => {
@@ -869,14 +872,17 @@ fn native_visitor<T: Write>(
                             range: range,
                         }));
                     }
-                    _ => panic!("Expected Block or Section, got {:?}", child),
+                    _ => panic!("Expected Block or Section, got {:?} {:?}", node, child),
                 }
             });
             PandocNativeIntermediate::IntermediateSection(blocks)
         }
         "paragraph" => {
             let mut inlines: Vec<Inline> = Vec::new();
-            for (_, child) in children {
+            for (node, child) in children {
+                if node == "block_continuation" {
+                    continue; // skip block continuation nodes
+                }
                 if let PandocNativeIntermediate::IntermediateInline(inline) = child {
                     inlines.push(inline);
                 } else if let PandocNativeIntermediate::IntermediateInlines(inner_inlines) = child {
@@ -895,6 +901,9 @@ fn native_visitor<T: Write>(
             let mut attr: Attr = empty_attr();
             let mut raw_format: Option<String> = None;
             for (node, child) in children {
+                if node == "block_continuation" {
+                    continue; // skip block continuation nodes
+                }
                 if node == "code_fence_content" {
                     let PandocNativeIntermediate::IntermediateBaseText(text, _) = child else {
                         panic!("Expected BaseText in code_fence_content, got {:?}", child)
@@ -1314,6 +1323,9 @@ fn native_visitor<T: Write>(
                         };
                         result.insert(name.clone(), arg);
                     }
+                    "block_continuation" => {
+                        // This is a marker node, we don't need to do anything with it
+                    }
                     _ => {
                         writeln!(buf, "Warning: Unhandled node kind: {}", node).unwrap();
                     }
@@ -1618,6 +1630,10 @@ fn native_visitor<T: Write>(
             let mut is_ordered_list: Option<ListAttributes> = None;
 
             for (node, child) in children {
+                if node == "block_continuation" {
+                    // this is a marker node, we don't need to do anything with it
+                    continue;
+                }
                 if node == "list_marker_parenthesis" || node == "list_marker_dot" {
                     // this is an ordered list, so we need to set the flag
                     let PandocNativeIntermediate::IntermediateOrderedListMarker(marker_number, _) =
@@ -1850,7 +1866,10 @@ fn native_visitor<T: Write>(
         "fenced_div_block" => {
             let mut attr: Attr = ("".to_string(), vec![], HashMap::new());
             let mut content: Vec<Block> = Vec::new();
-            for (_, child) in children {
+            for (node, child) in children {
+                if node == "block_continuation" {
+                    continue;
+                }
                 match child {
                     PandocNativeIntermediate::IntermediateAttr(a) => {
                         attr = a;
@@ -1858,11 +1877,14 @@ fn native_visitor<T: Write>(
                     PandocNativeIntermediate::IntermediateBlock(block) => {
                         content.push(block);
                     }
+                    PandocNativeIntermediate::IntermediateSection(blocks) => {
+                        content.extend(blocks);
+                    }
                     _ => {
                         writeln!(
                             buf,
-                            "Warning: Unhandled node kind in fenced_div_block: {:?}",
-                            child
+                            "Warning: Unhandled node kind in fenced_div_block: {:?} {:?}",
+                            node, child
                         )
                         .unwrap();
                     }
@@ -1880,7 +1902,10 @@ fn native_visitor<T: Write>(
             let mut content: Vec<Inline> = Vec::new();
             let mut attr: Attr = ("".to_string(), vec![], HashMap::new());
             for (node, child) in children {
-                if node == "atx_h1_marker" {
+                if node == "block_continuation" {
+                    continue;
+                    // This is a marker node, we don't need to do anything with it
+                } else if node == "atx_h1_marker" {
                     level = 1;
                 } else if node == "atx_h2_marker" {
                     level = 2;
