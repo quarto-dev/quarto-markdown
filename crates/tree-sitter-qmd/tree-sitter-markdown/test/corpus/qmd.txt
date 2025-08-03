@@ -187,7 +187,7 @@ Nested empty fenced divs
 ================================================================================
 A fenced div inside a bulleted list
 ================================================================================
-- ::: {#hello}
+- ::: {}
   
   Hi
   
@@ -200,12 +200,9 @@ A fenced div inside a bulleted list
       (list_item
         (list_marker_minus)
         (fenced_div_block
-          (commonmark_attribute
-            (id_specifier))
           (block_continuation)
           (block_continuation)
           (paragraph
             (inline)
             (block_continuation))
           (block_continuation))))))
-
