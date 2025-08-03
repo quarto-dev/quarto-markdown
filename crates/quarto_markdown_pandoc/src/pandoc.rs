@@ -1972,8 +1972,32 @@ fn native_visitor<T: Write>(
                 node_location(node),
             )
         }
+        "uri_autolink" => {
+            // This is a URI autolink, we need to extract the content
+            // by removing the angle brackets
+            let text = node.utf8_text(input_bytes).unwrap();
+            if text.len() < 2 || !text.starts_with('<') || !text.ends_with('>') {
+                panic!("Invalid URI autolink: {}", text);
+            }
+            let content = &text[1..text.len() - 1]; // remove the angle brackets
+            let mut attr = ("".to_string(), vec![], HashMap::new());
+            // pandoc adds the class "uri" to autolinks
+            attr.1.push("uri".to_string());
+            PandocNativeIntermediate::IntermediateInline(Inline::Link(Link {
+                content: vec![Inline::Str(Str {
+                    text: content.to_string(),
+                })],
+                attr,
+                target: (content.to_string(), "".to_string()),
+            }))
+        }
         _ => {
-            writeln!(buf, "Warning: Unhandled node kind: {}", node.kind()).unwrap();
+            writeln!(
+                buf,
+                "[TOP-LEVEL MISSING NODE] Warning: Unhandled node kind: {}",
+                node.kind()
+            )
+            .unwrap();
             let range = node_location(node);
             PandocNativeIntermediate::IntermediateUnknown(range)
         }
