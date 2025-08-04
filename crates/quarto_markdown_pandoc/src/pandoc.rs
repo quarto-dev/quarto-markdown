@@ -11,7 +11,7 @@
 use core::panic;
 use regex::Regex;
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::{Write, empty};
 
 use crate::filters::{
     Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,
@@ -851,7 +851,7 @@ fn native_visitor<T: Write>(
                 Some(ch) => ch.to_string(),
                 None => text, // If we can't parse it, return the original text
             };
-            
+
             PandocNativeIntermediate::IntermediateBaseText(result_text, node_location(node))
         }
 
@@ -931,6 +931,37 @@ fn native_visitor<T: Write>(
                 filename: None,
                 range: node_location(node),
             }))
+        }
+        "indented_code_block" => {
+            let mut content: String = String::new();
+            let outer_range = node_location(node);
+            // first, find the beginning of the contents in the node itself
+            let outer_string = node_text();
+            let mut start_offset = whitespace_re.find(&outer_string).map_or(0, |m| m.end());
+            for (node, children) in children {
+                if node == "block_continuation" {
+                    // append all content up to the beginning of this continuation
+                    match children {
+                        PandocNativeIntermediate::IntermediateUnknown(range) => {
+                            content.push_str(
+                                &outer_string
+                                    [start_offset..range.start.offset - outer_range.start.offset],
+                            );
+                            start_offset = range.end.offset - outer_range.start.offset;
+                        }
+                        _ => panic!("Unexpected {:?} inside indented_code_block", children),
+                    }
+                }
+            }
+            // append the remaining content after the last continuation
+            content.push_str(&outer_string[start_offset..]);
+            // TODO this will require careful encoding of the source map when we get to that point
+            return PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
+                attr: empty_attr(),
+                text: content.trim_end().to_string(),
+                filename: None,
+                range: outer_range,
+            }));
         }
         "fenced_code_block" => {
             let mut content: String = String::new();
