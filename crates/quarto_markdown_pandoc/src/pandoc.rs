@@ -609,6 +609,7 @@ enum PandocNativeIntermediate {
     IntermediateRow(Row),
     IntermediatePipeTableDelimiterCell(Alignment),
     IntermediatePipeTableDelimiterRow(Vec<Alignment>),
+    IntermediateSetextHeadingLevel(usize),
 }
 
 fn is_empty_attr(attr: &Attr) -> bool {
@@ -1935,7 +1936,21 @@ fn native_visitor<T: Write>(
             PandocNativeIntermediate::IntermediateBlock(Block::BlockQuote(BlockQuote {
                 content: children
                     .into_iter()
-                    .filter(|(node, _)| node != "block_quote_marker")
+                    .filter(|(node, child)| {
+                        let result = node != "block_quote_marker";
+                        if matches!(child, PandocNativeIntermediate::IntermediateUnknown(_)) {
+                            if node != "block_continuation" {
+                                writeln!(
+                                    buf,
+                                    "Warning: Unhandled node kind in block_quote: {}, {:?}",
+                                    node, child,
+                                )
+                                .unwrap();
+                            }
+                            return false;
+                        }
+                        result
+                    })
                     .map(|(_, child)| {
                         let PandocNativeIntermediate::IntermediateBlock(block) = child else {
                             panic!("Expected Block in block_quote, got {:?}", child);
@@ -2223,6 +2238,40 @@ fn native_visitor<T: Write>(
                 range: node_location(node),
             }))
         }
+        "setext_h1_underline" => PandocNativeIntermediate::IntermediateSetextHeadingLevel(1),
+        "setext_h2_underline" => PandocNativeIntermediate::IntermediateSetextHeadingLevel(2),
+        "setext_heading" => {
+            let mut content = Vec::new();
+            let mut level = 1;
+            for (_, child) in children {
+                match child {
+                    PandocNativeIntermediate::IntermediateBlock(Block::Paragraph(Paragraph {
+                        content: inner_content,
+                        ..
+                    })) => {
+                        content = inner_content;
+                    }
+                    PandocNativeIntermediate::IntermediateSetextHeadingLevel(l) => {
+                        level = l;
+                    }
+                    _ => {
+                        writeln!(
+                            buf,
+                            "[setext_heading] Warning: Unhandled node kind: {}",
+                            node.kind()
+                        )
+                        .unwrap();
+                    }
+                }
+            }
+            return PandocNativeIntermediate::IntermediateBlock(Block::Header(Header {
+                level,
+                attr: empty_attr(),
+                content,
+                filename: None,
+                range: node_location(node),
+            }));
+        }
         _ => {
             writeln!(
                 buf,
@@ -2315,7 +2364,8 @@ fn shortcode_to_span(shortcode: Shortcode) -> Span {
                             ));
                         }
                         ShortcodeArg::Shortcode(_) => {
-                            panic!("Quarto itself doesn't yet support nested shortcodes");
+                            eprintln!("PANIC - Quarto doesn't support nested shortcodes");
+                            std::process::exit(1);
                         }
                         _ => {
                             panic!("Unexpected ShortcodeArg type in shortcode: {:?}", value);
