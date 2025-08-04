@@ -744,6 +744,24 @@ fn make_cite_inline(attr: Attr, target: Target, content: Inlines) -> Inline {
     });
 }
 
+fn make_inline_leftover(node: &tree_sitter::Node, input_bytes: &[u8]) -> Inline {
+    let text = node.utf8_text(input_bytes).unwrap().to_string();
+    Inline::RawInline(RawInline {
+        format: "quarto-internal-leftover".to_string(),
+        text,
+    })
+}
+
+fn make_block_leftover(node: &tree_sitter::Node, input_bytes: &[u8]) -> Block {
+    let text = node.utf8_text(input_bytes).unwrap().to_string();
+    Block::RawBlock(RawBlock {
+        format: "quarto-internal-leftover".to_string(),
+        text,
+        filename: None,
+        range: node_location(node),
+    })
+}
+
 fn native_visitor<T: Write>(
     buf: &mut T,
     node: &tree_sitter::Node,
@@ -751,6 +769,7 @@ fn native_visitor<T: Write>(
     input_bytes: &[u8],
 ) -> PandocNativeIntermediate {
     let whitespace_re = Regex::new(r"\s+").unwrap();
+    let indent_re = Regex::new(r"[ \t]+").unwrap();
     let escaped_double_quote_re = Regex::new("[\\\\][\"]").unwrap();
     let escaped_single_quote_re = Regex::new("[\\\\][']").unwrap();
 
@@ -944,7 +963,8 @@ fn native_visitor<T: Write>(
             let outer_range = node_location(node);
             // first, find the beginning of the contents in the node itself
             let outer_string = node_text();
-            let mut start_offset = whitespace_re.find(&outer_string).map_or(0, |m| m.end());
+            let mut start_offset = indent_re.find(&outer_string).map_or(0, |m| m.end());
+
             for (node, children) in children {
                 if node == "block_continuation" {
                     // append all content up to the beginning of this continuation
@@ -1933,31 +1953,36 @@ fn native_visitor<T: Write>(
             panic!("Expected raw_attribute to have a format, but found none");
         }
         "block_quote" => {
-            PandocNativeIntermediate::IntermediateBlock(Block::BlockQuote(BlockQuote {
-                content: children
-                    .into_iter()
-                    .filter(|(node, child)| {
-                        let result = node != "block_quote_marker";
-                        if matches!(child, PandocNativeIntermediate::IntermediateUnknown(_)) {
-                            if node != "block_continuation" {
-                                writeln!(
-                                    buf,
-                                    "Warning: Unhandled node kind in block_quote: {}, {:?}",
-                                    node, child,
-                                )
-                                .unwrap();
-                            }
-                            return false;
+            let mut content: Blocks = Vec::new();
+            for (node_type, child) in children {
+                if node_type == "block_quote_marker" {
+                    if matches!(child, PandocNativeIntermediate::IntermediateUnknown(_)) {
+                        if node_type != "block_continuation" {
+                            writeln!(
+                                buf,
+                                "Warning: Unhandled node kind in block_quote: {}, {:?}",
+                                node_type, child,
+                            )
+                            .unwrap();
                         }
-                        result
-                    })
-                    .map(|(_, child)| {
-                        let PandocNativeIntermediate::IntermediateBlock(block) = child else {
-                            panic!("Expected Block in block_quote, got {:?}", child);
-                        };
-                        block
-                    })
-                    .collect(),
+                    }
+                    continue;
+                }
+                match child {
+                    PandocNativeIntermediate::IntermediateBlock(block) => {
+                        content.push(block);
+                    }
+                    _ => {
+                        writeln!(
+                        buf,
+                        "[block_quote] Will ignore unknown node. Expected Block in block_quote, got {:?}",
+                        child
+                        ).unwrap();
+                    }
+                }
+            }
+            PandocNativeIntermediate::IntermediateBlock(Block::BlockQuote(BlockQuote {
+                content,
                 filename: None,
                 range: node_location(node),
             }))
