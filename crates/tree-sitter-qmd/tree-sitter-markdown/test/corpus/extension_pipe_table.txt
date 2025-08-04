@@ -12,20 +12,16 @@ Example 198 - https://github.github.com/gfm/#example-198
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline))))))
 
 ================================================================================
@@ -42,10 +38,8 @@ bar | baz
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell
@@ -55,7 +49,6 @@ bar | baz
           (pipe_table_align_right)))
       (pipe_table_row
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
           (inline))))))
@@ -75,17 +68,14 @@ Example 200 - https://github.github.com/gfm/#example-200
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell))
       (pipe_table_row
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_row
         (pipe_table_cell
-          (inline)
           (inline))))))
 
 ================================================================================
@@ -101,20 +91,16 @@ Example 201 - https://github.github.com/gfm/#example-201
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline))))
     (block_quote
       (block_quote_marker)
@@ -136,20 +122,16 @@ bar
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_row
         (pipe_table_cell
@@ -211,10 +193,8 @@ Example 205 - https://github.github.com/gfm/#example-205
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
@@ -234,10 +214,8 @@ Example 205 - https://github.github.com/gfm/#example-205
     (pipe_table
       (pipe_table_header
         (pipe_table_cell
-          (inline)
           (inline))
         (pipe_table_cell
-          (inline)
           (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
@@ -245,5 +223,4 @@ Example 205 - https://github.github.com/gfm/#example-205
       (pipe_table_row
         (pipe_table_cell)
         (pipe_table_cell
-          (inline)
           (inline))))))

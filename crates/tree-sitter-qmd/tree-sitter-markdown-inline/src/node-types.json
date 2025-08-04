@@ -1101,6 +1101,11 @@
     }
   },
   {
+    "type": "shortcode_naked_string",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "shortcode_string",
     "named": true,
     "fields": {}
@@ -1753,10 +1758,6 @@
   },
   {
     "type": "shortcode_delimiter",
-    "named": true
-  },
-  {
-    "type": "shortcode_naked_string",
     "named": true
   },
   {

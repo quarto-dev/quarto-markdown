@@ -11,7 +11,7 @@
 use core::panic;
 use regex::Regex;
 use std::collections::HashMap;
-use std::io::{Write, empty};
+use std::io::Write;
 
 use crate::filters::{
     Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,
@@ -796,6 +796,14 @@ fn native_visitor<T: Write>(
         // see tests/cursed/002.qmd for why this cannot be parsed directly in
         // the block grammar.
         PandocNativeIntermediate::IntermediateAttr(attr) => Inline::Attr(attr),
+        PandocNativeIntermediate::IntermediateUnknown(range) => {
+            panic!(
+                "Unexpected unknown node in native inline at ({}:{}): {:?}",
+                range.start.row + 1,
+                range.start.column + 1,
+                node
+            );
+        }
         _ => panic!("Expected Inline, got {:?} {:?}", node, child),
     };
     let native_inlines = |children| {

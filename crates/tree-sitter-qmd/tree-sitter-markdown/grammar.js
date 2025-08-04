@@ -419,8 +419,8 @@ module.exports = grammar({
                 ),
             ),
 
-            pipe_table_cell: $ => prec.right(
-                alias(seq(
+            _pipe_table_cell_contents: $ => prec.right(
+                seq(
                     choice(
                         $._word,
                         $._backslash_escape,
@@ -431,7 +431,9 @@ module.exports = grammar({
                         $._whitespace,
                         $._backslash_escape,
                         common.punctuation_without($, ['|']),
-                    ))), $.inline)),
+                    )))),
+
+            pipe_table_cell: $ => alias($._pipe_table_cell_contents, $.inline),
         } : {}),
     },
 

@@ -2691,15 +2691,31 @@
       }
     },
     "shortcode_naked_string": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:[A-Za-z0-9_\\-.~:/?#\\]@!$&()*+,;]|\\[)+"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 1,
+            "content": {
+              "type": "PATTERN",
+              "value": "(?:[A-Za-z0-9_\\-.~:/?#\\]@!$&()*+,;]|\\[)+"
+            }
+          }
+        },
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 1,
+            "content": {
+              "type": "PATTERN",
+              "value": "(?:[A-Za-z0-9_\\-.~:/?#\\]@!$&()*+,;]|\\[)+[?](?:[A-Za-z0-9_\\-.~:/?#\\]@!$&()*+,;?=]|\\[)+"
+            }
+          }
         }
-      }
+      ]
     },
     "shortcode_string": {
       "type": "CHOICE",

@@ -241,7 +241,23 @@ module.exports = grammar(add_inline_rules({
 
         shortcode_name: $ => token(prec(1, new RustRegex("[a-zA-Z_][a-zA-Z0-9_-]*"))),
 
-        shortcode_naked_string: $ => token(prec(1, /(?:[A-Za-z0-9_\-.~:/?#\]@!$&()*+,;]|\[)+/)),
+        // it's extremely convenient to have a naked string that can encode complicated URLs,
+        // specifically those with query parameters.
+        // Those URLs have an equals sign in the string. 
+        // 
+        // But we don't want to allow every equals sign in there, because it would interfere with
+        // the parsing of shortcode keyword parameters.
+        // The solution is to allow a equals signs on naked strings, but only if they come
+        // after we've seen a question mark.
+        // 
+        // This works by a combination of
+        //   - longest parse rule
+        //   - question marks are not allowed in shortcode key names
+        //   - URLs with query parameters have both question marks and equals signs
+
+        shortcode_naked_string: $ => 
+            choice(token(prec(1, /(?:[A-Za-z0-9_\-.~:/?#\]@!$&()*+,;]|\[)+/)),
+                   token(prec(1, /(?:[A-Za-z0-9_\-.~:/?#\]@!$&()*+,;]|\[)+[?](?:[A-Za-z0-9_\-.~:/?#\]@!$&()*+,;?=]|\[)+/))),
 
         // shortcode_string: $ => new RegExp("[a-zA-Z_][a-zA-Z0-9_-]*"),
         shortcode_string: $ => choice(
