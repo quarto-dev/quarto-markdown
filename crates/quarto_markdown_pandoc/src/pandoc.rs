@@ -797,12 +797,18 @@ fn native_visitor<T: Write>(
         // the block grammar.
         PandocNativeIntermediate::IntermediateAttr(attr) => Inline::Attr(attr),
         PandocNativeIntermediate::IntermediateUnknown(range) => {
-            panic!(
-                "Unexpected unknown node in native inline at ({}:{}): {:?}",
+            writeln!(
+                buf,
+                "Ignoring unexpected unknown node in native inline at ({}:{}): {:?}.",
                 range.start.row + 1,
                 range.start.column + 1,
                 node
-            );
+            )
+            .unwrap();
+            Inline::RawInline(RawInline {
+                format: "quarto-internal-leftover".to_string(),
+                text: node_text(),
+            })
         }
         _ => panic!("Expected Inline, got {:?} {:?}", node, child),
     };
@@ -999,9 +1005,12 @@ fn native_visitor<T: Write>(
                 }
             }
             let location = node_location(node);
-            // assert that the last character is a newline and then trim only that one
-            assert!(content.ends_with('\n'));
-            content.pop(); // remove the trailing newline
+
+            // it might be the case (because of tree-sitter error recovery)
+            // that the content does not end with a newline, so we ensure it does before popping
+            if content.ends_with('\n') {
+                content.pop(); // remove the trailing newline
+            }
 
             if let Some(format) = raw_format {
                 return PandocNativeIntermediate::IntermediateBlock(Block::RawBlock(RawBlock {
