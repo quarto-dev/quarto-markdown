@@ -24,19 +24,24 @@ pub fn read<T: Write>(
     mut output_stream: &mut T,
 ) -> Result<pandoc::Pandoc, Vec<String>> {
     let mut parser = MarkdownParser::default();
+    // let mut found_error: bool = false;
 
-    parser
-        .parser
-        .set_logger(Some(Box::new(|log_type, message| match log_type {
-            LogType::Parse => {
-                eprintln!("tree-sitter: {:?}, {}", log_type, message);
-            }
-            _ => {}
-        })));
+    // parser
+    //     .parser
+    //     .set_logger(Some(Box::new(|log_type, message| match log_type {
+    //         LogType::Parse => {
+    //             if message.contains("detect_error") {
+    //                 found_error = true;
+    //             }
+    //             eprintln!("tree-sitter: {:?}, {}", log_type, message);
+    //         }
+    //         _ => {}
+    //     })));
 
     let tree = parser
         .parse(&input_bytes, None)
         .expect("Failed to parse input");
+    // println!("Found error: {}", found_error);
     let errors = parse_is_good(&tree);
     print_whole_tree(&mut tree.walk(), &mut output_stream);
     let mut error_messages: Vec<String> = Vec::new();
