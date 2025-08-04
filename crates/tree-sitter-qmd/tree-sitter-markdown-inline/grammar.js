@@ -181,9 +181,9 @@ module.exports = grammar(add_inline_rules({
         ),
 
         inline_note: $ => prec(2, seq(
-            alias("^[", $.inline_note_delimiter),
+            alias(seq("^[", optional($._last_token_punctuation)), $.inline_note_delimiter),
             repeat($._inline_element),
-            alias("]", $.inline_note_delimiter),
+            alias(seq("]", optional($._last_token_punctuation)), $.inline_note_delimiter),
         )),
         /*
             From https://pandoc.org/demo/example33/8.20-citation-syntax.html:
@@ -404,11 +404,11 @@ module.exports = grammar(add_inline_rules({
             common.EXTENSION_TAGS ? $.tag : choice(),
             $._unclosed_span,
         ))),
-        _text_base: $ => choice(
+        _text_base: $ => prec.right(choice(
             $._word,
             common.punctuation_without($, ['[', '{', '}', ']', "@"]),
             $._whitespace,
-        ),
+        )),
 
         ...(common.EXTENSION_TAGS ? {
             tag: $ => /#[0-9]*[a-zA-Z_\-\/][a-zA-Z_\-\/0-9]*/,
@@ -449,7 +449,7 @@ function add_inline_rules(grammar) {
                 if (link) {
                     elements = elements.concat([
                         $.inline_link,
-                        seq(choice('[', ']'), optional($._last_token_punctuation)),
+                        // seq(choice('[', ']'), optional($._last_token_punctuation)),
                     ]);
                 }
                 return choice(...elements);

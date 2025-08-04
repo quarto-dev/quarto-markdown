@@ -12,10 +12,12 @@ use tree_sitter_qmd::MarkdownParser;
 mod errors;
 mod filters;
 mod pandoc;
+mod readers;
 mod traversals;
 mod utils;
 mod writers;
 use errors::parse_is_good;
+use utils::output::VerboseOutput;
 
 #[derive(Parser, Debug)]
 #[command(name = "quarto-markdown-pandoc")]
@@ -41,27 +43,6 @@ fn print_whole_tree<T: Write>(cursor: &mut tree_sitter_qmd::MarkdownCursor, buf:
     });
 }
 
-enum VerboseOutput {
-    Stderr(io::Stderr),
-    Sink(io::Sink),
-}
-
-impl Write for VerboseOutput {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        match self {
-            VerboseOutput::Stderr(stderr) => stderr.write(buf),
-            VerboseOutput::Sink(sink) => sink.write(buf),
-        }
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        match self {
-            VerboseOutput::Stderr(stderr) => stderr.flush(),
-            VerboseOutput::Sink(sink) => sink.flush(),
-        }
-    }
-}
-
 fn main() {
     let args = Args::parse();
 
@@ -78,23 +59,17 @@ fn main() {
         input.push('\n'); // ensure the input ends with a newline
     }
 
-    let mut parser = MarkdownParser::default();
-    let input_bytes = input.as_bytes();
-    let tree = parser
-        .parse(&input_bytes, None)
-        .expect("Failed to parse input");
-    let errors = parse_is_good(&tree);
-    print_whole_tree(&mut tree.walk(), &mut output_stream);
-    if !errors.is_empty() {
-        let mut cursor = tree.walk();
-        for error in errors {
-            cursor.goto_id(error);
-            eprintln!("{}", errors::error_message(&mut cursor, &input_bytes));
+    let result = readers::qmd::read(input.as_bytes(), &mut output_stream);
+    let pandoc = match result {
+        Ok(p) => p,
+        Err(error_messages) => {
+            for msg in error_messages {
+                eprintln!("{}", msg);
+            }
+            std::process::exit(1);
         }
-        return;
-    }
+    };
 
-    let pandoc = pandoc::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes);
     let output = match args.to.as_str() {
         "json" => writers::json::write(&pandoc),
         "native" => writers::native::write(&pandoc),

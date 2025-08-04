@@ -8,6 +8,7 @@
 pub mod errors;
 pub mod filters;
 pub mod pandoc;
+pub mod readers;
 pub mod traversals;
 pub mod utils;
 pub mod writers;

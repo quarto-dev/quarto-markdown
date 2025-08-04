@@ -48,10 +48,21 @@ $$This should prevent *this from parsing$$ the bold.*
   (soft_line_break))
 
 ================================================================================
+Brackets inside LaTeX are fine and unparsed
+================================================================================
+$$Hello [there$$ outside
+-------------------------------------------------------------------------------
+(inline
+  (latex_span
+    (latex_span_delimiter)
+    (latex_content)
+    (latex_span_delimiter))
+  (text_base)
+  (text_base))
+================================================================================
 LaTeX and link clashes
 ================================================================================
 $$This should prevent [this from parsing$$ the link](https://google.com)
-
 -------------------------------------------------------------------------------
 (inline
   (latex_span
@@ -62,16 +73,7 @@ $$This should prevent [this from parsing$$ the link](https://google.com)
   (text_base)
   (text_base)
   (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (text_base)
-  (soft_line_break))
+  (ERROR))
 ================================================================================
 LaTeX inside markup
 ================================================================================
