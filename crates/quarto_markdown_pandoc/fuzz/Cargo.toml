@@ -1,0 +1,28 @@
+[package]
+name = "quarto_markdown_pandoc-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.quarto_markdown_pandoc]
+path = ".."
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hello_fuzz"
+path = "fuzz_targets/hello_fuzz.rs"
+test = false
+doc = false
+bench = false

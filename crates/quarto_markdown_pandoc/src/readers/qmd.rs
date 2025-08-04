@@ -2,7 +2,8 @@ use crate::errors;
 use crate::errors::parse_is_good;
 use crate::pandoc;
 use crate::traversals;
-use std::io::{self, Read, Write};
+use std::io::Write;
+use tree_sitter::LogType;
 use tree_sitter_qmd::MarkdownParser;
 
 fn print_whole_tree<T: Write>(cursor: &mut tree_sitter_qmd::MarkdownCursor, buf: &mut T) {
@@ -23,6 +24,16 @@ pub fn read<T: Write>(
     mut output_stream: &mut T,
 ) -> Result<pandoc::Pandoc, Vec<String>> {
     let mut parser = MarkdownParser::default();
+
+    parser
+        .parser
+        .set_logger(Some(Box::new(|log_type, message| match log_type {
+            LogType::Parse => {
+                eprintln!("tree-sitter: {:?}, {}", log_type, message);
+            }
+            _ => {}
+        })));
+
     let tree = parser
         .parse(&input_bytes, None)
         .expect("Failed to parse input");

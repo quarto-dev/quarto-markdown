@@ -400,8 +400,7 @@ module.exports = grammar(add_inline_rules({
             $.note_reference,
             $.commonmark_attribute,
 
-            alias($._text_base, $.text_base),
-            common.EXTENSION_TAGS ? $.tag : choice(),
+            // alias($._text_base, $.text_base),
             $._unclosed_span,
         ))),
         _text_base: $ => choice(
@@ -449,7 +448,7 @@ function add_inline_rules(grammar) {
                 if (link) {
                     elements = elements.concat([
                         $.inline_link,
-                        seq(choice('[', ']'), optional($._last_token_punctuation)),
+                        // seq(choice('[', ']'), optional($._last_token_punctuation)),
                     ]);
                 }
                 return choice(...elements);

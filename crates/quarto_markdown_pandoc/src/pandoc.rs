@@ -11,7 +11,7 @@
 use core::panic;
 use regex::Regex;
 use std::collections::HashMap;
-use std::io::{Write, empty};
+use std::io::Write;
 
 use crate::filters::{
     Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,

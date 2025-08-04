@@ -2,14 +2,14 @@ use std::collections::HashMap;
 use std::num::NonZeroU16;
 
 use crate::{INLINE_LANGUAGE, LANGUAGE};
-// use tree_sitter::LogType;
+use tree_sitter::LogType;
 use tree_sitter::{InputEdit, Language, Node, Parser, Point, Range, Tree, TreeCursor};
 
 /// A parser that produces [`MarkdownTree`]s.
 ///
 /// This is a convenience wrapper around [`LANGUAGE`] and [`INLINE_LANGUAGE`].
 pub struct MarkdownParser {
-    parser: Parser,
+    pub parser: Parser,
     block_language: Language,
     inline_language: Language,
 }
