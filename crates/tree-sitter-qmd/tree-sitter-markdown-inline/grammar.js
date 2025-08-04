@@ -400,7 +400,7 @@ module.exports = grammar(add_inline_rules({
             $.note_reference,
             $.commonmark_attribute,
 
-            // alias($._text_base, $.text_base),
+            alias($._text_base, $.text_base),
             $._unclosed_span,
         ))),
         _text_base: $ => prec.right(choice(

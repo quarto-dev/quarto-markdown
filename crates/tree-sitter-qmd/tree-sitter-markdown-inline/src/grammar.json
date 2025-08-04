@@ -3696,6 +3696,15 @@
               "name": "commonmark_attribute"
             },
             {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_text_base"
+              },
+              "named": true,
+              "value": "text_base"
+            },
+            {
               "type": "SYMBOL",
               "name": "_unclosed_span"
             }

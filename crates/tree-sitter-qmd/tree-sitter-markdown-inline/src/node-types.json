@@ -187,6 +187,10 @@
           "named": true
         },
         {
+          "type": "text_base",
+          "named": true
+        },
+        {
           "type": "uri_autolink",
           "named": true
         }
@@ -330,6 +334,10 @@
           "named": true
         },
         {
+          "type": "text_base",
+          "named": true
+        },
+        {
           "type": "uri_autolink",
           "named": true
         }
@@ -431,6 +439,10 @@
         },
         {
           "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "text_base",
           "named": true
         },
         {
@@ -573,6 +585,10 @@
         },
         {
           "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "text_base",
           "named": true
         },
         {
@@ -771,6 +787,10 @@
           "named": true
         },
         {
+          "type": "text_base",
+          "named": true
+        },
+        {
           "type": "uri_autolink",
           "named": true
         }
@@ -926,6 +946,10 @@
         },
         {
           "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "text_base",
           "named": true
         },
         {
@@ -1192,6 +1216,10 @@
           "named": true
         },
         {
+          "type": "text_base",
+          "named": true
+        },
+        {
           "type": "uri_autolink",
           "named": true
         }
@@ -1296,6 +1324,10 @@
         },
         {
           "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "text_base",
           "named": true
         },
         {
@@ -1406,6 +1438,10 @@
           "named": true
         },
         {
+          "type": "text_base",
+          "named": true
+        },
+        {
           "type": "uri_autolink",
           "named": true
         }
@@ -1513,11 +1549,20 @@
           "named": true
         },
         {
+          "type": "text_base",
+          "named": true
+        },
+        {
           "type": "uri_autolink",
           "named": true
         }
       ]
     }
+  },
+  {
+    "type": "text_base",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "!",
