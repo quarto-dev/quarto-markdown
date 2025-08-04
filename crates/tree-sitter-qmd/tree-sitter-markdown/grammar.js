@@ -419,19 +419,19 @@ module.exports = grammar({
                 ),
             ),
 
-            pipe_table_cell: $ => prec.right(seq(
-                choice(
-                    $._word,
-                    $._backslash_escape,
-                    common.punctuation_without($, ['|']),
-                ),
-                repeat(choice(
-                    $._word,
-                    $._whitespace,
-                    $._backslash_escape,
-                    common.punctuation_without($, ['|']),
-                )),
-            )),
+            pipe_table_cell: $ => prec.right(
+                alias(seq(
+                    choice(
+                        $._word,
+                        $._backslash_escape,
+                        common.punctuation_without($, ['|']),
+                    ),
+                    repeat(choice(
+                        $._word,
+                        $._whitespace,
+                        $._backslash_escape,
+                        common.punctuation_without($, ['|']),
+                    ))), $.inline)),
         } : {}),
     },
 

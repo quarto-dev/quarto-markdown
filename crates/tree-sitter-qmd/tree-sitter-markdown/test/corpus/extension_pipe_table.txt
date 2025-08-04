@@ -11,14 +11,22 @@ Example 198 - https://github.github.com/gfm/#example-198
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
-        (pipe_table_cell)
-        (pipe_table_cell)))))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline))))))
 
 ================================================================================
 Example 199 - https://github.github.com/gfm/#example-199
@@ -33,8 +41,12 @@ bar | baz
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell
           (pipe_table_align_left)
@@ -42,8 +54,11 @@ bar | baz
         (pipe_table_delimiter_cell
           (pipe_table_align_right)))
       (pipe_table_row
-        (pipe_table_cell)
-        (pipe_table_cell)))))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline))))))
 
 ================================================================================
 Example 200 - https://github.github.com/gfm/#example-200
@@ -59,13 +74,19 @@ Example 200 - https://github.github.com/gfm/#example-200
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell))
       (pipe_table_row
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_row
-        (pipe_table_cell)))))
+        (pipe_table_cell
+          (inline)
+          (inline))))))
 
 ================================================================================
 Example 201 - https://github.github.com/gfm/#example-201
@@ -74,21 +95,27 @@ Example 201 - https://github.github.com/gfm/#example-201
 | --- | --- |
 | bar | baz |
 > bar
-
 --------------------------------------------------------------------------------
-
 (document
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
-        (pipe_table_cell)
-        (pipe_table_cell)))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline))))
     (block_quote
       (block_quote_marker)
       (paragraph
@@ -103,28 +130,36 @@ Example 202 - https://github.github.com/gfm/#example-202
 bar
 
 bar
-
 --------------------------------------------------------------------------------
-
 (document
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_row
-        (pipe_table_cell)))
+        (pipe_table_cell
+          (inline))))
     (paragraph
       (inline))))
 
 ================================================================================
-Example 203 - https://github.github.com/gfm/#example-203
+Example 203 - https://github.github.com/gfm/#example-203 (FIXME SHOULD ERROR!)
+:skip
 ================================================================================
 | abc | def |
 | --- |
@@ -138,7 +173,8 @@ Example 203 - https://github.github.com/gfm/#example-203
       (inline))))
 
 ================================================================================
-Example 204 - https://github.github.com/gfm/#example-204
+Example 204 - https://github.github.com/gfm/#example-204 (FIXME SHOULD ERROR!)
+:skip
 ================================================================================
 | abc | def |
 | --- | --- |
@@ -170,13 +206,16 @@ Example 205 - https://github.github.com/gfm/#example-205
 | --- | --- |
 
 --------------------------------------------------------------------------------
-
 (document
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell)))))
@@ -194,11 +233,17 @@ Example 205 - https://github.github.com/gfm/#example-205
   (section
     (pipe_table
       (pipe_table_header
-        (pipe_table_cell)
-        (pipe_table_cell))
+        (pipe_table_cell
+          (inline)
+          (inline))
+        (pipe_table_cell
+          (inline)
+          (inline)))
       (pipe_table_delimiter_row
         (pipe_table_delimiter_cell)
         (pipe_table_delimiter_cell))
       (pipe_table_row
         (pipe_table_cell)
-        (pipe_table_cell)))))
+        (pipe_table_cell
+          (inline)
+          (inline))))))

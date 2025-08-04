@@ -27,16 +27,16 @@ fn write_native_attr(attr: &Attr, buf: &mut String) -> std::fmt::Result {
     write!(buf, "( ")?;
     write_safe_string(&id, buf)?;
     write!(buf, " , [")?;
-    
+
     for (i, class) in classes.iter().enumerate() {
         if i > 0 {
             write!(buf, ", ")?;
         }
         write_safe_string(&class, buf)?;
     }
-    
+
     write!(buf, "] , [")?;
-    
+
     for (i, (k, v)) in attrs.iter().enumerate() {
         if i > 0 {
             write!(buf, ", ")?;
@@ -47,7 +47,7 @@ fn write_native_attr(attr: &Attr, buf: &mut String) -> std::fmt::Result {
         write_safe_string(v, buf)?;
         write!(buf, ")")?;
     }
-    
+
     write!(buf, "] )")?;
     Ok(())
 }
@@ -64,6 +64,41 @@ fn write_native_quote_type(quote_type: &QuoteType, buf: &mut String) -> std::fmt
         QuoteType::SingleQuote => write!(buf, "SingleQuote"),
         QuoteType::DoubleQuote => write!(buf, "DoubleQuote"),
     }
+}
+
+fn write_native_alignment(
+    alignment: &crate::pandoc::Alignment,
+    buf: &mut String,
+) -> std::fmt::Result {
+    match alignment {
+        crate::pandoc::Alignment::Left => write!(buf, "AlignLeft"),
+        crate::pandoc::Alignment::Right => write!(buf, "AlignRight"),
+        crate::pandoc::Alignment::Center => write!(buf, "AlignCenter"),
+        crate::pandoc::Alignment::Default => write!(buf, "AlignDefault"),
+    }
+}
+
+fn write_native_colwidth(colwidth: &crate::pandoc::ColWidth, buf: &mut String) -> std::fmt::Result {
+    match colwidth {
+        crate::pandoc::ColWidth::Default => write!(buf, "ColWidthDefault"),
+        crate::pandoc::ColWidth::Percentage(percentage) => {
+            // FIXME
+            panic!("ColWidthPercentage is not implemented yet: {}", percentage);
+        }
+    }
+}
+
+fn write_native_table_body(
+    table_body: &crate::pandoc::TableBody,
+    buf: &mut String,
+) -> std::fmt::Result {
+    write!(buf, "TableBody ")?;
+    write_native_attr(&table_body.attr, buf)?;
+    write!(buf, " (RowHeadColumns {}) ", table_body.rowhead_columns)?;
+    write_native_rows(&table_body.head, buf)?;
+    write!(buf, " ")?;
+    write_native_rows(&table_body.body, buf)?;
+    Ok(())
 }
 
 fn write_inlines(inlines: &[Inline], buf: &mut String) -> std::fmt::Result {
@@ -84,6 +119,61 @@ fn write_citation_mode(mode: &CitationMode, buf: &mut String) -> std::fmt::Resul
         CitationMode::SuppressAuthor => write!(buf, "SuppressAuthor"),
         CitationMode::AuthorInText => write!(buf, "AuthorInText"),
     }
+}
+fn write_native_cell(cell: &crate::pandoc::Cell, buf: &mut String) -> std::fmt::Result {
+    write!(buf, "Cell ")?;
+    write_native_attr(&cell.attr, buf)?;
+    write!(buf, " ")?;
+    write_native_alignment(&cell.alignment, buf)?;
+    write!(
+        buf,
+        " (RowSpan {}) (ColSpan {})",
+        cell.row_span, cell.col_span
+    )?;
+    write!(buf, " [")?;
+    for (i, block) in cell.content.iter().enumerate() {
+        if i > 0 {
+            write!(buf, ", ")?;
+        }
+        write_block(block, buf)?;
+    }
+    write!(buf, "] ")?;
+    Ok(())
+}
+
+fn write_native_row(row: &crate::pandoc::Row, buf: &mut String) -> std::fmt::Result {
+    write!(buf, "Row ")?;
+    write_native_attr(&row.attr, buf)?;
+    write!(buf, " [")?;
+    for (i, cell) in row.cells.iter().enumerate() {
+        if i > 0 {
+            write!(buf, ", ")?;
+        }
+        write_native_cell(cell, buf)?;
+    }
+    write!(buf, "] ")?;
+    Ok(())
+}
+
+fn write_native_rows(rows: &Vec<crate::pandoc::Row>, buf: &mut String) -> std::fmt::Result {
+    write!(buf, "[")?;
+    for (i, row) in rows.iter().enumerate() {
+        if i > 0 {
+            write!(buf, ", ")?;
+        }
+        write_native_row(row, buf)?;
+    }
+    write!(buf, "]")?;
+    Ok(())
+}
+
+fn write_native_table_foot(foot: &crate::pandoc::TableFoot, buf: &mut String) -> std::fmt::Result {
+    write!(buf, "(TableFoot ")?;
+    write_native_attr(&foot.attr, buf)?;
+    write!(buf, " ")?;
+    write_native_rows(&foot.rows, buf)?;
+    write!(buf, " )")?;
+    Ok(())
 }
 
 fn write_inline(text: &Inline, buf: &mut String) -> std::fmt::Result {
@@ -189,7 +279,18 @@ fn write_inline(text: &Inline, buf: &mut String) -> std::fmt::Result {
         }
         Inline::Cite(cite_struct) => {
             write!(buf, "Cite [")?;
-            for (i, Citation { mode, note_num, hash, id, prefix, suffix }) in cite_struct.citations.iter().enumerate() {
+            for (
+                i,
+                Citation {
+                    mode,
+                    note_num,
+                    hash,
+                    id,
+                    prefix,
+                    suffix,
+                },
+            ) in cite_struct.citations.iter().enumerate()
+            {
                 if i > 0 {
                     write!(buf, ", ")?;
                 }
@@ -201,7 +302,11 @@ fn write_inline(text: &Inline, buf: &mut String) -> std::fmt::Result {
                 write_inlines(suffix, buf)?;
                 write!(buf, ", citationMode = ")?;
                 write_citation_mode(mode, buf)?;
-                write!(buf, ", citationNoteNum = {}, citationHash = {} }}", note_num, hash)?;
+                write!(
+                    buf,
+                    ", citationNoteNum = {}, citationHash = {} }}",
+                    note_num, hash
+                )?;
             }
             write!(buf, "] ")?;
             write_inlines(&cite_struct.content, buf)?;
@@ -211,7 +316,10 @@ fn write_inline(text: &Inline, buf: &mut String) -> std::fmt::Result {
     Ok(())
 }
 
-fn write_list_number_delim(delim: &crate::pandoc::ListNumberDelim, buf: &mut String) -> std::fmt::Result {
+fn write_list_number_delim(
+    delim: &crate::pandoc::ListNumberDelim,
+    buf: &mut String,
+) -> std::fmt::Result {
     match delim {
         ListNumberDelim::Period => write!(buf, "Period"),
         ListNumberDelim::OneParen => write!(buf, "OneParen"),
@@ -220,7 +328,10 @@ fn write_list_number_delim(delim: &crate::pandoc::ListNumberDelim, buf: &mut Str
     }
 }
 
-fn write_list_number_style(style: &crate::pandoc::ListNumberStyle, buf: &mut String) -> std::fmt::Result {
+fn write_list_number_style(
+    style: &crate::pandoc::ListNumberStyle,
+    buf: &mut String,
+) -> std::fmt::Result {
     match style {
         crate::pandoc::ListNumberStyle::Decimal => write!(buf, "Decimal"),
         crate::pandoc::ListNumberStyle::LowerAlpha => write!(buf, "LowerAlpha"),
@@ -250,7 +361,7 @@ fn write_long_caption(caption: &Option<Vec<Block>>, buf: &mut String) -> std::fm
             }
             write!(buf, " ]")?;
         }
-        None => write!(buf, "Nothing")?,
+        None => write!(buf, "[]")?,
     }
     Ok(())
 }
@@ -382,7 +493,47 @@ fn write_block(block: &Block, buf: &mut String) -> std::fmt::Result {
             write!(buf, " ")?;
             write_inlines(content, buf)?;
         }
-        Block::HorizontalRule(crate::pandoc::HorizontalRule { .. }) => write!(buf, "HorizontalRule")?,
+        Block::HorizontalRule(crate::pandoc::HorizontalRule { .. }) => {
+            write!(buf, "HorizontalRule")?
+        }
+        Block::Table(crate::pandoc::Table {
+            attr,
+            caption,
+            colspec,
+            head,
+            bodies,
+            foot,
+            ..
+        }) => {
+            write!(buf, "Table ")?;
+            write_native_attr(attr, buf)?;
+            write!(buf, " ")?;
+            write_caption(caption, buf)?;
+            write!(buf, " [")?;
+            for (i, spec) in colspec.iter().enumerate() {
+                if i > 0 {
+                    write!(buf, ", ")?;
+                }
+                write!(buf, "(")?;
+                write_native_alignment(&spec.0, buf)?;
+                write!(buf, ", ")?;
+                write_native_colwidth(&spec.1, buf)?;
+                write!(buf, ")")?;
+            }
+            write!(buf, "] (TableHead ")?;
+            write_native_attr(&head.attr, buf)?;
+            write!(buf, " ")?;
+            write_native_rows(&head.rows, buf)?;
+            write!(buf, ") [")?;
+            for (i, table_body) in bodies.iter().enumerate() {
+                if i > 0 {
+                    write!(buf, ", ")?;
+                }
+                write_native_table_body(table_body, buf)?;
+            }
+            write!(buf, "] ")?;
+            write_native_table_foot(foot, buf)?;
+        }
         _ => panic!("Unsupported block type: {:?}", block),
     }
     Ok(())

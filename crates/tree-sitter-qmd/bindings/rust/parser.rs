@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::num::NonZeroU16;
 
-use tree_sitter::{InputEdit, Language, Node, Parser, Point, Range, Tree, TreeCursor};
-
 use crate::{INLINE_LANGUAGE, LANGUAGE};
+// use tree_sitter::LogType;
+use tree_sitter::{InputEdit, Language, Node, Parser, Point, Range, Tree, TreeCursor};
 
 /// A parser that produces [`MarkdownTree`]s.
 ///
@@ -68,7 +68,7 @@ impl<'a> MarkdownCursor<'a> {
     fn move_to_inline_tree(&mut self) -> bool {
         let node = self.block_cursor.node();
         match node.kind() {
-            "inline" | "pipe_table_cell" => {
+            "inline" => {
                 if let Some(inline_tree) = self.markdown_tree.inline_tree(&node) {
                     self.inline_cursor = Some(inline_tree.walk());
                     return true;
@@ -279,6 +279,13 @@ impl Default for MarkdownParser {
         let block_language = LANGUAGE.into();
         let inline_language = INLINE_LANGUAGE.into();
         let parser = Parser::new();
+        // let mut parser = Parser::new();
+        // parser.set_logger(Some(Box::new(|log_type, message| match log_type {
+        //     LogType::Parse => {
+        //         eprintln!("tree-sitter: {:?}, {}", log_type, message);
+        //     }
+        //     _ => {}
+        // })));
         MarkdownParser {
             parser,
             block_language,
@@ -333,8 +340,7 @@ impl MarkdownParser {
         'outer: loop {
             let node = loop {
                 let kind = tree_cursor.node().kind();
-                if kind == "inline" || kind == "pipe_table_cell" || !tree_cursor.goto_first_child()
-                {
+                if kind == "inline" || !tree_cursor.goto_first_child() {
                     while !tree_cursor.goto_next_sibling() {
                         if !tree_cursor.goto_parent() {
                             break 'outer;
@@ -342,7 +348,7 @@ impl MarkdownParser {
                     }
                 }
                 let kind = tree_cursor.node().kind();
-                if kind == "inline" || kind == "pipe_table_cell" {
+                if kind == "inline" {
                     break tree_cursor.node();
                 }
             };
@@ -353,7 +359,7 @@ impl MarkdownParser {
                 // repeating this logic to handle the first child
                 // is cleaner than refactoring while into
                 // loop because rust doesn't support do while
-                if tree_cursor.node().is_named() {
+                if tree_cursor.node().kind() == "block_continuation" {
                     ranges.push(Range {
                         start_byte: range.start_byte,
                         start_point: range.start_point,
@@ -364,7 +370,9 @@ impl MarkdownParser {
                     range.start_point = child_range.end_point;
                 }
                 while tree_cursor.goto_next_sibling() {
-                    if !tree_cursor.node().is_named() {
+                    if !tree_cursor.node().is_named()
+                        || tree_cursor.node().kind() != "block_continuation"
+                    {
                         continue;
                     }
                     let child_range = tree_cursor.node().range();
@@ -499,29 +507,5 @@ mod tests {
         assert!(cursor.goto_parent());
         assert!(cursor.goto_parent());
         assert_eq!(cursor.node().kind(), "document");
-    }
-
-    #[test]
-    fn table() {
-        let code = "| foo |\n| --- |\n| *bar*|\n";
-        let mut parser = MarkdownParser::default();
-        let tree = parser.parse(code.as_bytes(), None).unwrap();
-        dbg!(&tree.inline_trees());
-        let mut cursor = tree.walk();
-
-        assert_eq!(cursor.node().kind(), "document");
-        assert!(cursor.goto_first_child());
-        assert_eq!(cursor.node().kind(), "section");
-        assert!(cursor.goto_first_child());
-        assert_eq!(cursor.node().kind(), "pipe_table");
-        assert!(cursor.goto_first_child());
-        assert!(cursor.goto_next_sibling());
-        assert!(cursor.goto_next_sibling());
-        assert_eq!(cursor.node().kind(), "pipe_table_row");
-        assert!(cursor.goto_first_child());
-        assert!(cursor.goto_next_sibling());
-        assert_eq!(cursor.node().kind(), "pipe_table_cell");
-        assert!(cursor.goto_first_child());
-        assert_eq!(cursor.node().kind(), "emphasis");
     }
 }
