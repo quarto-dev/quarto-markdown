@@ -12,60 +12,60 @@ pub enum FilterReturn<T, U> {
     FilterResult(U, bool), // (new content, should recurse)
 }
 
-type InlineFilterFn<T> = Box<dyn Fn(T) -> FilterReturn<T, Inlines>>;
-type BlockFilterFn<T> = Box<dyn Fn(T) -> FilterReturn<T, Blocks>>;
-type InlineFilterField<T> = Option<InlineFilterFn<T>>;
-type BlockFilterField<T> = Option<BlockFilterFn<T>>;
+type InlineFilterFn<'a, T> = Box<dyn FnMut(T) -> FilterReturn<T, Inlines> + 'a>;
+type BlockFilterFn<'a, T> = Box<dyn FnMut(T) -> FilterReturn<T, Blocks> + 'a>;
+type InlineFilterField<'a, T> = Option<InlineFilterFn<'a, T>>;
+type BlockFilterField<'a, T> = Option<BlockFilterFn<'a, T>>;
 
-pub struct Filter {
-    pub inlines: InlineFilterField<Inlines>,
-    pub blocks: BlockFilterField<Blocks>,
+pub struct Filter<'a> {
+    pub inlines: InlineFilterField<'a, Inlines>,
+    pub blocks: BlockFilterField<'a, Blocks>,
 
-    pub inline: InlineFilterField<Inline>,
-    pub block: BlockFilterField<Block>,
+    pub inline: InlineFilterField<'a, Inline>,
+    pub block: BlockFilterField<'a, Block>,
 
-    pub str: InlineFilterField<pandoc::Str>,
-    pub emph: InlineFilterField<pandoc::Emph>,
-    pub underline: InlineFilterField<pandoc::Underline>,
-    pub strong: InlineFilterField<pandoc::Strong>,
-    pub strikeout: InlineFilterField<pandoc::Strikeout>,
-    pub superscript: InlineFilterField<pandoc::Superscript>,
-    pub subscript: InlineFilterField<pandoc::Subscript>,
-    pub small_caps: InlineFilterField<pandoc::SmallCaps>,
-    pub quoted: InlineFilterField<pandoc::Quoted>,
-    pub cite: InlineFilterField<pandoc::Cite>,
-    pub code: InlineFilterField<pandoc::Code>,
-    pub space: InlineFilterField<pandoc::Space>,
-    pub soft_break: InlineFilterField<pandoc::SoftBreak>,
-    pub line_break: InlineFilterField<pandoc::LineBreak>,
-    pub math: InlineFilterField<pandoc::Math>,
-    pub raw_inline: InlineFilterField<pandoc::RawInline>,
-    pub link: InlineFilterField<pandoc::Link>,
-    pub image: InlineFilterField<pandoc::Image>,
-    pub note: InlineFilterField<pandoc::Note>,
-    pub span: InlineFilterField<pandoc::Span>,
-    pub shortcode: InlineFilterField<pandoc::Shortcode>,
-    pub note_reference: InlineFilterField<pandoc::NoteReference>,
-    pub attr: InlineFilterField<pandoc::Attr>,
+    pub str: InlineFilterField<'a, pandoc::Str>,
+    pub emph: InlineFilterField<'a, pandoc::Emph>,
+    pub underline: InlineFilterField<'a, pandoc::Underline>,
+    pub strong: InlineFilterField<'a, pandoc::Strong>,
+    pub strikeout: InlineFilterField<'a, pandoc::Strikeout>,
+    pub superscript: InlineFilterField<'a, pandoc::Superscript>,
+    pub subscript: InlineFilterField<'a, pandoc::Subscript>,
+    pub small_caps: InlineFilterField<'a, pandoc::SmallCaps>,
+    pub quoted: InlineFilterField<'a, pandoc::Quoted>,
+    pub cite: InlineFilterField<'a, pandoc::Cite>,
+    pub code: InlineFilterField<'a, pandoc::Code>,
+    pub space: InlineFilterField<'a, pandoc::Space>,
+    pub soft_break: InlineFilterField<'a, pandoc::SoftBreak>,
+    pub line_break: InlineFilterField<'a, pandoc::LineBreak>,
+    pub math: InlineFilterField<'a, pandoc::Math>,
+    pub raw_inline: InlineFilterField<'a, pandoc::RawInline>,
+    pub link: InlineFilterField<'a, pandoc::Link>,
+    pub image: InlineFilterField<'a, pandoc::Image>,
+    pub note: InlineFilterField<'a, pandoc::Note>,
+    pub span: InlineFilterField<'a, pandoc::Span>,
+    pub shortcode: InlineFilterField<'a, pandoc::Shortcode>,
+    pub note_reference: InlineFilterField<'a, pandoc::NoteReference>,
+    pub attr: InlineFilterField<'a, pandoc::Attr>,
 
-    pub paragraph: BlockFilterField<pandoc::Paragraph>,
-    pub plain: BlockFilterField<pandoc::Plain>,
-    pub code_block: BlockFilterField<pandoc::CodeBlock>,
-    pub raw_block: BlockFilterField<pandoc::RawBlock>,
-    pub bullet_list: BlockFilterField<pandoc::BulletList>,
-    pub ordered_list: BlockFilterField<pandoc::OrderedList>,
-    pub block_quote: BlockFilterField<pandoc::BlockQuote>,
-    pub div: BlockFilterField<pandoc::Div>,
-    pub figure: BlockFilterField<pandoc::Figure>,
-    pub line_block: BlockFilterField<pandoc::LineBlock>,
-    pub definition_list: BlockFilterField<pandoc::DefinitionList>,
-    pub header: BlockFilterField<pandoc::Header>,
-    pub table: BlockFilterField<pandoc::Table>,
-    pub horizontal_rule: BlockFilterField<pandoc::HorizontalRule>,
+    pub paragraph: BlockFilterField<'a, pandoc::Paragraph>,
+    pub plain: BlockFilterField<'a, pandoc::Plain>,
+    pub code_block: BlockFilterField<'a, pandoc::CodeBlock>,
+    pub raw_block: BlockFilterField<'a, pandoc::RawBlock>,
+    pub bullet_list: BlockFilterField<'a, pandoc::BulletList>,
+    pub ordered_list: BlockFilterField<'a, pandoc::OrderedList>,
+    pub block_quote: BlockFilterField<'a, pandoc::BlockQuote>,
+    pub div: BlockFilterField<'a, pandoc::Div>,
+    pub figure: BlockFilterField<'a, pandoc::Figure>,
+    pub line_block: BlockFilterField<'a, pandoc::LineBlock>,
+    pub definition_list: BlockFilterField<'a, pandoc::DefinitionList>,
+    pub header: BlockFilterField<'a, pandoc::Header>,
+    pub table: BlockFilterField<'a, pandoc::Table>,
+    pub horizontal_rule: BlockFilterField<'a, pandoc::HorizontalRule>,
 }
 
-impl Default for Filter {
-    fn default() -> Self {
+impl Default for Filter<'static> {
+    fn default() -> Filter<'static> {
         Filter {
             inlines: None,
             blocks: None,
@@ -114,14 +114,16 @@ impl Default for Filter {
     }
 }
 
-impl Filter {
-    pub fn new() -> Self {
+impl Filter<'static> {
+    pub fn new() -> Filter<'static> {
         Self::default()
     }
+}
 
-    pub fn with_inlines<F>(mut self, f: F) -> Self
+impl<'a> Filter<'a> {
+    pub fn with_inlines<F>(mut self, f: F) -> Filter<'a>
     where
-        F: Fn(Inlines) -> FilterReturn<Inlines, Inlines> + 'static,
+        F: FnMut(Inlines) -> FilterReturn<Inlines, Inlines> + 'a,
     {
         self.inlines = Some(Box::new(f));
         self
@@ -138,13 +140,13 @@ impl Filter {
 
 macro_rules! define_filter_with_methods {
     ($return:ident, $($field:ident),* $(,)?) => {
-        impl Filter {
+        impl<'a> Filter<'a> {
 
             $(
                 paste::paste! {
-                    pub fn [<with_ $field>]<F>(mut self, filter: F) -> Self
+                    pub fn [<with_ $field>]<F>(mut self, filter: F) -> Filter<'a>
                     where
-                        F: Fn(pandoc::[<$field:camel>]) -> FilterReturn<pandoc::[<$field:camel>], $return> + 'static,
+                        F: FnMut(pandoc::[<$field:camel>]) -> FilterReturn<pandoc::[<$field:camel>], $return> + 'a,
                     {
                         self.$field = Some(Box::new(filter));
                         self
@@ -179,6 +181,7 @@ define_filter_with_methods!(
     span,
     shortcode,
     note_reference,
+    attr,
 );
 
 define_filter_with_methods!(
@@ -203,9 +206,9 @@ define_filter_with_methods!(
 // Macro to reduce repetition in filter logic
 macro_rules! handle_inline_filter {
     ($variant:ident, $value:ident, $filter_field:ident, $filter:expr) => {
-        if let Some(f) = &$filter.$filter_field {
+        if let Some(f) = &mut $filter.$filter_field {
             return inlines_apply_and_maybe_recurse!($value, f, $filter);
-        } else if let Some(f) = &$filter.inline {
+        } else if let Some(f) = &mut $filter.inline {
             return inlines_apply_and_maybe_recurse!($value.as_inline(), f, $filter);
         } else {
             vec![traverse_inline_structure(Inline::$variant($value), $filter)]
@@ -215,9 +218,9 @@ macro_rules! handle_inline_filter {
 
 macro_rules! handle_block_filter {
     ($variant:ident, $value:ident, $filter_field:ident, $filter:expr) => {
-        if let Some(f) = &$filter.$filter_field {
+        if let Some(f) = &mut $filter.$filter_field {
             return blocks_apply_and_maybe_recurse!($value, f, $filter);
-        } else if let Some(f) = &$filter.block {
+        } else if let Some(f) = &mut $filter.block {
             return blocks_apply_and_maybe_recurse!(Block::$variant($value), f, $filter);
         } else {
             vec![traverse_block_structure(Block::$variant($value), $filter)]
@@ -226,14 +229,14 @@ macro_rules! handle_block_filter {
 }
 
 trait InlineFilterableStructure {
-    fn filter_structure(self, filter: &Filter) -> Inline;
+    fn filter_structure(self, filter: &mut Filter) -> Inline;
 }
 
 macro_rules! impl_inline_filterable_terminal {
     ($($variant:ident),*) => {
         $(
             impl InlineFilterableStructure for pandoc::$variant {
-                fn filter_structure(self, _: &Filter) -> Inline {
+                fn filter_structure(self, _: &mut Filter) -> Inline {
                     Inline::$variant(self)
                 }
             }
@@ -257,7 +260,7 @@ macro_rules! impl_inline_filterable_simple {
     ($($variant:ident),*) => {
         $(
             impl InlineFilterableStructure for pandoc::$variant {
-                fn filter_structure(self, filter: &Filter) -> Inline {
+                fn filter_structure(self, filter: &mut Filter) -> Inline {
                     Inline::$variant(pandoc::$variant {
                         content: topdown_traverse_inlines(self.content, filter),
                         ..self
@@ -283,7 +286,7 @@ impl_inline_filterable_simple!(
 );
 
 impl InlineFilterableStructure for pandoc::Note {
-    fn filter_structure(self, filter: &Filter) -> Inline {
+    fn filter_structure(self, filter: &mut Filter) -> Inline {
         Inline::Note(pandoc::Note {
             content: topdown_traverse_blocks(self.content, filter),
         })
@@ -291,7 +294,7 @@ impl InlineFilterableStructure for pandoc::Note {
 }
 
 impl InlineFilterableStructure for pandoc::Cite {
-    fn filter_structure(self, filter: &Filter) -> Inline {
+    fn filter_structure(self, filter: &mut Filter) -> Inline {
         Inline::Cite(pandoc::Cite {
             citations: self
                 .citations
@@ -311,19 +314,19 @@ impl InlineFilterableStructure for pandoc::Cite {
 }
 
 impl InlineFilterableStructure for Inline {
-    fn filter_structure(self, filter: &Filter) -> Inline {
+    fn filter_structure(self, filter: &mut Filter) -> Inline {
         traverse_inline_structure(self, filter)
     }
 }
 trait BlockFilterableStructure {
-    fn filter_structure(self, filter: &Filter) -> Block;
+    fn filter_structure(self, filter: &mut Filter) -> Block;
 }
 
 macro_rules! impl_block_filterable_terminal {
     ($($variant:ident),*) => {
         $(
             impl BlockFilterableStructure for pandoc::$variant {
-                fn filter_structure(self, _: &Filter) -> Block {
+                fn filter_structure(self, _: &mut Filter) -> Block {
                     Block::$variant(self)
                 }
             }
@@ -336,7 +339,7 @@ macro_rules! impl_block_filterable_simple {
     ($($variant:ident),*) => {
         $(
             impl BlockFilterableStructure for pandoc::$variant {
-                fn filter_structure(self, filter: &Filter) -> Block {
+                fn filter_structure(self, filter: &mut Filter) -> Block {
                     Block::$variant(pandoc::$variant {
                         content: topdown_traverse_blocks(self.content, filter),
                         ..self
@@ -349,7 +352,7 @@ macro_rules! impl_block_filterable_simple {
 impl_block_filterable_simple!(BlockQuote, Div);
 
 impl BlockFilterableStructure for pandoc::Paragraph {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::Paragraph(pandoc::Paragraph {
             content: topdown_traverse_inlines(self.content, filter),
             ..self
@@ -358,7 +361,7 @@ impl BlockFilterableStructure for pandoc::Paragraph {
 }
 
 impl BlockFilterableStructure for pandoc::Plain {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::Plain(pandoc::Plain {
             content: topdown_traverse_inlines(self.content, filter),
             ..self
@@ -367,7 +370,7 @@ impl BlockFilterableStructure for pandoc::Plain {
 }
 
 impl BlockFilterableStructure for pandoc::LineBlock {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::LineBlock(pandoc::LineBlock {
             content: self
                 .content
@@ -380,7 +383,7 @@ impl BlockFilterableStructure for pandoc::LineBlock {
 }
 
 impl BlockFilterableStructure for pandoc::OrderedList {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::OrderedList(pandoc::OrderedList {
             content: self
                 .content
@@ -393,7 +396,7 @@ impl BlockFilterableStructure for pandoc::OrderedList {
 }
 
 impl BlockFilterableStructure for pandoc::BulletList {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::BulletList(pandoc::BulletList {
             content: self
                 .content
@@ -406,7 +409,7 @@ impl BlockFilterableStructure for pandoc::BulletList {
 }
 
 impl BlockFilterableStructure for pandoc::DefinitionList {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::DefinitionList(pandoc::DefinitionList {
             content: self
                 .content
@@ -426,7 +429,7 @@ impl BlockFilterableStructure for pandoc::DefinitionList {
 }
 
 impl BlockFilterableStructure for pandoc::Header {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::Header(pandoc::Header {
             content: topdown_traverse_inlines(self.content, filter),
             ..self
@@ -435,7 +438,7 @@ impl BlockFilterableStructure for pandoc::Header {
 }
 
 impl BlockFilterableStructure for pandoc::Table {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::Table(pandoc::Table {
             caption: traverse_caption(self.caption, filter),
             head: pandoc::TableHead {
@@ -479,7 +482,7 @@ impl BlockFilterableStructure for pandoc::Table {
 }
 
 impl BlockFilterableStructure for pandoc::Figure {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         Block::Figure(pandoc::Figure {
             caption: traverse_caption(self.caption, filter),
             content: topdown_traverse_blocks(self.content, filter),
@@ -489,7 +492,7 @@ impl BlockFilterableStructure for pandoc::Figure {
 }
 
 impl BlockFilterableStructure for Block {
-    fn filter_structure(self, filter: &Filter) -> Block {
+    fn filter_structure(self, filter: &mut Filter) -> Block {
         traverse_block_structure(self, filter)
     }
 }
@@ -524,7 +527,7 @@ macro_rules! blocks_apply_and_maybe_recurse {
     };
 }
 
-pub fn topdown_traverse_inline(inline: Inline, filter: &Filter) -> Inlines {
+pub fn topdown_traverse_inline(inline: Inline, filter: &mut Filter) -> Inlines {
     match inline {
         Inline::Str(s) => {
             handle_inline_filter!(Str, s, str, filter)
@@ -599,7 +602,7 @@ pub fn topdown_traverse_inline(inline: Inline, filter: &Filter) -> Inlines {
     }
 }
 
-pub fn topdown_traverse_block(block: Block, filter: &Filter) -> Blocks {
+pub fn topdown_traverse_block(block: Block, filter: &mut Filter) -> Blocks {
     match block {
         Block::Paragraph(para) => {
             handle_block_filter!(Paragraph, para, paragraph, filter)
@@ -646,15 +649,15 @@ pub fn topdown_traverse_block(block: Block, filter: &Filter) -> Blocks {
     }
 }
 
-pub fn topdown_traverse_inlines(vec: Inlines, filter: &Filter) -> Inlines {
-    fn walk_vec(vec: Inlines, filter: &Filter) -> Inlines {
+pub fn topdown_traverse_inlines(vec: Inlines, filter: &mut Filter) -> Inlines {
+    fn walk_vec(vec: Inlines, filter: &mut Filter) -> Inlines {
         let mut result = vec![];
         for inline in vec {
             result.extend(topdown_traverse_inline(inline, filter));
         }
         result
     }
-    match &filter.inlines {
+    match &mut filter.inlines {
         None => walk_vec(vec, filter),
         Some(f) => match f(vec) {
             FilterReturn::Unchanged(inlines) => walk_vec(inlines, filter),
@@ -668,7 +671,7 @@ pub fn topdown_traverse_inlines(vec: Inlines, filter: &Filter) -> Inlines {
     }
 }
 
-fn traverse_inline_nonterminal(inline: Inline, filter: &Filter) -> Inline {
+fn traverse_inline_nonterminal(inline: Inline, filter: &mut Filter) -> Inline {
     match inline {
         Inline::Emph(e) => Inline::Emph(crate::pandoc::Emph {
             content: topdown_traverse_inlines(e.content, filter),
@@ -727,12 +730,11 @@ fn traverse_inline_nonterminal(inline: Inline, filter: &Filter) -> Inline {
             attr: span.attr,
             content: topdown_traverse_inlines(span.content, filter),
         }),
-
         _ => panic!("Unsupported inline type: {:?}", inline),
     }
 }
 
-pub fn traverse_inline_structure(inline: Inline, filter: &Filter) -> Inline {
+pub fn traverse_inline_structure(inline: Inline, filter: &mut Filter) -> Inline {
     match &inline {
         // terminal inline types
         Inline::Str(_) => inline,
@@ -745,18 +747,22 @@ pub fn traverse_inline_structure(inline: Inline, filter: &Filter) -> Inline {
         // extensions
         Inline::Shortcode(_) => inline,
         Inline::NoteReference(_) => inline,
+        Inline::Attr(_) => inline,
         _ => traverse_inline_nonterminal(inline, filter),
     }
 }
 
-fn traverse_blocks_vec_nonterminal(blocks_vec: Vec<Blocks>, filter: &Filter) -> Vec<Blocks> {
+fn traverse_blocks_vec_nonterminal(blocks_vec: Vec<Blocks>, filter: &mut Filter) -> Vec<Blocks> {
     blocks_vec
         .into_iter()
         .map(|blocks| topdown_traverse_blocks(blocks, filter))
         .collect()
 }
 
-fn traverse_caption(caption: crate::pandoc::Caption, filter: &Filter) -> crate::pandoc::Caption {
+fn traverse_caption(
+    caption: crate::pandoc::Caption,
+    filter: &mut Filter,
+) -> crate::pandoc::Caption {
     crate::pandoc::Caption {
         short: caption
             .short
@@ -767,7 +773,7 @@ fn traverse_caption(caption: crate::pandoc::Caption, filter: &Filter) -> crate::
     }
 }
 
-fn traverse_row(row: crate::pandoc::Row, filter: &Filter) -> crate::pandoc::Row {
+fn traverse_row(row: crate::pandoc::Row, filter: &mut Filter) -> crate::pandoc::Row {
     crate::pandoc::Row {
         cells: row
             .cells
@@ -781,13 +787,13 @@ fn traverse_row(row: crate::pandoc::Row, filter: &Filter) -> crate::pandoc::Row 
     }
 }
 
-fn traverse_rows(rows: Vec<crate::pandoc::Row>, filter: &Filter) -> Vec<crate::pandoc::Row> {
+fn traverse_rows(rows: Vec<crate::pandoc::Row>, filter: &mut Filter) -> Vec<crate::pandoc::Row> {
     rows.into_iter()
         .map(|row| traverse_row(row, filter))
         .collect()
 }
 
-fn traverse_block_nonterminal(block: Block, filter: &Filter) -> Block {
+fn traverse_block_nonterminal(block: Block, filter: &mut Filter) -> Block {
     match block {
         Block::Plain(plain) => Block::Plain(crate::pandoc::Plain {
             content: topdown_traverse_inlines(plain.content, filter),
@@ -869,7 +875,7 @@ fn traverse_block_nonterminal(block: Block, filter: &Filter) -> Block {
         }
     }
 }
-pub fn traverse_block_structure(block: Block, filter: &Filter) -> Block {
+pub fn traverse_block_structure(block: Block, filter: &mut Filter) -> Block {
     match &block {
         // terminal block types
         Block::CodeBlock(_) => block,
@@ -879,15 +885,15 @@ pub fn traverse_block_structure(block: Block, filter: &Filter) -> Block {
     }
 }
 
-pub fn topdown_traverse_blocks(vec: Blocks, filter: &Filter) -> Blocks {
-    fn walk_vec(vec: Blocks, filter: &Filter) -> Blocks {
+pub fn topdown_traverse_blocks(vec: Blocks, filter: &mut Filter) -> Blocks {
+    fn walk_vec(vec: Blocks, filter: &mut Filter) -> Blocks {
         let mut result = vec![];
         for block in vec {
             result.extend(topdown_traverse_block(block, filter));
         }
         result
     }
-    match &filter.blocks {
+    match &mut filter.blocks {
         None => walk_vec(vec, filter),
         Some(f) => match f(vec) {
             FilterReturn::Unchanged(blocks) => walk_vec(blocks, filter),
@@ -901,7 +907,7 @@ pub fn topdown_traverse_blocks(vec: Blocks, filter: &Filter) -> Blocks {
     }
 }
 
-pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &Filter) -> pandoc::Pandoc {
+pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &mut Filter) -> pandoc::Pandoc {
     pandoc::Pandoc {
         blocks: topdown_traverse_blocks(doc.blocks, filter),
         // TODO: handle meta

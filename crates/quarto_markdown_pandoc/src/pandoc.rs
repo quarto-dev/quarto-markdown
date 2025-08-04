@@ -13,6 +13,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::io::Write;
 
+use crate::errors;
 use crate::filters::{
     Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,
 };
@@ -2441,160 +2442,174 @@ fn trim_inlines(inlines: Inlines) -> (Inlines, bool) {
     (result, changed)
 }
 
-pub fn desugar(doc: Pandoc) -> Pandoc {
+pub fn desugar(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
+    let mut errors = Vec::new();
     let raw_reader_format_specifier = Regex::new(r"<(?P<reader>.+)").unwrap();
-    let filter = Filter::new()
-        .with_superscript(|mut superscript| {
-            let (content, changed) = trim_inlines(superscript.content);
-            if !changed {
-                return Unchanged(Superscript {
-                    content,
-                    ..superscript
-                });
-            } else {
-                superscript.content = content;
-                FilterResult(vec![Inline::Superscript(superscript)], true)
-            }
-        })
-        // add attribute to headers that have them.
-        .with_header(|mut header| {
-            let is_last_attr = header
-                .content
-                .last()
-                .map_or(false, |v| matches!(v, Inline::Attr(_)));
-            if !is_last_attr {
-                return Unchanged(header);
-            }
+    let result = {
+        let mut filter = Filter::new()
+            .with_superscript(|mut superscript| {
+                let (content, changed) = trim_inlines(superscript.content);
+                if !changed {
+                    return Unchanged(Superscript {
+                        content,
+                        ..superscript
+                    });
+                } else {
+                    superscript.content = content;
+                    FilterResult(vec![Inline::Superscript(superscript)], true)
+                }
+            })
+            // add attribute to headers that have them.
+            .with_header(|mut header| {
+                let is_last_attr = header
+                    .content
+                    .last()
+                    .map_or(false, |v| matches!(v, Inline::Attr(_)));
+                if !is_last_attr {
+                    return Unchanged(header);
+                }
 
-            let Some(Inline::Attr(attr)) = header.content.pop() else {
-                panic!("shouldn't happen, header should have an attribute at this point");
-            };
-            header.attr = attr;
-            header.content = trim_inlines(header.content).0;
-            FilterResult(vec![Block::Header(header)], true)
-        })
-        // attempt to desugar single-image paragraphs into figures
-        .with_paragraph(|para| {
-            if para.content.len() != 1 {
-                return Unchanged(para);
-            }
-            let first = para.content.first().unwrap();
-            let Inline::Image(image) = first else {
-                return Unchanged(para);
-            };
-            if image.content.is_empty() {
-                return Unchanged(para);
-            }
-            let figure_attr: Attr = (image.attr.0.clone(), vec![], HashMap::new());
-            let image_attr: Attr = ("".to_string(), image.attr.1.clone(), image.attr.2.clone());
-            let mut new_image = image.clone();
-            new_image.attr = image_attr;
-            // FIXME all source location is broken here
-            FilterResult(
-                vec![Block::Figure(Figure {
-                    attr: figure_attr,
-                    caption: Caption {
-                        short: None,
-                        long: Some(vec![Block::Plain(Plain {
-                            content: image.content.clone(),
+                let Some(Inline::Attr(attr)) = header.content.pop() else {
+                    panic!("shouldn't happen, header should have an attribute at this point");
+                };
+                header.attr = attr;
+                header.content = trim_inlines(header.content).0;
+                FilterResult(vec![Block::Header(header)], true)
+            })
+            // attempt to desugar single-image paragraphs into figures
+            .with_paragraph(|para| {
+                if para.content.len() != 1 {
+                    return Unchanged(para);
+                }
+                let first = para.content.first().unwrap();
+                let Inline::Image(image) = first else {
+                    return Unchanged(para);
+                };
+                if image.content.is_empty() {
+                    return Unchanged(para);
+                }
+                let figure_attr: Attr = (image.attr.0.clone(), vec![], HashMap::new());
+                let image_attr: Attr = ("".to_string(), image.attr.1.clone(), image.attr.2.clone());
+                let mut new_image = image.clone();
+                new_image.attr = image_attr;
+                // FIXME all source location is broken here
+                FilterResult(
+                    vec![Block::Figure(Figure {
+                        attr: figure_attr,
+                        caption: Caption {
+                            short: None,
+                            long: Some(vec![Block::Plain(Plain {
+                                content: image.content.clone(),
+                                filename: None,
+                                range: empty_range(),
+                            })]),
+                        },
+                        content: vec![Block::Plain(Plain {
+                            content: vec![Inline::Image(new_image)],
                             filename: None,
                             range: empty_range(),
-                        })]),
-                    },
-                    content: vec![Block::Plain(Plain {
-                        content: vec![Inline::Image(new_image)],
+                        })],
                         filename: None,
                         range: empty_range(),
                     })],
-                    filename: None,
-                    range: empty_range(),
-                })],
-                true,
-            )
-        })
-        .with_shortcode(|shortcode| {
-            FilterResult(vec![Inline::Span(shortcode_to_span(shortcode))], false)
-        })
-        .with_note_reference(|note_ref| {
-            let mut kv = HashMap::new();
-            kv.insert("reference-id".to_string(), note_ref.id);
-            FilterResult(
-                vec![Inline::Span(Span {
-                    attr: (
-                        "".to_string(),
-                        vec!["quarto-note-reference".to_string()],
-                        kv,
-                    ),
-                    content: vec![],
-                })],
-                false,
-            )
-        })
-        .with_inlines(|inlines| {
-            let mut result = vec![];
-            // states in this state machine:
-            // 0. normal state, where we just collect inlines
-            // 1. we just saw a valid cite (only one citation, no prefix or suffix)
-            // 2. from 1, we then saw a space
-            // 3. from 2, we then saw a span with only Strs and Spaces.
-            //
-            //    Here, we emit the cite and add the span content to the cite suffix.
-            let mut state = 0;
-            let mut pending_cite: Option<Cite> = None;
+                    true,
+                )
+            })
+            .with_shortcode(|shortcode| {
+                FilterResult(vec![Inline::Span(shortcode_to_span(shortcode))], false)
+            })
+            .with_note_reference(|note_ref| {
+                let mut kv = HashMap::new();
+                kv.insert("reference-id".to_string(), note_ref.id);
+                FilterResult(
+                    vec![Inline::Span(Span {
+                        attr: (
+                            "".to_string(),
+                            vec!["quarto-note-reference".to_string()],
+                            kv,
+                        ),
+                        content: vec![],
+                    })],
+                    false,
+                )
+            })
+            .with_inlines(|inlines| {
+                let mut result = vec![];
+                // states in this state machine:
+                // 0. normal state, where we just collect inlines
+                // 1. we just saw a valid cite (only one citation, no prefix or suffix)
+                // 2. from 1, we then saw a space
+                // 3. from 2, we then saw a span with only Strs and Spaces.
+                //
+                //    Here, we emit the cite and add the span content to the cite suffix.
+                let mut state = 0;
+                let mut pending_cite: Option<Cite> = None;
 
-            for inline in inlines {
-                match state {
-                    0 => {
-                        // Normal state - check if we see a valid cite
-                        if let Inline::Cite(cite) = &inline {
-                            if cite.citations.len() == 1
-                                && cite.citations[0].prefix.is_empty()
-                                && cite.citations[0].suffix.is_empty()
-                            {
-                                // Valid cite - transition to state 1
-                                state = 1;
-                                pending_cite = Some(cite.clone());
+                for inline in inlines {
+                    match state {
+                        0 => {
+                            // Normal state - check if we see a valid cite
+                            if let Inline::Cite(cite) = &inline {
+                                if cite.citations.len() == 1
+                                    && cite.citations[0].prefix.is_empty()
+                                    && cite.citations[0].suffix.is_empty()
+                                {
+                                    // Valid cite - transition to state 1
+                                    state = 1;
+                                    pending_cite = Some(cite.clone());
+                                } else {
+                                    // Not a simple cite, just add it
+                                    result.push(inline);
+                                }
                             } else {
-                                // Not a simple cite, just add it
                                 result.push(inline);
                             }
-                        } else {
-                            result.push(inline);
                         }
-                    }
-                    1 => {
-                        // Just saw a valid cite - check for space
-                        if let Inline::Space(_) = inline {
-                            // Transition to state 2
-                            state = 2;
-                        } else {
-                            // Not a space, emit pending cite and reset
-                            if let Some(cite) = pending_cite.take() {
-                                result.push(Inline::Cite(cite));
-                            }
-                            result.push(inline);
-                            state = 0;
-                        }
-                    }
-                    2 => {
-                        // After cite and space - check for span with only Strs and Spaces
-                        if let Inline::Span(span) = &inline {
-                            // Check if span contains only Str and Space inlines
-                            let is_valid_suffix = span
-                                .content
-                                .iter()
-                                .all(|i| matches!(i, Inline::Str(_) | Inline::Space(_)));
-
-                            if is_valid_suffix {
-                                // State 3 - merge span content into cite suffix
-                                if let Some(mut cite) = pending_cite.take() {
-                                    // Add span content to the citation's suffix
-                                    cite.citations[0].suffix = span.content.clone();
+                        1 => {
+                            // Just saw a valid cite - check for space
+                            if let Inline::Space(_) = inline {
+                                // Transition to state 2
+                                state = 2;
+                            } else {
+                                // Not a space, emit pending cite and reset
+                                if let Some(cite) = pending_cite.take() {
                                     result.push(Inline::Cite(cite));
                                 }
+                                result.push(inline);
                                 state = 0;
+                            }
+                        }
+                        2 => {
+                            // After cite and space - check for span with only Strs and Spaces
+                            if let Inline::Span(span) = &inline {
+                                // Check if span contains only Str and Space inlines
+                                let is_valid_suffix = span
+                                    .content
+                                    .iter()
+                                    .all(|i| matches!(i, Inline::Str(_) | Inline::Space(_)));
+
+                                if is_valid_suffix {
+                                    // State 3 - merge span content into cite suffix
+                                    if let Some(mut cite) = pending_cite.take() {
+                                        // Add span content to the citation's suffix
+                                        cite.citations[0].suffix = span.content.clone();
+                                        result.push(Inline::Cite(cite));
+                                    }
+                                    state = 0;
+                                } else {
+                                    // Invalid span, emit pending cite, space, and span
+                                    if let Some(cite) = pending_cite.take() {
+                                        result.push(Inline::Cite(cite));
+                                    }
+                                    result.push(Inline::Space(Space {
+                                        filename: None,
+                                        range: empty_range(),
+                                    }));
+                                    result.push(inline);
+                                    state = 0;
+                                }
                             } else {
-                                // Invalid span, emit pending cite, space, and span
+                                // Not a span, emit pending cite, space, and current inline
                                 if let Some(cite) = pending_cite.take() {
                                     result.push(Inline::Cite(cite));
                                 }
@@ -2605,56 +2620,58 @@ pub fn desugar(doc: Pandoc) -> Pandoc {
                                 result.push(inline);
                                 state = 0;
                             }
-                        } else {
-                            // Not a span, emit pending cite, space, and current inline
-                            if let Some(cite) = pending_cite.take() {
-                                result.push(Inline::Cite(cite));
-                            }
-                            result.push(Inline::Space(Space {
-                                filename: None,
-                                range: empty_range(),
-                            }));
-                            result.push(inline);
-                            state = 0;
                         }
+                        _ => unreachable!("Invalid state: {}", state),
                     }
-                    _ => unreachable!("Invalid state: {}", state),
                 }
-            }
 
-            // Handle any pending cite at the end
-            if let Some(cite) = pending_cite {
-                result.push(Inline::Cite(cite));
-                if state == 2 {
-                    result.push(Inline::Space(Space {
-                        filename: None,
-                        range: empty_range(),
-                    }));
+                // Handle any pending cite at the end
+                if let Some(cite) = pending_cite {
+                    result.push(Inline::Cite(cite));
+                    if state == 2 {
+                        result.push(Inline::Space(Space {
+                            filename: None,
+                            range: empty_range(),
+                        }));
+                    }
                 }
-            }
 
-            FilterResult(result, true)
-        })
-        .with_raw_block(move |raw_block| {
-            let Some(captures) = raw_reader_format_specifier.captures(&raw_block.text) else {
-                return Unchanged(raw_block);
-            };
-            return FilterResult(
-                vec![Block::RawBlock(RawBlock {
-                    format: "pandoc-reader:".to_string() + &captures["reader"],
-                    ..raw_block
-                })],
-                false,
-            );
-        });
-    topdown_traverse(doc, &filter)
+                FilterResult(result, true)
+            })
+            .with_raw_block(move |raw_block| {
+                let Some(captures) = raw_reader_format_specifier.captures(&raw_block.text) else {
+                    return Unchanged(raw_block);
+                };
+                return FilterResult(
+                    vec![Block::RawBlock(RawBlock {
+                        format: "pandoc-reader:".to_string() + &captures["reader"],
+                        ..raw_block
+                    })],
+                    false,
+                );
+            })
+            .with_attr(|attr| {
+                // TODO in order to do good error messages here, attr will need source mapping
+                errors.push(format!(
+                    "Found attr in desugar: {:?} - this should have been removed",
+                    attr
+                ));
+                FilterResult(vec![], false)
+            });
+        topdown_traverse(doc, &mut filter)
+    };
+    if !errors.is_empty() {
+        Err(errors)
+    } else {
+        Ok(result)
+    }
 }
 
 pub fn treesitter_to_pandoc<T: Write>(
     buf: &mut T,
     tree: &tree_sitter_qmd::MarkdownTree,
     input_bytes: &[u8],
-) -> Pandoc {
+) -> Result<Pandoc, Vec<String>> {
     let result = bottomup_traverse_concrete_tree(
         &mut tree.walk(),
         &mut |node, children, input_bytes| native_visitor(buf, node, children, input_bytes),

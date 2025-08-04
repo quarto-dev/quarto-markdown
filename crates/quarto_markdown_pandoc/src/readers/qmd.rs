@@ -56,6 +56,5 @@ pub fn read<T: Write>(
         return Err(error_messages);
     }
 
-    let pandoc = pandoc::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes);
-    Ok(pandoc)
+    pandoc::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes)
 }

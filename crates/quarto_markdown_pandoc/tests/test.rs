@@ -22,11 +22,9 @@ fn unit_test_simple_qmd_parses() {
             .expect("Failed to parse input");
         println!(
             "{}",
-            writers::native::write(&treesitter_to_pandoc(
-                &mut std::io::sink(),
-                &tree,
-                &input_bytes
-            ))
+            writers::native::write(
+                &treesitter_to_pandoc(&mut std::io::sink(), &tree, &input_bytes).unwrap()
+            )
         );
         assert!(true, "Parsed successfully");
     }
@@ -63,13 +61,16 @@ fn matches_pandoc_markdown_reader(input: &str) -> bool {
     if !has_good_pandoc_version() {
         return true; // Skip test if pandoc version is not suitable
     }
-    let ast = writers::native::write(&treesitter_to_pandoc(
-        &mut std::io::sink(),
-        &MarkdownParser::default()
-            .parse(input.as_bytes(), None)
-            .unwrap(),
-        input.as_bytes(),
-    ));
+    let ast = writers::native::write(
+        &treesitter_to_pandoc(
+            &mut std::io::sink(),
+            &MarkdownParser::default()
+                .parse(input.as_bytes(), None)
+                .unwrap(),
+            input.as_bytes(),
+        )
+        .unwrap(),
+    );
     let our_ast = canonicalize_pandoc_ast(&ast, "native", "native");
     let pandoc_ast = canonicalize_pandoc_ast(input, "markdown", "native");
     our_ast == pandoc_ast
@@ -79,13 +80,16 @@ fn matches_pandoc_commonmark_reader(input: &str) -> bool {
     if !has_good_pandoc_version() {
         return true; // Skip test if pandoc version is not suitable
     }
-    let ast = writers::native::write(&treesitter_to_pandoc(
-        &mut std::io::sink(),
-        &MarkdownParser::default()
-            .parse(input.as_bytes(), None)
-            .unwrap(),
-        input.as_bytes(),
-    ));
+    let ast = writers::native::write(
+        &treesitter_to_pandoc(
+            &mut std::io::sink(),
+            &MarkdownParser::default()
+                .parse(input.as_bytes(), None)
+                .unwrap(),
+            input.as_bytes(),
+        )
+        .unwrap(),
+    );
     let our_ast = canonicalize_pandoc_ast(&ast, "native", "native");
     let pandoc_ast = canonicalize_pandoc_ast(
         input,
@@ -164,13 +168,16 @@ fn unit_test_snapshots() {
                 eprintln!("Opening file: {}", path.display());
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 let snapshot_path = path.with_extension("qmd.snapshot");
-                let ast = writers::native::write(&treesitter_to_pandoc(
-                    &mut std::io::sink(),
-                    &MarkdownParser::default()
-                        .parse(input.as_bytes(), None)
-                        .unwrap(),
-                    input.as_bytes(),
-                ));
+                let ast = writers::native::write(
+                    &treesitter_to_pandoc(
+                        &mut std::io::sink(),
+                        &MarkdownParser::default()
+                            .parse(input.as_bytes(), None)
+                            .unwrap(),
+                        input.as_bytes(),
+                    )
+                    .unwrap(),
+                );
                 let snapshot = std::fs::read_to_string(&snapshot_path).unwrap_or_else(|_| {
                     panic!(
                         "Snapshot file {} does not exist, please create it",
@@ -213,7 +220,8 @@ fn test_json_writer() {
                 let tree = parser
                     .parse(input_bytes, None)
                     .expect("Failed to parse input");
-                let pandoc = treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes);
+                let pandoc =
+                    treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes).unwrap();
                 let our_json = writers::json::write(&pandoc);
 
                 // Get Pandoc's output
