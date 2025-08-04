@@ -831,6 +831,30 @@ fn native_visitor<T: Write>(
     };
 
     match node.kind() {
+        "numeric_character_reference" => {
+            // Convert numeric character references to their corresponding characters
+            // &#x0040; => @, &#64; => @, etc
+            let text = node_text();
+            let char_value = if text.starts_with("&#x") || text.starts_with("&#X") {
+                // Hexadecimal reference
+                let hex_str = &text[3..text.len() - 1];
+                u32::from_str_radix(hex_str, 16).ok()
+            } else if text.starts_with("&#") {
+                // Decimal reference
+                let dec_str = &text[2..text.len() - 1];
+                dec_str.parse::<u32>().ok()
+            } else {
+                None
+            };
+
+            let result_text = match char_value.and_then(char::from_u32) {
+                Some(ch) => ch.to_string(),
+                None => text, // If we can't parse it, return the original text
+            };
+            
+            PandocNativeIntermediate::IntermediateBaseText(result_text, node_location(node))
+        }
+
         "language"
         | "note_reference_id"
         | "citation_id_suppress_author"
