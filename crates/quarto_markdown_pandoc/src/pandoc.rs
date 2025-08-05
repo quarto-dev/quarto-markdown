@@ -1683,14 +1683,36 @@ fn native_visitor<T: Write>(
                     }
                 })
                 .collect();
-            assert!(
-                inlines.len() == 1,
-                "Expected exactly one inline in code_span, got {}",
-                inlines.len()
-            );
+            if inlines.len() == 0 {
+                writeln!(
+                    buf,
+                    "Warning: Expected exactly one inline in code_span, got none"
+                )
+                .unwrap();
+                return PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
+                    attr,
+                    text: "".to_string(),
+                }));
+            }
             let (_, child) = inlines.remove(0);
-            let PandocNativeIntermediate::IntermediateBaseText(text, _) = child else {
-                panic!("Expected BaseText in code_span, got {:?}", child);
+            if inlines.len() > 0 {
+                writeln!(
+                    buf,
+                    "Warning: Expected exactly one inline in code_span, got {}. Will ignore the rest.",
+                    inlines.len() + 1
+                ).unwrap();
+            }
+            let text = match child {
+                PandocNativeIntermediate::IntermediateBaseText(text, _) => text,
+                _ => {
+                    writeln!(
+                        buf,
+                        "Warning: Expected BaseText in code_span, got {:?}. Will ignore.",
+                        child
+                    )
+                    .unwrap();
+                    "".to_string()
+                }
             };
             if let Some(raw) = is_raw {
                 PandocNativeIntermediate::IntermediateInline(Inline::RawInline(RawInline {
