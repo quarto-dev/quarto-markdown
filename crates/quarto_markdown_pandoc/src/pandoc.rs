@@ -983,14 +983,18 @@ fn native_visitor<T: Write>(
                     match children {
                         PandocNativeIntermediate::IntermediateUnknown(range) => {
                             // Calculate the relative offset of the continuation within outer_string
-                            let continuation_start = range.start.offset.saturating_sub(outer_range.start.offset);
-                            let continuation_end = range.end.offset.saturating_sub(outer_range.start.offset);
-                            
+                            let continuation_start =
+                                range.start.offset.saturating_sub(outer_range.start.offset);
+                            let continuation_end =
+                                range.end.offset.saturating_sub(outer_range.start.offset);
+
                             // Append content before this continuation
-                            if continuation_start > start_offset && continuation_start <= outer_string.len() {
+                            if continuation_start > start_offset
+                                && continuation_start <= outer_string.len()
+                            {
                                 content.push_str(&outer_string[start_offset..continuation_start]);
                             }
-                            
+
                             // Update start_offset to after this continuation
                             start_offset = continuation_end.min(outer_string.len());
                         }
@@ -1564,7 +1568,13 @@ fn native_visitor<T: Write>(
             } else if str == "$$" {
                 PandocNativeIntermediate::IntermediateLatexDisplayDelimiter(range)
             } else {
-                panic!("Warning: Unrecognized latex_span_delimiter: {}", str);
+                writeln!(
+                    buf,
+                    "Warning: Unrecognized latex_span_delimiter: {} Will assume inline delimiter",
+                    str
+                )
+                .unwrap();
+                PandocNativeIntermediate::IntermediateLatexInlineDelimiter(range)
             }
         }
         "inline_note" => {
