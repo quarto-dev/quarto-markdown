@@ -6,8 +6,8 @@ use crate::traversals;
 use tree_sitter_qmd::MarkdownTree;
 
 pub fn concrete_tree_depth(tree: &MarkdownTree) -> usize {
-    let mut this_depth = 0;
-    let mut max_depth = 0;
+    let mut this_depth = 1;
+    let mut max_depth = 1;
     crate::traversals::topdown_traverse_concrete_tree(&mut tree.walk(), &mut |node, phase| {
         if phase == traversals::TraversePhase::Enter {
             if node.is_named() {
