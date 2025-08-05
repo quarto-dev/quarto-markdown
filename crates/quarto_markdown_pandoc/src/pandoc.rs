@@ -831,7 +831,18 @@ fn native_visitor<T: Write>(
                 text: node_text(),
             })
         }
-        _ => panic!("Expected Inline, got {:?} {:?}", node, child),
+        other => {
+            writeln!(
+                buf,
+                "Ignoring unexpected unknown node in native_inline {:?}.",
+                other
+            )
+            .unwrap();
+            Inline::RawInline(RawInline {
+                format: "quarto-internal-leftover".to_string(),
+                text: node_text(),
+            })
+        }
     };
     let native_inlines = |children| {
         let mut inlines: Vec<Inline> = Vec::new();
@@ -971,11 +982,17 @@ fn native_visitor<T: Write>(
                     // append all content up to the beginning of this continuation
                     match children {
                         PandocNativeIntermediate::IntermediateUnknown(range) => {
-                            content.push_str(
-                                &outer_string
-                                    [start_offset..range.start.offset - outer_range.start.offset],
-                            );
-                            start_offset = range.end.offset - outer_range.start.offset;
+                            // Calculate the relative offset of the continuation within outer_string
+                            let continuation_start = range.start.offset.saturating_sub(outer_range.start.offset);
+                            let continuation_end = range.end.offset.saturating_sub(outer_range.start.offset);
+                            
+                            // Append content before this continuation
+                            if continuation_start > start_offset && continuation_start <= outer_string.len() {
+                                content.push_str(&outer_string[start_offset..continuation_start]);
+                            }
+                            
+                            // Update start_offset to after this continuation
+                            start_offset = continuation_end.min(outer_string.len());
                         }
                         _ => panic!("Unexpected {:?} inside indented_code_block", children),
                     }
