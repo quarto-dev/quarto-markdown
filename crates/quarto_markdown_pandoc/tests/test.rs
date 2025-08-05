@@ -312,7 +312,7 @@ fn test_do_not_smoke() {
                 let tree = parser
                     .parse(input_bytes, None)
                     .expect("Failed to parse input");
-                treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes);
+                let _ = treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes);
                 file_count += 1;
             }
             Err(e) => panic!("Error reading glob entry: {}", e),

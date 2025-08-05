@@ -3,7 +3,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 
 pub enum VerboseOutput {
     Stderr(io::Stderr),

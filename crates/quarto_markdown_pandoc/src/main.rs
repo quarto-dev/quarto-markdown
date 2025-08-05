@@ -7,7 +7,6 @@
 
 use clap::Parser;
 use std::io::{self, Read, Write};
-use tree_sitter_qmd::MarkdownParser;
 
 mod errors;
 mod filters;
@@ -16,7 +15,6 @@ mod readers;
 mod traversals;
 mod utils;
 mod writers;
-use errors::parse_is_good;
 use utils::output::VerboseOutput;
 
 #[derive(Parser, Debug)]
