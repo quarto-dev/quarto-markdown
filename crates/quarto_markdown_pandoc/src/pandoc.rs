@@ -768,6 +768,9 @@ fn native_visitor<T: Write>(
     children: Vec<(String, PandocNativeIntermediate)>,
     input_bytes: &[u8],
 ) -> PandocNativeIntermediate {
+    let mut inline_buf = Vec::<u8>::new();
+    let mut inlines_buf = Vec::<u8>::new();
+
     let whitespace_re = Regex::new(r"\s+").unwrap();
     let indent_re = Regex::new(r"[ \t]+").unwrap();
     let escaped_double_quote_re = Regex::new("[\\\\][\"]").unwrap();
@@ -818,7 +821,7 @@ fn native_visitor<T: Write>(
         PandocNativeIntermediate::IntermediateAttr(attr) => Inline::Attr(attr),
         PandocNativeIntermediate::IntermediateUnknown(range) => {
             writeln!(
-                buf,
+                inline_buf,
                 "Ignoring unexpected unknown node in native inline at ({}:{}): {:?}.",
                 range.start.row + 1,
                 range.start.column + 1,
@@ -832,7 +835,7 @@ fn native_visitor<T: Write>(
         }
         other => {
             writeln!(
-                buf,
+                inline_buf,
                 "Ignoring unexpected unknown node in native_inline {:?}.",
                 other
             )
@@ -843,7 +846,7 @@ fn native_visitor<T: Write>(
             })
         }
     };
-    let native_inlines = |children| {
+    let mut native_inlines = |children| {
         let mut inlines: Vec<Inline> = Vec::new();
         for (_, child) in children {
             match child {
@@ -861,13 +864,20 @@ fn native_visitor<T: Write>(
                         inlines.push(Inline::Str(Str { text }))
                     }
                 }
-                _ => panic!("Unexpected child in link_text: {:?}", child),
+                other => {
+                    writeln!(
+                        inlines_buf,
+                        "Ignoring unexpected unknown node in native_inlines {:?}.",
+                        other
+                    )
+                    .unwrap();
+                }
             }
         }
         inlines
     };
 
-    match node.kind() {
+    let result = match node.kind() {
         "numeric_character_reference" => {
             // Convert numeric character references to their corresponding characters
             // &#x0040; => @, &#64; => @, etc
@@ -2356,7 +2366,10 @@ fn native_visitor<T: Write>(
             let range = node_location(node);
             PandocNativeIntermediate::IntermediateUnknown(range)
         }
-    }
+    };
+    buf.write_all(&inline_buf).unwrap();
+    buf.write_all(&inlines_buf).unwrap();
+    result
 }
 
 fn shortcode_value_span(str: String) -> Inline {
