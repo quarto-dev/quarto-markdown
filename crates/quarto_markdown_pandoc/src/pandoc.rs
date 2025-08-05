@@ -13,7 +13,6 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::io::Write;
 
-use crate::errors;
 use crate::filters::{
     Filter, FilterReturn::FilterResult, FilterReturn::Unchanged, topdown_traverse,
 };

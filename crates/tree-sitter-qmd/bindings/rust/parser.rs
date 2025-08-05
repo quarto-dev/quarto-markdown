@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::num::NonZeroU16;
 
 use crate::{INLINE_LANGUAGE, LANGUAGE};
-use tree_sitter::LogType;
 use tree_sitter::{InputEdit, Language, Node, Parser, Point, Range, Tree, TreeCursor};
 
 /// A parser that produces [`MarkdownTree`]s.
@@ -265,7 +264,7 @@ impl MarkdownTree {
     }
 
     /// Create a new [`MarkdownCursor`] starting from the root of the tree.
-    pub fn walk(&self) -> MarkdownCursor {
+    pub fn walk(&self) -> MarkdownCursor<'_> {
         MarkdownCursor {
             markdown_tree: self,
             block_cursor: self.block_tree.walk(),
