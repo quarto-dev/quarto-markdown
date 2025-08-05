@@ -14,6 +14,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum TraversePhase {
     Enter,
+    Exit,
     GoToSiblings,
 }
 
@@ -39,9 +40,11 @@ pub fn topdown_traverse_concrete_tree<F>(
                 if cursor.goto_next_sibling() {
                     stack.push(TraversePhase::Enter);
                 } else {
+                    visitor(&cursor.node(), TraversePhase::Exit);
                     cursor.goto_parent();
                 }
             }
+            _ => panic!("Unexpected phase on stack"),
         }
     }
 }

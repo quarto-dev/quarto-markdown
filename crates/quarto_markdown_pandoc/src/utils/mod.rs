@@ -4,4 +4,5 @@
  */
 
 pub mod autoid;
+pub mod concrete_tree_depth;
 pub mod output;

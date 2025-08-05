@@ -1,0 +1,25 @@
+/*
+ * concrete_tree_depth.rs
+ * Copyright (c) 2025 Posit, PBC
+ */
+use crate::traversals;
+use tree_sitter_qmd::MarkdownTree;
+
+pub fn concrete_tree_depth(tree: &MarkdownTree) -> usize {
+    let mut this_depth = 0;
+    let mut max_depth = 0;
+    crate::traversals::topdown_traverse_concrete_tree(&mut tree.walk(), &mut |node, phase| {
+        if phase == traversals::TraversePhase::Enter {
+            if node.is_named() {
+                this_depth += 1;
+                if this_depth > max_depth {
+                    max_depth = this_depth;
+                }
+            }
+        } else {
+            this_depth -= 1;
+        }
+        true // continue traversing
+    });
+    max_depth
+}

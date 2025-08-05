@@ -2,6 +2,7 @@ use crate::errors;
 use crate::errors::parse_is_good;
 use crate::pandoc;
 use crate::traversals;
+use crate::utils;
 use std::io::Write;
 // use tree_sitter::LogType;
 use tree_sitter_qmd::MarkdownParser;
@@ -24,6 +25,7 @@ pub fn read<T: Write>(
     mut output_stream: &mut T,
 ) -> Result<pandoc::Pandoc, Vec<String>> {
     let mut parser = MarkdownParser::default();
+    let mut error_messages: Vec<String> = Vec::new();
     // let mut found_error: bool = false;
 
     // parser
@@ -41,10 +43,20 @@ pub fn read<T: Write>(
     let tree = parser
         .parse(&input_bytes, None)
         .expect("Failed to parse input");
-    // println!("Found error: {}", found_error);
+
+    let depth = crate::utils::concrete_tree_depth::concrete_tree_depth(&tree);
+    // this is here mostly to prevent our fuzzer from blowing the stack
+    // with a deeply nested document
+    if depth > 100 {
+        error_messages.push(format!(
+            "The input document is too deeply nested (max depth: {} > 100).",
+            depth
+        ));
+        return Err(error_messages);
+    }
+
     let errors = parse_is_good(&tree);
     print_whole_tree(&mut tree.walk(), &mut output_stream);
-    let mut error_messages: Vec<String> = Vec::new();
     if !errors.is_empty() {
         let mut cursor = tree.walk();
         for error in errors {
