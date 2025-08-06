@@ -26,6 +26,9 @@ struct Args {
 
     #[arg(short = 'v', long = "verbose")]
     verbose: bool,
+
+    #[arg(short = 'i', long = "input", default_value = "-")]
+    input: String,
 }
 
 fn print_whole_tree<T: Write>(cursor: &mut tree_sitter_qmd::MarkdownCursor, buf: &mut T) {
@@ -50,7 +53,19 @@ fn main() {
     } else {
         VerboseOutput::Sink(io::sink())
     };
-    io::stdin().read_to_string(&mut input).unwrap();
+    if args.input == "-" {
+        // Read from stdin
+        io::stdin()
+            .read_to_string(&mut input)
+            .expect("Failed to read from stdin");
+    } else {
+        // Read from file
+        std::fs::File::open(&args.input)
+            .expect("Failed to open input file")
+            .read_to_string(&mut input)
+            .expect("Failed to read input file");
+    }
+
     if !input.ends_with("\n") {
         eprintln!("(Warning) Adding missing newline to end of input.");
         //
