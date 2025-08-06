@@ -167,3 +167,14 @@ Nested quotes 2
       (text_base)
       (single_quoted_span_delimiter))
     (double_quoted_span_delimiter)))
+================================================================================
+code span with braces inside, inline-executable style
+================================================================================
+`{r} cat("Hello world")`
+--------------------------------------------------------------------------------
+(inline
+  (code_span
+    (code_span_delimiter)
+    (code_content)
+    (code_span_delimiter))
+  (soft_line_break))

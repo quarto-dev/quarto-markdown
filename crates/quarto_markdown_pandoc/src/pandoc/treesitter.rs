@@ -24,6 +24,7 @@ use crate::pandoc::table::{
     Alignment, Cell, ColSpec, ColWidth, Row, Table, TableBody, TableFoot, TableHead,
 };
 use core::panic;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::Write;
@@ -67,10 +68,10 @@ fn native_visitor<T: Write>(
     let mut inline_buf = Vec::<u8>::new();
     let mut inlines_buf = Vec::<u8>::new();
 
-    let whitespace_re = Regex::new(r"\s+").unwrap();
-    let indent_re = Regex::new(r"[ \t]+").unwrap();
-    let escaped_double_quote_re = Regex::new("[\\\\][\"]").unwrap();
-    let escaped_single_quote_re = Regex::new("[\\\\][']").unwrap();
+    let whitespace_re: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
+    let indent_re: Lazy<Regex> = Lazy::new(|| Regex::new(r"[ \t]+").unwrap());
+    let escaped_double_quote_re: Lazy<Regex> = Lazy::new(|| Regex::new("[\\\\][\"]").unwrap());
+    let escaped_single_quote_re: Lazy<Regex> = Lazy::new(|| Regex::new("[\\\\][']").unwrap());
 
     let node_text = || node.utf8_text(input_bytes).unwrap().to_string();
 
@@ -1703,7 +1704,8 @@ fn trim_inlines(inlines: Inlines) -> (Inlines, bool) {
 
 fn desugar(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
     let mut errors = Vec::new();
-    let raw_reader_format_specifier = Regex::new(r"<(?P<reader>.+)").unwrap();
+    let raw_reader_format_specifier: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"<(?P<reader>.+)").unwrap());
     let result = {
         let mut filter = Filter::new()
             .with_superscript(|mut superscript| {

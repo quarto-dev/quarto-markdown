@@ -136,7 +136,7 @@ module.exports = grammar(add_inline_rules({
 
         code_span: $ => prec.right(seq(
             alias($._code_span_start, $.code_span_delimiter),
-            alias(repeat(choice($._text_base, '[', ']', $._soft_line_break)), $.code_content),
+            alias(repeat(choice($._code_span_text_base, $._soft_line_break)), $.code_content),
             alias($._code_span_close, $.code_span_delimiter),
             optional($._qmd_attribute)
         )),
@@ -406,6 +406,11 @@ module.exports = grammar(add_inline_rules({
         _text_base: $ => prec.right(choice(
             $._word,
             common.punctuation_without($, ['[', '{', '}', ']', "@"]),
+            $._whitespace,
+        )),
+        _code_span_text_base: $ => prec.right(choice(
+            $._word,
+            common.punctuation_without($, []),
             $._whitespace,
         )),
 
