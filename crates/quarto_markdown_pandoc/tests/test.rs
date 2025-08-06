@@ -56,47 +56,88 @@ fn canonicalize_pandoc_ast(ast: &str, from: &str, to: &str) -> String {
     let output = child.wait_with_output().expect("Failed to read stdout");
     String::from_utf8_lossy(&output.stdout).to_string()
 }
+fn matches_canonical_pandoc_format(
+    markdown: &str,
+    ast: &String,
+    pandoc_reader: &str,
+    output_format: &str,
+) -> bool {
+    if !has_good_pandoc_version() {
+        return true; // Skip test if pandoc version is not suitable
+    }
+    let our_ast = canonicalize_pandoc_ast(ast, output_format, output_format);
+    let pandoc_ast = canonicalize_pandoc_ast(markdown, pandoc_reader, output_format);
+    our_ast == pandoc_ast
+}
 
 fn matches_pandoc_markdown_reader(input: &str) -> bool {
     if !has_good_pandoc_version() {
         return true; // Skip test if pandoc version is not suitable
     }
-    let ast = writers::native::write(
-        &treesitter_to_pandoc(
-            &mut std::io::sink(),
-            &MarkdownParser::default()
-                .parse(input.as_bytes(), None)
-                .unwrap(),
-            input.as_bytes(),
-        )
-        .unwrap(),
-    );
-    let our_ast = canonicalize_pandoc_ast(&ast, "native", "native");
-    let pandoc_ast = canonicalize_pandoc_ast(input, "markdown", "native");
-    our_ast == pandoc_ast
+    matches_canonical_pandoc_format(
+        input,
+        &writers::native::write(
+            &treesitter_to_pandoc(
+                &mut std::io::sink(),
+                &MarkdownParser::default()
+                    .parse(input.as_bytes(), None)
+                    .unwrap(),
+                input.as_bytes(),
+            )
+            .unwrap(),
+        ),
+        "markdown",
+        "native",
+    ) && matches_canonical_pandoc_format(
+        input,
+        &writers::json::write(
+            &treesitter_to_pandoc(
+                &mut std::io::sink(),
+                &MarkdownParser::default()
+                    .parse(input.as_bytes(), None)
+                    .unwrap(),
+                input.as_bytes(),
+            )
+            .unwrap(),
+        ),
+        "markdown",
+        "json",
+    )
 }
 
 fn matches_pandoc_commonmark_reader(input: &str) -> bool {
     if !has_good_pandoc_version() {
         return true; // Skip test if pandoc version is not suitable
     }
-    let ast = writers::native::write(
-        &treesitter_to_pandoc(
-            &mut std::io::sink(),
-            &MarkdownParser::default()
-                .parse(input.as_bytes(), None)
-                .unwrap(),
-            input.as_bytes(),
-        )
-        .unwrap(),
-    );
-    let our_ast = canonicalize_pandoc_ast(&ast, "native", "native");
-    let pandoc_ast = canonicalize_pandoc_ast(
+    matches_canonical_pandoc_format(
         input,
+        &writers::native::write(
+            &treesitter_to_pandoc(
+                &mut std::io::sink(),
+                &MarkdownParser::default()
+                    .parse(input.as_bytes(), None)
+                    .unwrap(),
+                input.as_bytes(),
+            )
+            .unwrap(),
+        ),
         "commonmark+strikeout+subscript+superscript",
         "native",
-    );
-    our_ast == pandoc_ast
+    ) && matches_canonical_pandoc_format(
+        input,
+        &writers::json::write(
+            &treesitter_to_pandoc(
+                &mut std::io::sink(),
+                &MarkdownParser::default()
+                    .parse(input.as_bytes(), None)
+                    .unwrap(),
+                input.as_bytes(),
+            )
+            .unwrap(),
+        ),
+        "commonmark+strikeout+subscript+superscript",
+        "json",
+    )
 }
 
 #[test]
