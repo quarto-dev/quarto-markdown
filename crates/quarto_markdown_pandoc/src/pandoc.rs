@@ -1526,7 +1526,10 @@ fn native_visitor<T: Write>(
             let marker_text = node
                 .utf8_text(input_bytes)
                 .unwrap()
-                .trim_end()
+                // we trim both ends instead of just trim_end()
+                // because the lexer might hand us a marker with tabs at the beginning,
+                // as a result of weird mixed-spaces-and-tabs cases like "> \t1."
+                .trim()
                 .trim_end_matches('.')
                 .trim_end_matches(')')
                 .to_string();
