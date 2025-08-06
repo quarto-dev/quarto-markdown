@@ -24,27 +24,30 @@ pub fn topdown_traverse_concrete_tree<F>(
 ) where
     F: for<'a> FnMut(&'a tree_sitter::Node, TraversePhase) -> bool,
 {
-    let mut stack = vec![TraversePhase::Enter];
+    let mut stack: Vec<usize> = vec![0];
     while stack.len() > 0 {
-        let top = stack.pop().unwrap();
-        match top {
-            TraversePhase::Enter => {
-                stack.push(TraversePhase::GoToSiblings);
-                if visitor(&cursor.node(), TraversePhase::Enter) {
-                    if cursor.goto_first_child() {
-                        stack.push(TraversePhase::Enter);
-                    }
+        match stack.pop().unwrap() {
+            0 => {
+                stack.push(2); // exit
+                if visitor(&cursor.node(), TraversePhase::Enter) && cursor.goto_first_child() {
+                    stack.push(1); // go to parent
+                    stack.push(3); // check for next sibling
+                    stack.push(0); // recurse
                 }
             }
-            TraversePhase::GoToSiblings => {
+            1 => {
+                cursor.goto_parent();
+            }
+            2 => {
+                visitor(&cursor.node(), TraversePhase::Exit);
+            }
+            3 => {
                 if cursor.goto_next_sibling() {
-                    stack.push(TraversePhase::Enter);
-                } else {
-                    visitor(&cursor.node(), TraversePhase::Exit);
-                    cursor.goto_parent();
+                    stack.push(3); // continue sibling traversal
+                    stack.push(0); // recurse
                 }
             }
-            _ => panic!("Unexpected phase on stack"),
+            _ => unreachable!(),
         }
     }
 }
