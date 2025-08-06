@@ -2731,6 +2731,43 @@ pub fn desugar(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
     }
 }
 
+pub fn merge_strs(pandoc: Pandoc) -> Pandoc {
+    topdown_traverse(
+        pandoc,
+        &mut Filter::new().with_inlines(|inlines| {
+            let mut current_str: Option<String> = None;
+            let mut result: Inlines = Vec::new();
+            let mut did_merge = false;
+            for inline in inlines {
+                match inline {
+                    Inline::Str(s) => {
+                        if let Some(ref mut current) = current_str {
+                            current.push_str(&s.text);
+                            did_merge = true;
+                        } else {
+                            current_str = Some(s.text);
+                        }
+                    }
+                    _ => {
+                        if let Some(current) = current_str.take() {
+                            result.push(Inline::Str(Str { text: current }));
+                        }
+                        result.push(inline);
+                    }
+                }
+            }
+            if let Some(current) = current_str {
+                result.push(Inline::Str(Str { text: current }));
+            }
+            if did_merge {
+                FilterResult(result, true)
+            } else {
+                Unchanged(result)
+            }
+        }),
+    )
+}
+
 pub fn treesitter_to_pandoc<T: Write>(
     buf: &mut T,
     tree: &tree_sitter_qmd::MarkdownTree,
@@ -2744,5 +2781,6 @@ pub fn treesitter_to_pandoc<T: Write>(
     let (_, PandocNativeIntermediate::IntermediatePandoc(pandoc)) = result else {
         panic!("Expected Pandoc, got {:?}", result)
     };
-    desugar(pandoc)
+    let result = desugar(pandoc)?;
+    Ok(merge_strs(result))
 }

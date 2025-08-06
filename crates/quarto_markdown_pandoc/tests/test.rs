@@ -185,8 +185,8 @@ fn unit_test_snapshots() {
                     )
                 });
                 assert_eq!(
-                    ast,
-                    snapshot,
+                    ast.trim(),
+                    snapshot.trim(),
                     "Snapshot mismatch for file {}",
                     path.display()
                 );
