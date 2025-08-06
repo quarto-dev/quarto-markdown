@@ -23,13 +23,13 @@ pub use crate::pandoc::caption::Caption;
 pub use crate::pandoc::inline::{
     Citation, CitationMode, Cite, Code, Emph, Image, Inline, Inlines, LineBreak, Link, Math,
     MathType, Note, NoteReference, QuoteType, Quoted, RawInline, SmallCaps, SoftBreak, Space, Span,
-    Str, Strikeout, Strong, Subscript, Superscript, Target, Underline,
+    Str, Strikeout, Strong, Subscript, Superscript, Underline,
 };
 pub use crate::pandoc::list::{ListAttributes, ListNumberDelim, ListNumberStyle};
 pub use crate::pandoc::pandoc::Pandoc;
 pub use crate::pandoc::shortcode::Shortcode;
 pub use crate::pandoc::table::{
-    Alignment, Cell, ColSpec, ColWidth, Row, Table, TableBody, TableFoot, TableHead,
+    Alignment, Cell, ColWidth, Row, Table, TableBody, TableFoot, TableHead,
 };
 
 pub use crate::pandoc::treesitter::treesitter_to_pandoc;

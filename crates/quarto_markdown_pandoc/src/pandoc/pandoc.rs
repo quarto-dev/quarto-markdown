@@ -3,11 +3,7 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-pub use crate::pandoc::attr::Attr;
-pub use crate::pandoc::block::{Block, Blocks};
-pub use crate::pandoc::caption::Caption;
-pub use crate::pandoc::inline::{Citation, Inline, Inlines};
-pub use crate::pandoc::list::ListAttributes;
+pub use crate::pandoc::block::Blocks;
 
 /*
  * A data structure that mimics Pandoc's `data Pandoc` type.

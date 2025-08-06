@@ -2,7 +2,6 @@ use crate::errors;
 use crate::errors::parse_is_good;
 use crate::pandoc;
 use crate::traversals;
-use crate::utils;
 use std::io::Write;
 // use tree_sitter::LogType;
 use tree_sitter_qmd::MarkdownParser;
