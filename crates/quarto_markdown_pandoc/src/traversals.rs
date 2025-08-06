@@ -15,7 +15,6 @@
 pub enum TraversePhase {
     Enter,
     Exit,
-    GoToSiblings,
 }
 
 pub fn topdown_traverse_concrete_tree<F>(
