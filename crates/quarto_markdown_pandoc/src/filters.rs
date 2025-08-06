@@ -3,7 +3,8 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::{self, AsInline, Block, Blocks, Inline, Inlines};
+use crate::pandoc::inline::AsInline;
+use crate::pandoc::{self, Block, Blocks, Inline, Inlines};
 
 // filters are destructive and take ownership of the input
 
