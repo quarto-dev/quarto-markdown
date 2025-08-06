@@ -6,23 +6,22 @@
 use crate::pandoc::{
     Attr, Block, Citation, CitationMode, Inline, ListNumberDelim, MathType, Pandoc, QuoteType,
 };
-use std::fmt::Write;
 
-fn write_safe_string(text: &str, buf: &mut String) -> std::fmt::Result {
+fn write_safe_string<T: std::io::Write>(text: &str, buf: &mut T) -> std::io::Result<()> {
     write!(buf, "\"")?;
     for ch in text.chars() {
         match ch {
-            '\\' => write!(buf, "\\\\")?,
-            '"' => write!(buf, "\\\"")?,
-            '\n' => write!(buf, "\\n")?,
-            _ => write!(buf, "{}", ch)?,
-        }
+            '\\' => write!(buf, "\\\\"),
+            '"' => write!(buf, "\\\""),
+            '\n' => write!(buf, "\\n"),
+            _ => write!(buf, "{}", ch),
+        }?
     }
     write!(buf, "\"")?;
     Ok(())
 }
 
-fn write_native_attr(attr: &Attr, buf: &mut String) -> std::fmt::Result {
+fn write_native_attr<T: std::io::Write>(attr: &Attr, buf: &mut T) -> std::io::Result<()> {
     let (id, classes, attrs) = attr;
     write!(buf, "( ")?;
     write_safe_string(&id, buf)?;
@@ -52,24 +51,30 @@ fn write_native_attr(attr: &Attr, buf: &mut String) -> std::fmt::Result {
     Ok(())
 }
 
-fn write_inline_math_type(math_type: &MathType, buf: &mut String) -> std::fmt::Result {
+fn write_inline_math_type<T: std::io::Write>(
+    math_type: &MathType,
+    buf: &mut T,
+) -> std::io::Result<()> {
     match math_type {
         MathType::InlineMath => write!(buf, "InlineMath"),
         MathType::DisplayMath => write!(buf, "DisplayMath"),
     }
 }
 
-fn write_native_quote_type(quote_type: &QuoteType, buf: &mut String) -> std::fmt::Result {
+fn write_native_quote_type<T: std::io::Write>(
+    quote_type: &QuoteType,
+    buf: &mut T,
+) -> std::io::Result<()> {
     match quote_type {
         QuoteType::SingleQuote => write!(buf, "SingleQuote"),
         QuoteType::DoubleQuote => write!(buf, "DoubleQuote"),
     }
 }
 
-fn write_native_alignment(
+fn write_native_alignment<T: std::io::Write>(
     alignment: &crate::pandoc::Alignment,
-    buf: &mut String,
-) -> std::fmt::Result {
+    buf: &mut T,
+) -> std::io::Result<()> {
     match alignment {
         crate::pandoc::Alignment::Left => write!(buf, "AlignLeft"),
         crate::pandoc::Alignment::Right => write!(buf, "AlignRight"),
@@ -78,7 +83,10 @@ fn write_native_alignment(
     }
 }
 
-fn write_native_colwidth(colwidth: &crate::pandoc::ColWidth, buf: &mut String) -> std::fmt::Result {
+fn write_native_colwidth<T: std::io::Write>(
+    colwidth: &crate::pandoc::ColWidth,
+    buf: &mut T,
+) -> std::io::Result<()> {
     match colwidth {
         crate::pandoc::ColWidth::Default => write!(buf, "ColWidthDefault"),
         crate::pandoc::ColWidth::Percentage(percentage) => {
@@ -88,10 +96,10 @@ fn write_native_colwidth(colwidth: &crate::pandoc::ColWidth, buf: &mut String) -
     }
 }
 
-fn write_native_table_body(
+fn write_native_table_body<T: std::io::Write>(
     table_body: &crate::pandoc::TableBody,
-    buf: &mut String,
-) -> std::fmt::Result {
+    buf: &mut T,
+) -> std::io::Result<()> {
     write!(buf, "TableBody ")?;
     write_native_attr(&table_body.attr, buf)?;
     write!(buf, " (RowHeadColumns {}) ", table_body.rowhead_columns)?;
@@ -101,7 +109,7 @@ fn write_native_table_body(
     Ok(())
 }
 
-fn write_inlines(inlines: &[Inline], buf: &mut String) -> std::fmt::Result {
+fn write_inlines<T: std::io::Write>(inlines: &[Inline], buf: &mut T) -> std::io::Result<()> {
     write!(buf, "[")?;
     for (i, inline) in inlines.iter().enumerate() {
         if i > 0 {
@@ -113,14 +121,17 @@ fn write_inlines(inlines: &[Inline], buf: &mut String) -> std::fmt::Result {
     Ok(())
 }
 
-fn write_citation_mode(mode: &CitationMode, buf: &mut String) -> std::fmt::Result {
+fn write_citation_mode<T: std::io::Write>(mode: &CitationMode, buf: &mut T) -> std::io::Result<()> {
     match mode {
         CitationMode::NormalCitation => write!(buf, "NormalCitation"),
         CitationMode::SuppressAuthor => write!(buf, "SuppressAuthor"),
         CitationMode::AuthorInText => write!(buf, "AuthorInText"),
     }
 }
-fn write_native_cell(cell: &crate::pandoc::Cell, buf: &mut String) -> std::fmt::Result {
+fn write_native_cell<T: std::io::Write>(
+    cell: &crate::pandoc::Cell,
+    buf: &mut T,
+) -> std::io::Result<()> {
     write!(buf, "Cell ")?;
     write_native_attr(&cell.attr, buf)?;
     write!(buf, " ")?;
@@ -141,7 +152,10 @@ fn write_native_cell(cell: &crate::pandoc::Cell, buf: &mut String) -> std::fmt::
     Ok(())
 }
 
-fn write_native_row(row: &crate::pandoc::Row, buf: &mut String) -> std::fmt::Result {
+fn write_native_row<T: std::io::Write>(
+    row: &crate::pandoc::Row,
+    buf: &mut T,
+) -> std::io::Result<()> {
     write!(buf, "Row ")?;
     write_native_attr(&row.attr, buf)?;
     write!(buf, " [")?;
@@ -155,7 +169,10 @@ fn write_native_row(row: &crate::pandoc::Row, buf: &mut String) -> std::fmt::Res
     Ok(())
 }
 
-fn write_native_rows(rows: &Vec<crate::pandoc::Row>, buf: &mut String) -> std::fmt::Result {
+fn write_native_rows<T: std::io::Write>(
+    rows: &Vec<crate::pandoc::Row>,
+    buf: &mut T,
+) -> std::io::Result<()> {
     write!(buf, "[")?;
     for (i, row) in rows.iter().enumerate() {
         if i > 0 {
@@ -167,7 +184,10 @@ fn write_native_rows(rows: &Vec<crate::pandoc::Row>, buf: &mut String) -> std::f
     Ok(())
 }
 
-fn write_native_table_foot(foot: &crate::pandoc::TableFoot, buf: &mut String) -> std::fmt::Result {
+fn write_native_table_foot<T: std::io::Write>(
+    foot: &crate::pandoc::TableFoot,
+    buf: &mut T,
+) -> std::io::Result<()> {
     write!(buf, "(TableFoot ")?;
     write_native_attr(&foot.attr, buf)?;
     write!(buf, " ")?;
@@ -176,7 +196,7 @@ fn write_native_table_foot(foot: &crate::pandoc::TableFoot, buf: &mut String) ->
     Ok(())
 }
 
-fn write_inline(text: &Inline, buf: &mut String) -> std::fmt::Result {
+fn write_inline<T: std::io::Write>(text: &Inline, buf: &mut T) -> std::io::Result<()> {
     match text {
         Inline::Math(math_struct) => {
             write!(buf, "Math ")?;
@@ -316,10 +336,10 @@ fn write_inline(text: &Inline, buf: &mut String) -> std::fmt::Result {
     Ok(())
 }
 
-fn write_list_number_delim(
+fn write_list_number_delim<T: std::io::Write>(
     delim: &crate::pandoc::ListNumberDelim,
-    buf: &mut String,
-) -> std::fmt::Result {
+    buf: &mut T,
+) -> std::io::Result<()> {
     match delim {
         ListNumberDelim::Period => write!(buf, "Period"),
         ListNumberDelim::OneParen => write!(buf, "OneParen"),
@@ -328,10 +348,10 @@ fn write_list_number_delim(
     }
 }
 
-fn write_list_number_style(
+fn write_list_number_style<T: std::io::Write>(
     style: &crate::pandoc::ListNumberStyle,
-    buf: &mut String,
-) -> std::fmt::Result {
+    buf: &mut T,
+) -> std::io::Result<()> {
     match style {
         crate::pandoc::ListNumberStyle::Decimal => write!(buf, "Decimal"),
         crate::pandoc::ListNumberStyle::LowerAlpha => write!(buf, "LowerAlpha"),
@@ -342,14 +362,20 @@ fn write_list_number_style(
     }
 }
 
-fn write_short_caption(caption: &Option<Vec<Inline>>, buf: &mut String) -> std::fmt::Result {
+fn write_short_caption<T: std::io::Write>(
+    caption: &Option<Vec<Inline>>,
+    buf: &mut T,
+) -> std::io::Result<()> {
     match caption {
         Some(text) => write_inlines(text, buf),
         None => write!(buf, "Nothing"),
     }
 }
 
-fn write_long_caption(caption: &Option<Vec<Block>>, buf: &mut String) -> std::fmt::Result {
+fn write_long_caption<T: std::io::Write>(
+    caption: &Option<Vec<Block>>,
+    buf: &mut T,
+) -> std::io::Result<()> {
     match caption {
         Some(blocks) => {
             write!(buf, "[ ")?;
@@ -366,7 +392,10 @@ fn write_long_caption(caption: &Option<Vec<Block>>, buf: &mut String) -> std::fm
     Ok(())
 }
 
-fn write_caption(caption: &crate::pandoc::Caption, buf: &mut String) -> std::fmt::Result {
+fn write_caption<T: std::io::Write>(
+    caption: &crate::pandoc::Caption,
+    buf: &mut T,
+) -> std::io::Result<()> {
     write!(buf, "(Caption ")?;
     write_short_caption(&caption.short, buf)?;
     write!(buf, " ")?;
@@ -375,7 +404,7 @@ fn write_caption(caption: &crate::pandoc::Caption, buf: &mut String) -> std::fmt
     Ok(())
 }
 
-fn write_block(block: &Block, buf: &mut String) -> std::fmt::Result {
+fn write_block<T: std::io::Write>(block: &Block, buf: &mut T) -> std::io::Result<()> {
     match block {
         Block::Plain(crate::pandoc::Plain { content, .. }) => {
             write!(buf, "Plain ")?;
@@ -539,15 +568,14 @@ fn write_block(block: &Block, buf: &mut String) -> std::fmt::Result {
     Ok(())
 }
 
-pub fn write(pandoc: &Pandoc) -> String {
-    let mut buf = String::new();
-    write!(buf, "[ ").unwrap();
+pub fn write<T: std::io::Write>(pandoc: &Pandoc, mut buf: &mut T) -> std::io::Result<()> {
+    write!(buf, "[ ")?;
     for (i, block) in pandoc.blocks.iter().enumerate() {
         if i > 0 {
-            write!(buf, ", ").unwrap();
+            write!(buf, ", ")?;
         }
-        write_block(block, &mut buf).unwrap();
+        write_block(block, &mut buf)?;
     }
-    write!(buf, " ]").unwrap();
-    buf
+    write!(buf, " ]")?;
+    Ok(())
 }

@@ -20,12 +20,14 @@ fn unit_test_simple_qmd_parses() {
         let tree = parser
             .parse(input_bytes, None)
             .expect("Failed to parse input");
-        println!(
-            "{}",
-            writers::native::write(
-                &treesitter_to_pandoc(&mut std::io::sink(), &tree, &input_bytes).unwrap()
-            )
-        );
+        let mut buf = Vec::new();
+        writers::native::write(
+            &treesitter_to_pandoc(&mut std::io::sink(), &tree, &input_bytes).unwrap(),
+            &mut buf,
+        )
+        .unwrap();
+        let ast = String::from_utf8(buf).expect("Invalid UTF-8 in output");
+        println!("{}", &ast);
         assert!(true, "Parsed successfully");
     }
 }
@@ -74,67 +76,78 @@ fn matches_pandoc_markdown_reader(input: &str) -> bool {
     if !has_good_pandoc_version() {
         return true; // Skip test if pandoc version is not suitable
     }
-    matches_canonical_pandoc_format(
-        input,
-        &writers::native::write(
-            &treesitter_to_pandoc(
-                &mut std::io::sink(),
-                &MarkdownParser::default()
-                    .parse(input.as_bytes(), None)
-                    .unwrap(),
-                input.as_bytes(),
-            )
-            .unwrap(),
-        ),
-        "markdown",
-        "native",
-    ) && matches_canonical_pandoc_format(
-        input,
-        &writers::json::write(
-            &treesitter_to_pandoc(
-                &mut std::io::sink(),
-                &MarkdownParser::default()
-                    .parse(input.as_bytes(), None)
-                    .unwrap(),
-                input.as_bytes(),
-            )
-            .unwrap(),
-        ),
-        "markdown",
-        "json",
+    let mut buf1 = Vec::new();
+    let mut buf2 = Vec::new();
+    writers::native::write(
+        &treesitter_to_pandoc(
+            &mut std::io::sink(),
+            &MarkdownParser::default()
+                .parse(input.as_bytes(), None)
+                .unwrap(),
+            input.as_bytes(),
+        )
+        .unwrap(),
+        &mut buf1,
     )
+    .unwrap();
+    let native_output = String::from_utf8(buf1).expect("Invalid UTF-8 in output");
+    writers::json::write(
+        &treesitter_to_pandoc(
+            &mut std::io::sink(),
+            &MarkdownParser::default()
+                .parse(input.as_bytes(), None)
+                .unwrap(),
+            input.as_bytes(),
+        )
+        .unwrap(),
+        &mut buf2,
+    )
+    .unwrap();
+    let json_output = String::from_utf8(buf2).expect("Invalid UTF-8 in output");
+    matches_canonical_pandoc_format(input, &native_output, "markdown", "native")
+        && matches_canonical_pandoc_format(input, &json_output, "markdown", "json")
 }
 
 fn matches_pandoc_commonmark_reader(input: &str) -> bool {
     if !has_good_pandoc_version() {
         return true; // Skip test if pandoc version is not suitable
     }
+    let mut buf1 = Vec::new();
+    let mut buf2 = Vec::new();
+    writers::native::write(
+        &treesitter_to_pandoc(
+            &mut std::io::sink(),
+            &MarkdownParser::default()
+                .parse(input.as_bytes(), None)
+                .unwrap(),
+            input.as_bytes(),
+        )
+        .unwrap(),
+        &mut buf1,
+    )
+    .unwrap();
+    let native_output = String::from_utf8(buf1).expect("Invalid UTF-8 in output");
+    writers::json::write(
+        &treesitter_to_pandoc(
+            &mut std::io::sink(),
+            &MarkdownParser::default()
+                .parse(input.as_bytes(), None)
+                .unwrap(),
+            input.as_bytes(),
+        )
+        .unwrap(),
+        &mut buf2,
+    )
+    .unwrap();
+    let json_output = String::from_utf8(buf2).expect("Invalid UTF-8 in output");
     matches_canonical_pandoc_format(
         input,
-        &writers::native::write(
-            &treesitter_to_pandoc(
-                &mut std::io::sink(),
-                &MarkdownParser::default()
-                    .parse(input.as_bytes(), None)
-                    .unwrap(),
-                input.as_bytes(),
-            )
-            .unwrap(),
-        ),
+        &native_output,
         "commonmark+strikeout+subscript+superscript",
         "native",
     ) && matches_canonical_pandoc_format(
         input,
-        &writers::json::write(
-            &treesitter_to_pandoc(
-                &mut std::io::sink(),
-                &MarkdownParser::default()
-                    .parse(input.as_bytes(), None)
-                    .unwrap(),
-                input.as_bytes(),
-            )
-            .unwrap(),
-        ),
+        &json_output,
         "commonmark+strikeout+subscript+superscript",
         "json",
     )
@@ -209,7 +222,8 @@ fn unit_test_snapshots() {
                 eprintln!("Opening file: {}", path.display());
                 let input = std::fs::read_to_string(&path).expect("Failed to read file");
                 let snapshot_path = path.with_extension("qmd.snapshot");
-                let ast = writers::native::write(
+                let mut buffer = Vec::new();
+                writers::native::write(
                     &treesitter_to_pandoc(
                         &mut std::io::sink(),
                         &MarkdownParser::default()
@@ -218,7 +232,10 @@ fn unit_test_snapshots() {
                         input.as_bytes(),
                     )
                     .unwrap(),
-                );
+                    &mut buffer,
+                )
+                .unwrap();
+                let ast = String::from_utf8(buffer).expect("Invalid UTF-8 in output");
                 let snapshot = std::fs::read_to_string(&snapshot_path).unwrap_or_else(|_| {
                     panic!(
                         "Snapshot file {} does not exist, please create it",
@@ -263,7 +280,9 @@ fn test_json_writer() {
                     .expect("Failed to parse input");
                 let pandoc =
                     treesitter_to_pandoc(&mut std::io::sink(), &tree, input_bytes).unwrap();
-                let our_json = writers::json::write(&pandoc);
+                let mut buf = Vec::new();
+                writers::json::write(&pandoc, &mut buf).unwrap();
+                let our_json = String::from_utf8(buf).expect("Invalid UTF-8 in our JSON output");
 
                 // Get Pandoc's output
                 let output = Command::new("pandoc")

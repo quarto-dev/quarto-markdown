@@ -83,13 +83,16 @@ fn main() {
         }
     };
 
-    let output = match args.to.as_str() {
-        "json" => writers::json::write(&pandoc),
-        "native" => writers::native::write(&pandoc),
+    let mut buf = Vec::new();
+    match args.to.as_str() {
+        "json" => writers::json::write(&pandoc, &mut buf),
+        "native" => writers::native::write(&pandoc, &mut buf),
         _ => {
             eprintln!("Unknown output format: {}", args.to);
             return;
         }
-    };
+    }
+    .unwrap();
+    let output = String::from_utf8(buf).expect("Invalid UTF-8 in output");
     println!("{}", output);
 }

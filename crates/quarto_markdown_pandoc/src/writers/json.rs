@@ -263,6 +263,8 @@ fn write_pandoc(pandoc: &Pandoc) -> Value {
     })
 }
 
-pub fn write(pandoc: &Pandoc) -> String {
-    write_pandoc(pandoc).to_string()
+pub fn write<W: std::io::Write>(pandoc: &Pandoc, writer: &mut W) -> std::io::Result<()> {
+    let json = write_pandoc(pandoc);
+    serde_json::to_writer(writer, &json)?;
+    Ok(())
 }
