@@ -200,6 +200,12 @@ static size_t roundup_32(size_t x) {
 }
 
 typedef struct {
+    unsigned own_size; 
+    // Size of the serialized state of the scanner.
+    // This is used to determine if we're too close to hitting
+    // tree-sitter's maximum serialized size limit of 1024 bytes,
+    // defined in tree-sitter's repo in lib/src/parser.h
+
     // A stack of open blocks in the current parse state
     struct {
         size_t size;
@@ -223,6 +229,19 @@ typedef struct {
     bool simulate;
 } Scanner;
 
+static bool can_push_block(Scanner *s) {
+    // the serialization state size is equal
+    // to sizeof(Scanner) + sizeof(Block) * open_blocks.size
+    // If this grows over 75% of the maximum serialized size limit
+    // then we refuse to push blocks further, and purposefully fail to scan.
+    // This is to prevent the scanner from growing too large and hitting
+    // tree-sitter's maximum serialized size limit of 1024 bytes.
+    size_t serialized_size = sizeof(Scanner) + sizeof(Block) * s->open_blocks.size;
+    size_t max_serialized_size = 1024;
+    size_t max_serialized_size_limit = (max_serialized_size * 3) / 4;
+    return serialized_size < max_serialized_size_limit;
+}
+
 static void push_block(Scanner *s, Block b) {
     if (s->open_blocks.size == s->open_blocks.capacity) {
         s->open_blocks.capacity =
@@ -243,6 +262,9 @@ static inline Block pop_block(Scanner *s) {
 // Write the whole state of a Scanner to a byte buffer
 static unsigned serialize(Scanner *s, char *buffer) {
     unsigned size = 0;
+    for (size_t i = 0; i < sizeof(unsigned); i++) {
+        buffer[size++] = '\0';
+    }
     buffer[size++] = (char)s->state;
     buffer[size++] = (char)s->matched;
     buffer[size++] = (char)s->indentation;
@@ -254,12 +276,14 @@ static unsigned serialize(Scanner *s, char *buffer) {
                blocks_count * sizeof(Block));
         size += blocks_count * sizeof(Block);
     }
+    s->own_size = size;
     return size;
 }
 
 // Read the whole state of a Scanner from a byte buffer
 // `serizalize` and `deserialize` should be fully symmetric.
 static void deserialize(Scanner *s, const char *buffer, unsigned length) {
+    s->own_size = 0;
     s->open_blocks.size = 0;
     s->open_blocks.capacity = 0;
     s->state = 0;
@@ -269,6 +293,8 @@ static void deserialize(Scanner *s, const char *buffer, unsigned length) {
     s->fenced_code_block_delimiter_length = 0;
     if (length > 0) {
         size_t size = 0;
+        s->own_size = length;
+        size += sizeof(unsigned);
         s->state = (uint8_t)buffer[size++];
         s->matched = (uint8_t)buffer[size++];
         s->indentation = (uint8_t)buffer[size++];
@@ -308,6 +334,8 @@ static void mark_end(Scanner *s, TSLexer *lexer) {
 // 3. When a `$._trigger_error` token is valid, which is used to stop parse
 // branches through
 //    normal tree-sitter grammar rules.
+// 4. When the scanner is asked to push a block but is too close to the
+//    maximum serialized size limit of 1024 bytes.
 //
 // See also the `$._soft_line_break` and `$._paragraph_end_newline` tokens in
 // grammar.js
@@ -438,6 +466,9 @@ static bool parse_fenced_div_marker(Scanner *s, TSLexer *lexer,
         if (valid_symbols[FENCED_DIV_START]) {
             lexer->result_symbol = FENCED_DIV_START;
             if (!s->simulate) {
+                if (!can_push_block(s)) {
+                    return error(lexer);
+                }
                 push_block(s, FENCED_DIV);
             }
             return true;
@@ -495,8 +526,12 @@ static bool parse_fenced_code_block(Scanner *s, const char delimiter,
             lexer->result_symbol = delimiter == '`'
                                        ? FENCED_CODE_BLOCK_START_BACKTICK
                                        : FENCED_CODE_BLOCK_START_TILDE;
-            if (!s->simulate)
+            if (!s->simulate) {
+                if (!can_push_block(s)) {
+                    return error(lexer);
+                }
                 push_block(s, FENCED_CODE_BLOCK);
+            }
             // Remember the length of the delimiter for later, since we need it
             // to decide whether a sequence of backticks can close the block.
             s->fenced_code_block_delimiter_length = level;
@@ -581,8 +616,12 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             s->indentation = extra_indentation;
             extra_indentation = temp;
         }
-        if (!s->simulate)
+        if (!s->simulate) {
+            if (!can_push_block(s)) {
+                return error(lexer);
+            }
             push_block(s, (Block)(LIST_ITEM + extra_indentation));
+        }
         lexer->result_symbol =
             dont_interrupt ? LIST_MARKER_STAR_DONT_INTERRUPT : LIST_MARKER_STAR;
         return true;
@@ -624,8 +663,12 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
             s->indentation += advance(s, lexer) - 1;
         }
         lexer->result_symbol = BLOCK_QUOTE_START;
-        if (!s->simulate)
+        if (!s->simulate) {
+            if (!can_push_block(s)) {
+                return error(lexer);
+            }
             push_block(s, BLOCK_QUOTE);
+        }
         return true;
     }
     return false;
@@ -765,8 +808,12 @@ static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                     s->indentation = extra_indentation;
                     extra_indentation = temp;
                 }
-                if (!s->simulate)
+                if (!s->simulate) {
+                    if (!can_push_block(s)) {
+                        return error(lexer);
+                    }
                     push_block(s, (Block)(LIST_ITEM + extra_indentation));
+                }
                 return true;
             }
         }
@@ -831,9 +878,13 @@ static bool parse_ordered_list_marker(Scanner *s, TSLexer *lexer,
                         s->indentation = extra_indentation;
                         extra_indentation = temp;
                     }
-                    if (!s->simulate)
+                    if (!s->simulate) {
+                        if (!can_push_block(s)) {
+                            return error(lexer);
+                        }
                         push_block(
                             s, (Block)(LIST_ITEM + extra_indentation + digits));
+                    }
                     return true;
                 }
             }
@@ -916,8 +967,12 @@ static bool parse_minus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                 s->indentation = extra_indentation;
                 extra_indentation = temp;
             }
-            if (!s->simulate)
+            if (!s->simulate) {
+                if (!can_push_block(s)) {
+                    return error(lexer);
+                }
                 push_block(s, (Block)(LIST_ITEM + extra_indentation));
+            }
             lexer->result_symbol = dont_interrupt
                                        ? LIST_MARKER_MINUS_DONT_INTERRUPT
                                        : LIST_MARKER_MINUS;
@@ -997,8 +1052,12 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
     if (lexer->lookahead == '?' && valid_symbols[HTML_BLOCK_3_START]) {
         advance(s, lexer);
         lexer->result_symbol = HTML_BLOCK_3_START;
-        if (!s->simulate)
+        if (!s->simulate) {
+            if (!can_push_block(s)) {
+                return error(lexer);
+            }
             push_block(s, ANONYMOUS);
+        }
         return true;
     }
     if (lexer->lookahead == '!') {
@@ -1009,16 +1068,24 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
             if (lexer->lookahead == '-' && valid_symbols[HTML_BLOCK_2_START]) {
                 advance(s, lexer);
                 lexer->result_symbol = HTML_BLOCK_2_START;
-                if (!s->simulate)
+                if (!s->simulate) {
+                    if (!can_push_block(s)) {
+                        return error(lexer);
+                    }
                     push_block(s, ANONYMOUS);
+                }
                 return true;
             }
         } else if ('A' <= lexer->lookahead && lexer->lookahead <= 'Z' &&
                    valid_symbols[HTML_BLOCK_4_START]) {
             advance(s, lexer);
             lexer->result_symbol = HTML_BLOCK_4_START;
-            if (!s->simulate)
+            if (!s->simulate) {
+                if (!can_push_block(s)) {
+                    return error(lexer);
+                }
                 push_block(s, ANONYMOUS);
+            }
             return true;
         } else if (lexer->lookahead == '[') {
             advance(s, lexer);
@@ -1036,8 +1103,12 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
                                     valid_symbols[HTML_BLOCK_5_START]) {
                                     advance(s, lexer);
                                     lexer->result_symbol = HTML_BLOCK_5_START;
-                                    if (!s->simulate)
+                                    if (!s->simulate) {
+                                        if (!can_push_block(s)) {
+                                            return error(lexer);
+                                        }
                                         push_block(s, ANONYMOUS);
+                                    }
                                     return true;
                                 }
                             }
@@ -1082,8 +1153,12 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
                         }
                     } else if (valid_symbols[HTML_BLOCK_1_START]) {
                         lexer->result_symbol = HTML_BLOCK_1_START;
-                        if (!s->simulate)
+                        if (!s->simulate) {
+                            if (!can_push_block(s)) {
+                                return error(lexer);
+                            }
                             push_block(s, ANONYMOUS);
+                        }
                         return true;
                     }
                 }
@@ -1102,8 +1177,12 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
                 if (strcmp(name, HTML_TAG_NAMES_RULE_7[i]) == 0 &&
                     valid_symbols[HTML_BLOCK_6_START]) {
                     lexer->result_symbol = HTML_BLOCK_6_START;
-                    if (!s->simulate)
+                    if (!s->simulate) {
+                        if (!can_push_block(s)) {
+                            return error(lexer);
+                        }
                         push_block(s, ANONYMOUS);
+                    }
                     return true;
                 }
             }
@@ -1215,8 +1294,12 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
     }
     if (lexer->lookahead == '\r' || lexer->lookahead == '\n') {
         lexer->result_symbol = HTML_BLOCK_7_START;
-        if (!s->simulate)
+        if (!s->simulate) {
+            if (!can_push_block(s)) {
+                return error(lexer);
+            }
             push_block(s, ANONYMOUS);
+        }
         return true;
     }
     return false;
@@ -1408,8 +1491,12 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             if (s->indentation >= 4 && lexer->lookahead != '\n' &&
                 lexer->lookahead != '\r') {
                 lexer->result_symbol = INDENTED_CHUNK_START;
-                if (!s->simulate)
+                if (!s->simulate) {
+                    if (!can_push_block(s)) {
+                        return error(lexer);
+                    }
                     push_block(s, INDENTED_CODE_BLOCK);
+                }
                 s->indentation -= 4;
                 return true;
             }
