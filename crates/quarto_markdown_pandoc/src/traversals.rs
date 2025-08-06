@@ -109,24 +109,4 @@ where
             }
         }
     }
-
-    // let node = cursor.node();
-    // let mut children = Vec::new();
-    // // state 1
-    // if cursor.goto_first_child() {
-    //     loop {
-    //         // state 2
-    //         let result = bottomup_traverse_concrete_tree(cursor, visitor, input_bytes);
-    //         children.push(result);
-    //         if !cursor.goto_next_sibling() {
-    //             break;
-    //         }
-    //     }
-    //     cursor.goto_parent();
-    // }
-    // // state 3
-    // (
-    //     node.kind().to_string(),
-    //     visitor(&node, children, input_bytes),
-    // )
 }
