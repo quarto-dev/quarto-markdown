@@ -122,6 +122,8 @@ module.exports.rules = {
     )),
     commonmark_name: $ => token(prec(1, /[a-zA-Z_][a-zA-Z0-9_\-.]*/)),
     id_specifier: $ => /[#][a-zA-Z0-9_\-.]+/,
+    // we're slightly more permissive here than pandoc, which
+    // requires class specifiers to start with a letter
     class_specifier: $ => /[.][a-zA-Z0-9_\-][a-zA-Z0-9_\-.]*/,
 
     commonmark_attribute: $ => prec(3, prec.dynamic(2, seq(
