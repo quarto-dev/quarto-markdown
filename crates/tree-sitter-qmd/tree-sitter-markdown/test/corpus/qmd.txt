@@ -208,3 +208,19 @@ A fenced div with a paragraph inside a bulleted list
             (inline)
             (block_continuation))
           (block_continuation))))))
+================================================================================
+A code block with a single one-character class specifier
+================================================================================
+```{.c}
+printf("hello");
+```
+--------------------------------------------------------------------------------
+(document
+  (section
+    (fenced_code_block
+      (fenced_code_block_delimiter)
+      (commonmark_attribute
+        (class_specifier))
+      (block_continuation)
+      (code_fence_content
+        (block_continuation)))))

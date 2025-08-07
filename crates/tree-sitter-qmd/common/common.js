@@ -122,7 +122,7 @@ module.exports.rules = {
     )),
     commonmark_name: $ => token(prec(1, /[a-zA-Z_][a-zA-Z0-9_\-.]*/)),
     id_specifier: $ => /[#][a-zA-Z0-9_\-.]+/,
-    class_specifier: $ => /[.][a-zA-Z0-9_\-][a-zA-Z0-9_\-.]+/,
+    class_specifier: $ => /[.][a-zA-Z0-9_\-][a-zA-Z0-9_\-.]*/,
 
     commonmark_attribute: $ => prec(3, prec.dynamic(2, seq(
       "{",
