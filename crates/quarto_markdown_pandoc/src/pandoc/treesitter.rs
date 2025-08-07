@@ -65,8 +65,12 @@ fn native_visitor<T: Write>(
     children: Vec<(String, PandocNativeIntermediate)>,
     input_bytes: &[u8],
 ) -> PandocNativeIntermediate {
+    // TODO What sounded like a good idea with two buffers
+    // is becoming annoying now...
     let mut inline_buf = Vec::<u8>::new();
     let mut inlines_buf = Vec::<u8>::new();
+    let mut link_buf = Vec::<u8>::new();
+    let mut image_buf = Vec::<u8>::new();
 
     let whitespace_re: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
     let indent_re: Lazy<Regex> = Lazy::new(|| Regex::new(r"[ \t]+").unwrap());
@@ -311,12 +315,12 @@ fn native_visitor<T: Write>(
             // append the remaining content after the last continuation
             content.push_str(&outer_string[start_offset..]);
             // TODO this will require careful encoding of the source map when we get to that point
-            return PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
+            PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
                 attr: empty_attr(),
                 text: content.trim_end().to_string(),
                 filename: None,
                 range: outer_range,
-            }));
+            }))
         }
         "fenced_code_block" => {
             let mut content: String = String::new();
@@ -362,21 +366,22 @@ fn native_visitor<T: Write>(
             }
 
             if let Some(format) = raw_format {
-                return PandocNativeIntermediate::IntermediateBlock(Block::RawBlock(RawBlock {
+                PandocNativeIntermediate::IntermediateBlock(Block::RawBlock(RawBlock {
                     format,
                     text: content,
                     filename: None,
                     range: location,
-                }));
+                }))
+            } else {
+                PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
+                    attr,
+                    text: content,
+                    filename: None,
+                    range: location,
+                }))
             }
-            return PandocNativeIntermediate::IntermediateBlock(Block::CodeBlock(CodeBlock {
-                attr,
-                text: content,
-                filename: None,
-                range: location,
-            }));
         }
-        "attribute" => {
+        "attribute" => (|| {
             for (node, child) in children {
                 match child {
                     PandocNativeIntermediate::IntermediateAttr(attr) => {
@@ -392,7 +397,7 @@ fn native_visitor<T: Write>(
                 }
             }
             panic!("No commonmark_attribute found in attribute node");
-        }
+        })(),
         "commonmark_attribute" => {
             let mut attr = ("".to_string(), vec![], HashMap::new());
             children.into_iter().for_each(|(node, child)| match child {
@@ -469,6 +474,13 @@ fn native_visitor<T: Write>(
                             target.0 = text; // URL
                         } else if node == "link_title" {
                             target.1 = text; // Title
+                        } else if node == "language_attribute" {
+                            // TODO show position of this error
+                            let _ = writeln!(
+                                image_buf,
+                                "Language specifiers are unsupported in spans: {}",
+                                node_text()
+                            );
                         } else {
                             panic!("Unexpected image node: {}", node);
                         }
@@ -503,6 +515,13 @@ fn native_visitor<T: Write>(
                             target.0 = text; // URL
                         } else if node == "link_title" {
                             target.1 = text; // Title
+                        } else if node == "language_attribute" {
+                            // TODO show position of this error
+                            let _ = writeln!(
+                                link_buf,
+                                "Language specifiers are unsupported in spans: {}",
+                                node_text()
+                            );
                         } else {
                             panic!("Unexpected inline_link node: {}", node);
                         }
@@ -523,11 +542,11 @@ fn native_visitor<T: Write>(
             // and no attributes
             let is_cite = has_citations && is_empty_target(&target) && is_empty_attr(&attr);
 
-            return PandocNativeIntermediate::IntermediateInline(if is_cite {
+            PandocNativeIntermediate::IntermediateInline(if is_cite {
                 make_cite_inline(attr, target, content)
             } else {
                 make_span_inline(attr, target, content)
-            });
+            })
         }
         "key_value_specifier" => {
             let mut spec = HashMap::new();
@@ -958,7 +977,7 @@ fn native_visitor<T: Write>(
                 content: inlines,
             }))
         }
-        "code_span" => {
+        "code_span" => (|| {
             let mut is_raw: Option<String> = None;
             let mut attr = ("".to_string(), vec![], HashMap::new());
             let mut inlines: Vec<_> = children
@@ -1031,7 +1050,7 @@ fn native_visitor<T: Write>(
             } else {
                 PandocNativeIntermediate::IntermediateInline(Inline::Code(Code { attr, text }))
             }
-        }
+        })(),
         "latex_span" => {
             let mut is_inline_math = false;
             let mut is_display_math = false;
@@ -1264,13 +1283,9 @@ fn native_visitor<T: Write>(
                     block
                 })
                 .collect();
-            return PandocNativeIntermediate::IntermediateListItem(
-                children,
-                node_location(node),
-                list_attr,
-            );
+            PandocNativeIntermediate::IntermediateListItem(children, node_location(node), list_attr)
         }
-        "info_string" => {
+        "info_string" => (|| {
             for (_, child) in children {
                 match child {
                     PandocNativeIntermediate::IntermediateBaseText(text, _) => {
@@ -1284,8 +1299,8 @@ fn native_visitor<T: Write>(
                 }
             }
             panic!("Expected info_string to have a string, but found none");
-        }
-        "language_attribute" => {
+        })(),
+        "language_attribute" => (|| {
             for (_, child) in children {
                 match child {
                     PandocNativeIntermediate::IntermediateBaseText(text, range) => {
@@ -1298,8 +1313,8 @@ fn native_visitor<T: Write>(
                 }
             }
             panic!("Expected language_attribute to have a language, but found none");
-        }
-        "raw_attribute" => {
+        })(),
+        "raw_attribute" => (|| {
             for (_, child) in children {
                 let range = node_location(node);
                 match child {
@@ -1310,7 +1325,7 @@ fn native_visitor<T: Write>(
                 }
             }
             panic!("Expected raw_attribute to have a format, but found none");
-        }
+        })(),
         "block_quote" => {
             let mut content: Blocks = Vec::new();
             for (node_type, child) in children {
@@ -1373,12 +1388,12 @@ fn native_visitor<T: Write>(
                     }
                 }
             }
-            return PandocNativeIntermediate::IntermediateBlock(Block::Div(Div {
+            PandocNativeIntermediate::IntermediateBlock(Block::Div(Div {
                 attr,
                 content,
                 filename: None,
                 range: node_location(node),
-            }));
+            }))
         }
         "atx_heading" => {
             let mut level = 0;
@@ -1480,14 +1495,14 @@ fn native_visitor<T: Write>(
                     panic!("Unexpected node in pipe_table_delimiter_cell: {}", node);
                 }
             }
-            return PandocNativeIntermediate::IntermediatePipeTableDelimiterCell(
+            PandocNativeIntermediate::IntermediatePipeTableDelimiterCell(
                 match (has_starter_colon, has_ending_colon) {
                     (true, true) => Alignment::Center,
                     (true, false) => Alignment::Left,
                     (false, true) => Alignment::Right,
                     (false, false) => Alignment::Default,
                 },
-            );
+            )
         }
         "pipe_table_header" | "pipe_table_row" => {
             let mut row = Row {
@@ -1648,13 +1663,13 @@ fn native_visitor<T: Write>(
                     }
                 }
             }
-            return PandocNativeIntermediate::IntermediateBlock(Block::Header(Header {
+            PandocNativeIntermediate::IntermediateBlock(Block::Header(Header {
                 level,
                 attr: empty_attr(),
                 content,
                 filename: None,
                 range: node_location(node),
-            }));
+            }))
         }
         _ => {
             writeln!(
@@ -1669,6 +1684,8 @@ fn native_visitor<T: Write>(
     };
     buf.write_all(&inline_buf).unwrap();
     buf.write_all(&inlines_buf).unwrap();
+    buf.write_all(&link_buf).unwrap();
+    buf.write_all(&image_buf).unwrap();
     result
 }
 
