@@ -87,8 +87,8 @@ jobs:
 
       - name: debug bad test case
         run: |
-            cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
-            echo "'inline'" | tree-sitter parse --debug
+            cd crates/quarto_markdown_pandoc
+            echo "'inline'" | cargo run -- --verbose
 
       - name: Test Rust code
         run: cargo test
