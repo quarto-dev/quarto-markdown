@@ -468,6 +468,14 @@ fn native_visitor<T: Write>(
                     continue;
                 }
                 match child {
+                    PandocNativeIntermediate::IntermediateRawFormat(_, _) => {
+                        // TODO show position of this error
+                        let _ = writeln!(
+                            image_buf,
+                            "Raw specifiers are unsupported in images: {}. Will ignore.",
+                            node_text()
+                        );
+                    },
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
                     PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                         if node == "link_destination" {
@@ -478,7 +486,7 @@ fn native_visitor<T: Write>(
                             // TODO show position of this error
                             let _ = writeln!(
                                 image_buf,
-                                "Language specifiers are unsupported in spans: {}",
+                                "Language specifiers are unsupported in images: {}",
                                 node_text()
                             );
                         } else {
@@ -503,12 +511,20 @@ fn native_visitor<T: Write>(
             PandocNativeIntermediate::IntermediateInlines(native_inlines(children))
         }
         "inline_link" => {
-            let mut attr = ("".to_string(), vec![], HashMap::new());
+            let mut attr: Attr = ("".to_string(), vec![], HashMap::new());
             let mut target = ("".to_string(), "".to_string());
             let mut content: Vec<Inline> = Vec::new();
 
             for (node, child) in children {
                 match child {
+                    PandocNativeIntermediate::IntermediateRawFormat(_, _) => {
+                        // TODO show position of this error
+                        let _ = writeln!(
+                            link_buf,
+                            "Raw attribute specifiers are unsupported in links and spans: {}. Ignoring.",
+                            node_text()
+                        );
+                    },
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
                     PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                         if node == "link_destination" {
@@ -519,7 +535,7 @@ fn native_visitor<T: Write>(
                             // TODO show position of this error
                             let _ = writeln!(
                                 link_buf,
-                                "Language specifiers are unsupported in spans: {}",
+                                "Language specifiers are unsupported in links and spans: {}. Ignoring.",
                                 node_text()
                             );
                         } else {
