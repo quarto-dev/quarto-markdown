@@ -1,0 +1,33 @@
+# Tests a broad set of Quarto functionality that users are likely to encounter.
+# A failure indicates some signficant portion of functionality is likely to be broken.
+name: Test Suite
+on:
+  push:
+    # only trigger on branches, not on tags
+    branches:
+      - main
+
+jobs:
+  test-suite:
+    name: Run test suite
+    if: github.repository == 'quarto-dev/quarto-markdown'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Temporarily modify the rust toolchain version
+        run: rustup override set nightly
+        shell: bash
+
+      - name: Output rust version for educational purposes
+        run: rustup --version
+        shell: bash
+        
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: cargo build
+        shell: bash
+
+      - name: Test
+        run: cargo test
+        shell: bash
