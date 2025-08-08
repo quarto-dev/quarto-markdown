@@ -64,7 +64,6 @@ jobs:
           gunzip tree-sitter-linux-x86.gz
           chmod +x tree-sitter-linux-x86
           sudo mv tree-sitter-linux-x86 /usr/local/bin/tree-sitter
-          rehash
     
       - name: Set up tree-sitter CLI (macOS)
         if: runner.os == 'macOS'
