@@ -44,7 +44,7 @@ A robust parser for QMD documents will enable more robust treatment in editors, 
 
 ## Important differences
 
-These is non-exhaustive and will only list intentional differences.
+These are non-exhaustive and will only list intentional differences.
 We will, aspirationally, treat unintentional differences as bugs.
 
 - no naked HTML support: use `{=html}` raw blocks an inlines
