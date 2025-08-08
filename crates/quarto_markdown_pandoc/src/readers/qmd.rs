@@ -3,7 +3,7 @@ use crate::errors::parse_is_good;
 use crate::pandoc;
 use crate::traversals;
 use std::io::Write;
-use tree_sitter::LogType;
+// use tree_sitter::LogType;
 use tree_sitter_qmd::MarkdownParser;
 
 fn print_whole_tree<T: Write>(cursor: &mut tree_sitter_qmd::MarkdownCursor, buf: &mut T) {
@@ -27,17 +27,17 @@ pub fn read<T: Write>(
     let mut error_messages: Vec<String> = Vec::new();
     // let mut found_error: bool = false;
 
-    parser
-        .parser
-        .set_logger(Some(Box::new(|log_type, message| match log_type {
-            LogType::Parse => {
-                // if message.contains("detect_error") {
-                //     found_error = true;
-                // }
-                eprintln!("tree-sitter: {:?}, {}", log_type, message);
-            }
-            _ => {}
-        })));
+    // parser
+    //     .parser
+    //     .set_logger(Some(Box::new(|log_type, message| match log_type {
+    //         LogType::Parse => {
+    //             // if message.contains("detect_error") {
+    //             //     found_error = true;
+    //             // }
+    //             eprintln!("tree-sitter: {:?}, {}", log_type, message);
+    //         }
+    //         _ => {}
+    //     })));
 
     let tree = parser
         .parse(&input_bytes, None)
