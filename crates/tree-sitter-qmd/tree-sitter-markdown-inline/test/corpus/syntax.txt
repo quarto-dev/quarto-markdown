@@ -176,5 +176,4 @@ code span with braces inside, inline-executable style
   (code_span
     (code_span_delimiter)
     (code_content)
-    (code_span_delimiter))
-  (soft_line_break))
+    (code_span_delimiter)))
