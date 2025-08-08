@@ -9,76 +9,69 @@ on:
 
 jobs:
   test-suite:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
     name: Run test suite
     if: github.repository == 'quarto-dev/quarto-markdown'
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - name: Temporarily modify the rust toolchain version
-    #     run: rustup override set nightly
-    #     shell: bash
-
-    #   - name: Output rust version for educational purposes
-    #     run: rustup --version
-    #     shell: bash
-        
-    #   - name: Checkout Repo
-    #     uses: actions/checkout@v4
-
-    #   - name: Install Pandoc
-    #     run: | 
-    #       curl -LO https://github.com/jgm/pandoc/releases/download/3.7.0.2/pandoc-3.7.0.2-1-amd64.deb
-    #       sudo dpkg -i pandoc-3.7.0.2-1-amd64.deb
-    #     shell: bash
-
-    #   - name: Install tree-sitter CLI
-    #     run: |
-    #       sudo apt-get install libc6-dev
-    #       sudo apt-get install gcc-multilib
-    #       curl -LO https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.8/tree-sitter-linux-x86.gz
-    #       gunzip tree-sitter-linux-x86.gz
-    #       chmod +x tree-sitter-linux-x86
-
-    #   - name: Build
-    #     run: cargo build
-    #     shell: bash
-
-    #   - name: Test inline tree-sitter grammar
-    #     run: |
-    #         cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
-    #         ../../../tree-sitter-linux-x86 test
-
-    #   - name: Test block tree-sitter grammar
-    #     run: |
-    #         cd crates/tree-sitter-qmd/tree-sitter-markdown
-    #         ../../../tree-sitter-linux-x86 test
-
-    #   - name: Test Rust code
-    #     run: cargo test
-    #     shell: bash
-    runs-on: macos-latest
+    
     steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
       - name: Set up Homebrew
+        if: runner.os == 'macOS'
         id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
 
-      - name: Set up Rust
+      # Rust setup
+      - name: Set up Rust nightly (macOS)
+        if: runner.os == 'macOS'
         uses: dtolnay/rust-toolchain@nightly
+
+      - name: Set up Rust nightly (Linux)
+        if: runner.os == 'Linux'
+        run: rustup override set nightly
+        shell: bash
 
       - name: Output rust version
         run: rustup --version
         shell: bash
         
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Install Pandoc
-        run: brew install pandoc
+      # Pandoc setup
+      - name: Set up Pandoc (Linux)
+        if: runner.os == 'Linux'
+        run: | 
+          curl -LO https://github.com/jgm/pandoc/releases/download/3.7.0.2/pandoc-3.7.0.2-1-amd64.deb
+          sudo dpkg -i pandoc-3.7.0.2-1-amd64.deb
         shell: bash
 
-      - name: Install tree-sitter CLI
+      - name: Set up Pandoc (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install pandoc
+        shell: bash
+
+      # tree-sitter setup
+      - name: Set up tree-sitter CLI (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install libc6-dev
+          sudo apt-get install gcc-multilib
+          curl -LO https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.8/tree-sitter-linux-x86.gz
+          gunzip tree-sitter-linux-x86.gz
+          chmod +x tree-sitter-linux-x86
+          sudo mv tree-sitter-linux-x86 /usr/local/bin/tree-sitter
+          rehash
+    
+      - name: Set up tree-sitter CLI (macOS)
+        if: runner.os == 'macOS'
         run: brew install tree-sitter-cli
         shell: bash
 
+      # build and run tests
       - name: Build
         run: cargo build
         shell: bash
