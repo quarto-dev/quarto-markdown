@@ -67,5 +67,9 @@ pub fn read<T: Write>(
         return Err(error_messages);
     }
 
+    // // repeat this 100 times to get profiling data
+    // for _ in 0..100 {
+    //     let _ = pandoc::treesitter::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes);
+    // }
     pandoc::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes)
 }

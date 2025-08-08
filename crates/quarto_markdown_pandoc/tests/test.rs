@@ -321,31 +321,31 @@ fn test_json_writer() {
     );
 }
 
-#[test]
-fn test_disallowed_in_qmd_fails() {
+fn ensure_file_does_not_parse(path: &std::path::Path) {
+    let markdown = std::fs::read_to_string(path).expect("Failed to read file");
+    let mut parser = MarkdownParser::default();
+    let input_bytes = markdown.as_bytes();
+    let tree = parser
+        .parse(input_bytes, None)
+        .expect("Failed to parse input");
+
+    let errors = parse_is_good(&tree);
+    if errors.is_empty() {
+        panic!(
+            "File {} should not parse but it did: {:?}",
+            path.display(),
+            errors
+        );
+    }
+}
+
+fn ensure_every_file_in_directory_does_not_parse(pattern: &str) {
     let mut file_count = 0;
-    for entry in glob("tests/pandoc-differences/disallowed-in-qmd/*.qmd")
-        .expect("Failed to read glob pattern")
-    {
+    for entry in glob(pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
                 eprintln!("Opening file: {}", path.display());
-                let markdown = std::fs::read_to_string(&path).expect("Failed to read file");
-
-                // Parse with our parser
-                let mut parser = MarkdownParser::default();
-                let input_bytes = markdown.as_bytes();
-                let tree = parser
-                    .parse(input_bytes, None)
-                    .expect("Failed to parse input");
-
-                let errors = parse_is_good(&tree);
-                if errors.is_empty() {
-                    panic!(
-                        "File {} contains disallowed syntax but no parse errors were reported",
-                        path.display()
-                    );
-                }
+                ensure_file_does_not_parse(&path);
                 file_count += 1;
             }
             Err(e) => panic!("Error reading glob entry: {}", e),
@@ -353,8 +353,15 @@ fn test_disallowed_in_qmd_fails() {
     }
     assert!(
         file_count > 0,
-        "No files found in tests/pandoc-differences/disallowed-in-qmd directory"
+        "No files found in directory matching pattern: {}",
+        pattern
     );
+}
+
+#[test]
+fn test_disallowed_in_qmd_fails() {
+    ensure_every_file_in_directory_does_not_parse("tests/pandoc-differences/disallowed-in-qmd/*.qmd");
+    ensure_every_file_in_directory_does_not_parse("tests/invalid-syntax/*.qmd");
 }
 
 #[test]
