@@ -32,6 +32,7 @@ jobs:
 
       - name: Install tree-sitter CLI
         run: |
+          sudo apt-get install libc6-dev
           curl -LO https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.8/tree-sitter-linux-x86.gz
           gunzip tree-sitter-linux-x86.gz
           chmod +x tree-sitter-linux-x86
