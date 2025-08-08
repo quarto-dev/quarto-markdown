@@ -128,6 +128,10 @@ static void deserialize(Scanner *s, const char *buffer, unsigned length) {
     s->code_span_delimiter_length = 0;
     s->latex_span_delimiter_length = 0;
     s->num_emphasis_delimiters_left = 0;
+    s->inside_shortcode = 0;
+    s->inside_superscript = 0;
+    s->inside_subscript = 0;
+    s->inside_strikeout = 0;
     s->inside_single_quote = 0;
     s->inside_double_quote = 0;
     if (length > 0) {
