@@ -40,10 +40,6 @@ jobs:
         run: cargo build
         shell: bash
 
-      - name: Test Rust code
-        run: cargo test
-        shell: bash
-
       - name: Test inline tree-sitter grammar
         run: |
             cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
@@ -53,3 +49,8 @@ jobs:
         run: |
             cd crates/tree-sitter-qmd/tree-sitter-markdown
             ../../../tree-sitter-linux-x86 test
+
+      - name: Test Rust code
+        run: cargo test
+        shell: bash
+
