@@ -11,13 +11,60 @@ jobs:
   test-suite:
     name: Run test suite
     if: github.repository == 'quarto-dev/quarto-markdown'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Temporarily modify the rust toolchain version
-        run: rustup override set nightly
-        shell: bash
+    # runs-on: ubuntu-latest
+    # steps:
+    #   - name: Temporarily modify the rust toolchain version
+    #     run: rustup override set nightly
+    #     shell: bash
 
-      - name: Output rust version for educational purposes
+    #   - name: Output rust version for educational purposes
+    #     run: rustup --version
+    #     shell: bash
+        
+    #   - name: Checkout Repo
+    #     uses: actions/checkout@v4
+
+    #   - name: Install Pandoc
+    #     run: | 
+    #       curl -LO https://github.com/jgm/pandoc/releases/download/3.7.0.2/pandoc-3.7.0.2-1-amd64.deb
+    #       sudo dpkg -i pandoc-3.7.0.2-1-amd64.deb
+    #     shell: bash
+
+    #   - name: Install tree-sitter CLI
+    #     run: |
+    #       sudo apt-get install libc6-dev
+    #       sudo apt-get install gcc-multilib
+    #       curl -LO https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.8/tree-sitter-linux-x86.gz
+    #       gunzip tree-sitter-linux-x86.gz
+    #       chmod +x tree-sitter-linux-x86
+
+    #   - name: Build
+    #     run: cargo build
+    #     shell: bash
+
+    #   - name: Test inline tree-sitter grammar
+    #     run: |
+    #         cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
+    #         ../../../tree-sitter-linux-x86 test
+
+    #   - name: Test block tree-sitter grammar
+    #     run: |
+    #         cd crates/tree-sitter-qmd/tree-sitter-markdown
+    #         ../../../tree-sitter-linux-x86 test
+
+    #   - name: Test Rust code
+    #     run: cargo test
+    #     shell: bash
+    runs-on: macos-latest
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Output rust version
         run: rustup --version
         shell: bash
         
@@ -25,18 +72,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Pandoc
-        run: | 
-          curl -LO https://github.com/jgm/pandoc/releases/download/3.7.0.2/pandoc-3.7.0.2-1-amd64.deb
-          sudo dpkg -i pandoc-3.7.0.2-1-amd64.deb
+        run: brew install pandoc
         shell: bash
 
       - name: Install tree-sitter CLI
-        run: |
-          sudo apt-get install libc6-dev
-          sudo apt-get install gcc-multilib
-          curl -LO https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.8/tree-sitter-linux-x86.gz
-          gunzip tree-sitter-linux-x86.gz
-          chmod +x tree-sitter-linux-x86
+        run: brew install tree-sitter
+        shell: bash
 
       - name: Build
         run: cargo build
@@ -45,14 +86,15 @@ jobs:
       - name: Test inline tree-sitter grammar
         run: |
             cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
-            ../../../tree-sitter-linux-x86 test
+            tree-sitter test
 
       - name: Test block tree-sitter grammar
         run: |
             cd crates/tree-sitter-qmd/tree-sitter-markdown
-            ../../../tree-sitter-linux-x86 test
+            tree-sitter test
 
       - name: Test Rust code
         run: cargo test
         shell: bash
+
 
