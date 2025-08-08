@@ -76,7 +76,7 @@ jobs:
         shell: bash
 
       - name: Install tree-sitter CLI
-        run: brew install tree-sitter
+        run: brew install tree-sitter-cli
         shell: bash
 
       - name: Build
