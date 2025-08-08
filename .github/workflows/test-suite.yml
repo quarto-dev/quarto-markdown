@@ -85,11 +85,16 @@ jobs:
             cd crates/tree-sitter-qmd/tree-sitter-markdown
             tree-sitter test
 
-      - name: debug bad test case
+      - name: debug bad test case in quarto_markdown_pandoc
         run: |
             cd crates/quarto_markdown_pandoc
             echo "'inline'" | cargo run -- --verbose
 
-      - name: Test Rust code
-        run: cargo test
-        shell: bash
+      - name: show consistent behavior in standalone tree-sitter grammar
+        run: |
+            cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
+            echo "'inline'" | tree-sitter parse --debug
+        
+      # - name: Test Rust code
+      #   run: cargo test
+      #   shell: bash
