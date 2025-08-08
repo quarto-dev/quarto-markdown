@@ -30,10 +30,26 @@ jobs:
           sudo dpkg -i pandoc-3.7.0.2-1-amd64.deb
         shell: bash
 
+      - name: Install tree-sitter CLI
+        run: |
+          curl -LO https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.8/tree-sitter-linux-x86.gz
+          gunzip tree-sitter-linux-x86.gz
+          chmod +x tree-sitter-linux-x86
+
       - name: Build
         run: cargo build
         shell: bash
 
-      - name: Test
+      - name: Test Rust code
         run: cargo test
         shell: bash
+
+      - name: Test inline tree-sitter grammar
+        run: |
+            cd crates/tree-sitter-qmd/tree-sitter-markdown-inline
+            ../../../tree-sitter-linux-x86 test
+
+      - name: Test block tree-sitter grammar
+        run: |
+            cd crates/tree-sitter-qmd/tree-sitter-markdown
+            ../../../tree-sitter-linux-x86 test
