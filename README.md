@@ -15,6 +15,7 @@ This repository hosts a standalone parser for "Quarto Markdown" ("QMD"), the Mar
   - shortcodes
   - "reader syntax": `{<html}` for transparently using other Pandoc reader formats inside Markdown
 - emits parse tree in Pandoc's `json` and `native` formats
+  - as a consequence, the Quarto-specific syntax constructs are "desugared" into standard Pandoc AST nodes
 
 ## Background
 
