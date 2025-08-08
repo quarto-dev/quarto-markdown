@@ -475,7 +475,7 @@ fn native_visitor<T: Write>(
                             "Raw specifiers are unsupported in images: {}. Will ignore.",
                             node_text()
                         );
-                    },
+                    }
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
                     PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                         if node == "link_destination" {
@@ -524,7 +524,7 @@ fn native_visitor<T: Write>(
                             "Raw attribute specifiers are unsupported in links and spans: {}. Ignoring.",
                             node_text()
                         );
-                    },
+                    }
                     PandocNativeIntermediate::IntermediateAttr(a) => attr = a,
                     PandocNativeIntermediate::IntermediateBaseText(text, _) => {
                         if node == "link_destination" {
@@ -1022,14 +1022,18 @@ fn native_visitor<T: Write>(
                             if node_name == "language_attribute" {
                                 language_attribute = Some(text);
                                 // IntermediateUnknown here "consumes" the node
-                                (node_name, PandocNativeIntermediate::IntermediateUnknown(range))
+                                (
+                                    node_name,
+                                    PandocNativeIntermediate::IntermediateUnknown(range),
+                                )
                             } else {
-                                (node_name, PandocNativeIntermediate::IntermediateBaseText(text, range))
+                                (
+                                    node_name,
+                                    PandocNativeIntermediate::IntermediateBaseText(text, range),
+                                )
                             }
                         }
-                        _ => {
-                            (node_name, child)
-                        },
+                        _ => (node_name, child),
                     }
                 })
                 .filter(|(_, child)| {
@@ -1078,11 +1082,15 @@ fn native_visitor<T: Write>(
             } else {
                 match language_attribute {
                     Some(lang) => {
-                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code { attr, text: lang + &" " + &text }))
+                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
+                            attr,
+                            text: lang + &" " + &text,
+                        }))
                     }
-                    None => {
-                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code { attr, text }))
-                    }
+                    None => PandocNativeIntermediate::IntermediateInline(Inline::Code(Code {
+                        attr,
+                        text,
+                    })),
                 }
             }
         })(),
@@ -1404,6 +1412,31 @@ fn native_visitor<T: Write>(
                     continue;
                 }
                 match child {
+                    PandocNativeIntermediate::IntermediateBaseText(_, _) => {
+                        if node == "language_attribute" {
+                            writeln!(
+                                buf,
+                                "Warning: language attribute unsupported in divs: {:?} {:?}",
+                                node, child
+                            )
+                            .unwrap();
+                        } else {
+                            writeln!(
+                                buf,
+                                "Warning: Unexpected base text in div, ignoring: {:?} {:?}",
+                                node, child
+                            )
+                            .unwrap();
+                        }
+                    }
+                    PandocNativeIntermediate::IntermediateRawFormat(_, _) => {
+                        writeln!(
+                            buf,
+                            "Warning: Raw attribute specifiers are not supported in divs: {:?} {:?}",
+                            node, child
+                        )
+                        .unwrap();
+                    }
                     PandocNativeIntermediate::IntermediateAttr(a) => {
                         attr = a;
                     }
