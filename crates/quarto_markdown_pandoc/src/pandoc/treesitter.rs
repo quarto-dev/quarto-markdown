@@ -980,6 +980,7 @@ fn native_visitor<T: Write>(
         "code_span" => (|| {
             let mut is_raw: Option<String> = None;
             let mut attr = ("".to_string(), vec![], HashMap::new());
+            let mut language_attribute: Option<String> = None;
             let mut inlines: Vec<_> = children
                 .into_iter()
                 .map(|(node_name, child)| {
@@ -1001,7 +1002,18 @@ fn native_visitor<T: Write>(
                                 PandocNativeIntermediate::IntermediateUnknown(range),
                             )
                         }
-                        _ => (node_name, child),
+                        PandocNativeIntermediate::IntermediateBaseText(text, range) => {
+                            if node_name == "language_attribute" {
+                                language_attribute = Some(text);
+                                // IntermediateUnknown here "consumes" the node
+                                (node_name, PandocNativeIntermediate::IntermediateUnknown(range))
+                            } else {
+                                (node_name, PandocNativeIntermediate::IntermediateBaseText(text, range))
+                            }
+                        }
+                        _ => {
+                            (node_name, child)
+                        },
                     }
                 })
                 .filter(|(_, child)| {
@@ -1048,7 +1060,14 @@ fn native_visitor<T: Write>(
                     text,
                 }))
             } else {
-                PandocNativeIntermediate::IntermediateInline(Inline::Code(Code { attr, text }))
+                match language_attribute {
+                    Some(lang) => {
+                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code { attr, text: lang + &" " + &text }))
+                    }
+                    None => {
+                        PandocNativeIntermediate::IntermediateInline(Inline::Code(Code { attr, text }))
+                    }
+                }
             }
         })(),
         "latex_span" => {
