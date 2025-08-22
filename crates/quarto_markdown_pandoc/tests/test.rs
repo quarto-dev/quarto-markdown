@@ -259,6 +259,19 @@ fn unit_test_snapshots() {
     );
 }
 
+fn remove_location_fields(json: &mut serde_json::Value) {
+    if let Some(obj) = json.as_object_mut() {
+        obj.remove("l"); // Remove the "l" field
+        for value in obj.values_mut() {
+            remove_location_fields(value);
+        }
+    } else if let Some(array) = json.as_array_mut() {
+        for item in array {
+            remove_location_fields(item);
+        }
+    }
+}
+
 #[test]
 fn test_json_writer() {
     assert!(
@@ -297,10 +310,11 @@ fn test_json_writer() {
                 let pandoc_json = String::from_utf8(output.stdout).expect("Invalid UTF-8");
 
                 // Parse both JSON outputs to compare
-                let our_value: serde_json::Value =
+                let mut our_value: serde_json::Value =
                     serde_json::from_str(&our_json).expect("Failed to parse our JSON");
                 let pandoc_value: serde_json::Value =
                     serde_json::from_str(&pandoc_json).expect("Failed to parse Pandoc JSON");
+                remove_location_fields(&mut our_value);
 
                 assert_eq!(
                     our_value,
@@ -360,7 +374,9 @@ fn ensure_every_file_in_directory_does_not_parse(pattern: &str) {
 
 #[test]
 fn test_disallowed_in_qmd_fails() {
-    ensure_every_file_in_directory_does_not_parse("tests/pandoc-differences/disallowed-in-qmd/*.qmd");
+    ensure_every_file_in_directory_does_not_parse(
+        "tests/pandoc-differences/disallowed-in-qmd/*.qmd",
+    );
     ensure_every_file_in_directory_does_not_parse("tests/invalid-syntax/*.qmd");
 }
 

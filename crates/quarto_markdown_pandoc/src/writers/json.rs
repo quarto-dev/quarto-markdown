@@ -7,6 +7,23 @@ use crate::pandoc::{Attr, Block, Caption, CitationMode, Inline, Inlines, ListAtt
 use crate::utils::autoid;
 use serde_json::{Value, json};
 
+fn write_location<T: crate::pandoc::location::SourceLocation>(item: &T) -> Value {
+    let range = item.range();
+    json!({
+        "start": {
+            "offset": range.start.offset,
+            "row": range.start.row,
+            "column": range.start.column,
+        },
+        "end": {
+            "offset": range.end.offset,
+            "row": range.end.row,
+            "column": range.end.column,
+        },
+        "filename": item.filename(),
+    })
+}
+
 fn write_attr(attr: &Attr) -> Value {
     json!([
         attr.0, // id
@@ -180,7 +197,8 @@ fn write_block(block: &Block) -> Value {
                 write_attr(&figure.attr),
                 write_caption(&figure.caption),
                 write_blocks(&figure.content)
-            ]
+            ],
+            "l": write_location(figure)
         }),
         Block::DefinitionList(deflist) => json!({
             "t": "DefinitionList",
@@ -192,39 +210,47 @@ fn write_block(block: &Block) -> Value {
                         write_blockss(&definition),
                     ])
                 })
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
+            "l": write_location(deflist),
         }),
         Block::OrderedList(orderedlist) => json!({
             "t": "OrderedList",
             "c": [
                 write_list_attributes(&orderedlist.attr),
                 write_blockss(&orderedlist.content),
-            ]
+            ],
+            "l": write_location(orderedlist),
         }),
         Block::RawBlock(raw) => json!({
             "t": "RawBlock",
-            "c": [raw.format.clone(), raw.text.clone()]
+            "c": [raw.format.clone(), raw.text.clone()],
+            "l": write_location(raw),
         }),
-        Block::HorizontalRule(_) => json!({
-            "t": "HorizontalRule"
+        Block::HorizontalRule(block) => json!({
+            "t": "HorizontalRule",
+            "l": write_location(block),
         }),
         Block::Table(_) => panic!("unimplemented block: Table"),
 
         Block::Div(div) => json!({
             "t": "Div",
-            "c": [write_attr(&div.attr), write_blocks(&div.content)]
+            "c": [write_attr(&div.attr), write_blocks(&div.content)],
+            "l": write_location(div),
         }),
         Block::BlockQuote(quote) => json!({
             "t": "BlockQuote",
-            "c": write_blocks(&quote.content)
+            "c": write_blocks(&quote.content),
+            "l": write_location(quote),
         }),
         Block::LineBlock(lineblock) => json!({
             "t": "LineBlock",
-            "c": lineblock.content.iter().map(write_inlines).collect::<Vec<_>>()
+            "c": lineblock.content.iter().map(write_inlines).collect::<Vec<_>>(),
+            "l": write_location(lineblock),
         }),
         Block::Paragraph(para) => json!({
             "t": "Para",
-            "c": write_inlines(&para.content)
+            "c": write_inlines(&para.content),
+            "l": write_location(para),
         }),
         Block::Header(header) => {
             let mut attr = header.attr.clone();
@@ -233,20 +259,24 @@ fn write_block(block: &Block) -> Value {
             }
             json!({
                 "t": "Header",
-                "c": [header.level, write_attr(&attr), write_inlines(&header.content)]
+                "c": [header.level, write_attr(&attr), write_inlines(&header.content)],
+                "l": write_location(header),
             })
         }
         Block::CodeBlock(codeblock) => json!({
             "t": "CodeBlock",
-            "c": [write_attr(&codeblock.attr), codeblock.text]
+            "c": [write_attr(&codeblock.attr), codeblock.text],
+            "l": write_location(codeblock),
         }),
         Block::Plain(plain) => json!({
             "t": "Plain",
-            "c": write_inlines(&plain.content)
+            "c": write_inlines(&plain.content),
+            "l": write_location(plain),
         }),
         Block::BulletList(bulletlist) => json!({
             "t": "BulletList",
-            "c": bulletlist.content.iter().map(|blocks| blocks.iter().map(write_block).collect::<Vec<_>>()).collect::<Vec<_>>()
+            "c": bulletlist.content.iter().map(|blocks| blocks.iter().map(write_block).collect::<Vec<_>>()).collect::<Vec<_>>(),
+            "l": write_location(bulletlist),
         }),
     }
 }
