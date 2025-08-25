@@ -4,7 +4,7 @@
  */
 
 pub use crate::pandoc::block::Blocks;
-
+pub use crate::pandoc::meta::Meta;
 /*
  * A data structure that mimics Pandoc's `data Pandoc` type.
  * This is used to represent the parsed structure of a Quarto Markdown document.
@@ -12,6 +12,6 @@ pub use crate::pandoc::block::Blocks;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Pandoc {
-    // eventually, meta
+    pub meta: Meta,
     pub blocks: Blocks,
 }

@@ -18,6 +18,7 @@ use crate::pandoc::inline::{
 use crate::pandoc::inline::{make_cite_inline, make_span_inline};
 use crate::pandoc::list::{ListAttributes, ListNumberDelim, ListNumberStyle};
 use crate::pandoc::location::{Range, empty_range, node_location};
+use crate::pandoc::meta::Meta;
 use crate::pandoc::pandoc::Pandoc;
 use crate::pandoc::shortcode::{Shortcode, ShortcodeArg, shortcode_to_span};
 use crate::pandoc::table::{
@@ -234,7 +235,10 @@ fn native_visitor<T: Write>(
                     _ => panic!("Expected Block or Section, got {:?}", child),
                 }
             });
-            PandocNativeIntermediate::IntermediatePandoc(Pandoc { blocks })
+            PandocNativeIntermediate::IntermediatePandoc(Pandoc {
+                meta: Meta::default(),
+                blocks,
+            })
         }
         "section" => {
             let mut blocks: Vec<Block> = Vec::new();

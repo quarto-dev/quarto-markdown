@@ -7,3 +7,7 @@ to parse the inline structure within each block.
 
 As a result, in this repository all traversals of the tree-sitter data structure
 need to be done with the traversal helpers in traversals.rs.
+
+## Best practices in this repo
+
+- If you want to create a test file, do so in the `tests/` directory.

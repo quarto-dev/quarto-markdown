@@ -4,6 +4,8 @@
  */
 
 use crate::pandoc::inline::AsInline;
+use crate::pandoc::meta::Meta;
+use crate::pandoc::meta::rawblock_to_meta;
 use crate::pandoc::{self, Block, Blocks, Inline, Inlines};
 
 // filters are destructive and take ownership of the input
@@ -909,8 +911,21 @@ pub fn topdown_traverse_blocks(vec: Blocks, filter: &mut Filter) -> Blocks {
 }
 
 pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &mut Filter) -> pandoc::Pandoc {
+    let (real_blocks, meta_blocks): (Vec<Block>, Vec<Block>) = doc
+        .blocks
+        .into_iter()
+        .partition(|b| !matches!(b, Block::RawBlock(rb) if rb.format == "quarto_minus_metadata"));
+
+    meta_blocks.into_iter().for_each(|b| match b {
+        Block::RawBlock(rb) if rb.format == "quarto_minus_metadata" => {
+            rawblock_to_meta(rb);
+        }
+        _ => {}
+    });
+
     pandoc::Pandoc {
-        blocks: topdown_traverse_blocks(doc.blocks, filter),
+        meta: Meta::default(),
+        blocks: topdown_traverse_blocks(real_blocks, filter),
         // TODO: handle meta
     }
 }

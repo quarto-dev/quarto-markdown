@@ -1,0 +1,18 @@
+---
+hello: world
+array: [of, items]
+array2:
+  - more
+  - stuff
+complicated: |
+  strings that go long are
+  here.
+typed_values:
+  - 1
+  - false
+  - true
+  - "quoted string"
+  -
+---
+
+## Hi
