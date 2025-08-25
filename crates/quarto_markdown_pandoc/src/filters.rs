@@ -3,8 +3,10 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
+use crate::pandoc::MetaValue;
 use crate::pandoc::inline::AsInline;
 use crate::pandoc::meta::Meta;
+use crate::pandoc::meta::parse_metadata_strings;
 use crate::pandoc::meta::rawblock_to_meta;
 use crate::pandoc::{self, Block, Blocks, Inline, Inlines};
 
@@ -17,8 +19,10 @@ pub enum FilterReturn<T, U> {
 
 type InlineFilterFn<'a, T> = Box<dyn FnMut(T) -> FilterReturn<T, Inlines> + 'a>;
 type BlockFilterFn<'a, T> = Box<dyn FnMut(T) -> FilterReturn<T, Blocks> + 'a>;
+type MetaFilterFn<'a> = Box<dyn FnMut(Meta) -> FilterReturn<Meta, Meta> + 'a>;
 type InlineFilterField<'a, T> = Option<InlineFilterFn<'a, T>>;
 type BlockFilterField<'a, T> = Option<BlockFilterFn<'a, T>>;
+type MetaFilterField<'a> = Option<MetaFilterFn<'a>>;
 
 pub struct Filter<'a> {
     pub inlines: InlineFilterField<'a, Inlines>,
@@ -65,6 +69,8 @@ pub struct Filter<'a> {
     pub header: BlockFilterField<'a, pandoc::Header>,
     pub table: BlockFilterField<'a, pandoc::Table>,
     pub horizontal_rule: BlockFilterField<'a, pandoc::HorizontalRule>,
+
+    pub meta: MetaFilterField<'a>,
 }
 
 impl Default for Filter<'static> {
@@ -113,6 +119,8 @@ impl Default for Filter<'static> {
             table: None,
             horizontal_rule: None,
             attr: None,
+
+            meta: None,
         }
     }
 }
@@ -910,21 +918,83 @@ pub fn topdown_traverse_blocks(vec: Blocks, filter: &mut Filter) -> Blocks {
     }
 }
 
+pub fn topdown_traverse_meta_value(value: MetaValue, filter: &mut Filter) -> MetaValue {
+    match value {
+        MetaValue::MetaMap(m) => MetaValue::MetaMap(
+            m.into_iter()
+                .map(|(k, v)| (k, topdown_traverse_meta_value(v, filter)))
+                .collect(),
+        ),
+        MetaValue::MetaList(l) => MetaValue::MetaList(
+            l.into_iter()
+                .map(|mv| topdown_traverse_meta_value(mv, filter))
+                .collect(),
+        ),
+        MetaValue::MetaBlocks(b) => MetaValue::MetaBlocks(topdown_traverse_blocks(b, filter)),
+        MetaValue::MetaInlines(i) => MetaValue::MetaInlines(topdown_traverse_inlines(i, filter)),
+        value => value,
+    }
+}
+
+pub fn topdown_traverse_meta(meta: Meta, filter: &mut Filter) -> Meta {
+    if let Some(f) = &mut filter.meta {
+        return match f(meta) {
+            FilterReturn::FilterResult(new_meta, recurse) => {
+                if !recurse {
+                    return new_meta;
+                }
+                topdown_traverse_meta(new_meta, filter)
+            }
+            FilterReturn::Unchanged(m) => {
+                let meta_value = MetaValue::MetaMap(m);
+                match topdown_traverse_meta_value(meta_value, filter) {
+                    MetaValue::MetaMap(m) => m,
+                    _ => panic!("Expected MetaMap after filtering meta"),
+                }
+            }
+        };
+    } else {
+        return meta
+            .into_iter()
+            .map(|(k, v)| (k, topdown_traverse_meta_value(v, filter)))
+            .collect();
+    }
+}
+
 pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &mut Filter) -> pandoc::Pandoc {
     let (real_blocks, meta_blocks): (Vec<Block>, Vec<Block>) = doc
         .blocks
         .into_iter()
         .partition(|b| !matches!(b, Block::RawBlock(rb) if rb.format == "quarto_minus_metadata"));
 
+    let mut meta = Meta::default();
+    let mut meta_from_parses = Meta::default();
     meta_blocks.into_iter().for_each(|b| match b {
         Block::RawBlock(rb) if rb.format == "quarto_minus_metadata" => {
-            rawblock_to_meta(rb);
+            let Some(result) = rawblock_to_meta(rb) else {
+                return;
+            };
+            let meta_map = MetaValue::MetaMap(result);
+
+            match parse_metadata_strings(meta_map, &mut meta_from_parses) {
+                MetaValue::MetaMap(m) => {
+                    for (k, v) in m {
+                        meta.insert(k, v);
+                    }
+                }
+                _ => panic!("Expected MetaMap from parse_metadata_strings"),
+            }
         }
         _ => {}
     });
+    for (k, v) in meta_from_parses {
+        if !meta.contains_key(&k) {
+            meta.insert(k, v);
+        }
+    }
 
     pandoc::Pandoc {
-        meta: Meta::default(),
+        meta: topdown_traverse_meta(meta, filter),
         blocks: topdown_traverse_blocks(real_blocks, filter),
         // TODO: handle meta
     }

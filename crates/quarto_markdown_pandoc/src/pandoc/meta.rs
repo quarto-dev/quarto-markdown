@@ -3,10 +3,12 @@
  * Copyright (c) 2025 Posit, PBC
  */
 
-use crate::pandoc::RawBlock;
 use crate::pandoc::block::Blocks;
 use crate::pandoc::inline::Inlines;
+use crate::readers;
+use crate::{pandoc::RawBlock, utils::output::VerboseOutput};
 use std::collections::HashMap;
+use std::{io, mem};
 use yaml_rust2::parser::{Event, MarkedEventReceiver, Parser};
 
 // Pandoc's MetaValue notably does not support numbers or nulls, so we don't either
@@ -113,18 +115,16 @@ impl MarkedEventReceiver for YamlEventHandler {
                     self.push_value(MetaValue::MetaList(list));
                 }
             }
-            Event::Scalar(s, ..) => {
-                match self.stack.last_mut() {
-                    Some(ContextFrame::Map(_, key_slot @ None)) => {
-                        *key_slot = Some(s.to_string());
-                    }
-                    Some(ContextFrame::Map(_, Some(_))) | Some(ContextFrame::List(_)) => {
-                        let value = self.parse_scalar(&s);
-                        self.push_value(value);
-                    }
-                    _ => {}
+            Event::Scalar(s, ..) => match self.stack.last_mut() {
+                Some(ContextFrame::Map(_, key_slot @ None)) => {
+                    *key_slot = Some(s.to_string());
                 }
-            }
+                Some(ContextFrame::Map(_, Some(_))) | Some(ContextFrame::List(_)) => {
+                    let value = self.parse_scalar(&s);
+                    self.push_value(value);
+                }
+                _ => {}
+            },
             Event::DocumentEnd | Event::StreamEnd => {}
             _ => {}
         }
@@ -141,4 +141,51 @@ pub fn rawblock_to_meta(block: RawBlock) -> Option<Meta> {
     let _parse_result = parser.load(&mut handler, false);
 
     handler.result
+}
+
+pub fn parse_metadata_strings(meta: MetaValue, outer_metadata: &mut Meta) -> MetaValue {
+    match meta {
+        MetaValue::MetaString(s) => {
+            let mut output_stream = VerboseOutput::Sink(io::sink());
+            let result = readers::qmd::read(s.as_bytes(), &mut output_stream);
+            match result {
+                Ok(mut pandoc) => {
+                    for (k, v) in pandoc.meta.into_iter() {
+                        outer_metadata.insert(k, v);
+                    }
+                    // we need to examine pandoc.blocks to see if it's a single paragraph or multiple blocks
+                    // if it's a single paragraph, we can return MetaInlines
+                    if pandoc.blocks.len() == 1 {
+                        let first = &mut pandoc.blocks[0];
+                        match first {
+                            crate::pandoc::Block::Paragraph(p) => {
+                                return MetaValue::MetaInlines(mem::take(&mut p.content));
+                            }
+                            _ => {}
+                        }
+                    }
+                    MetaValue::MetaBlocks(pandoc.blocks)
+                }
+                _ => panic!(
+                    "(unimplemented syntax error, this is a bug!) Failed to parse metadata string as markdown: {}",
+                    s
+                ),
+            }
+        }
+        MetaValue::MetaList(list) => {
+            let parsed_list = list
+                .into_iter()
+                .map(|value| parse_metadata_strings(value, outer_metadata))
+                .collect();
+            MetaValue::MetaList(parsed_list)
+        }
+        MetaValue::MetaMap(map) => {
+            let parsed_map = map
+                .into_iter()
+                .map(|(k, v)| (k, parse_metadata_strings(v, outer_metadata)))
+                .collect();
+            MetaValue::MetaMap(parsed_map)
+        }
+        other => other,
+    }
 }
