@@ -131,16 +131,24 @@ impl MarkedEventReceiver for YamlEventHandler {
     }
 }
 
-pub fn rawblock_to_meta(block: RawBlock) -> Option<Meta> {
+pub fn rawblock_to_meta(block: RawBlock) -> Meta {
     if block.format != "quarto_minus_metadata" {
-        return None;
+        panic!(
+            "Expected RawBlock with format 'quarto_minus_metadata', got {}",
+            block.format
+        );
     }
-    let content = extract_between_delimiters(&block.text)?;
+    let content = extract_between_delimiters(&block.text).unwrap();
     let mut parser = Parser::new_from_str(content);
     let mut handler = YamlEventHandler::new();
-    let _parse_result = parser.load(&mut handler, false);
-
-    handler.result
+    let parse_result = parser.load(&mut handler, false);
+    if parse_result.is_err() {
+        panic!(
+            "(unimplemented syntax error - this is a bug!) Failed to parse metadata block as YAML: {:?}",
+            parse_result.err()
+        );
+    }
+    handler.result.unwrap()
 }
 
 pub fn parse_metadata_strings(meta: MetaValue, outer_metadata: &mut Meta) -> MetaValue {

@@ -4,6 +4,7 @@
  */
 
 use crate::impl_source_location;
+use crate::pandoc::Meta;
 use crate::pandoc::attr::Attr;
 use crate::pandoc::caption::Caption;
 use crate::pandoc::inline::Inlines;
@@ -29,6 +30,8 @@ pub enum Block {
     Table(Table),
     Figure(Figure),
     Div(Div),
+    // quarto extensions
+    BlockMetadata(MetaBlock),
 }
 
 pub type Blocks = Vec<Block>;
@@ -143,6 +146,14 @@ pub struct Div {
     pub range: Range,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct MetaBlock {
+    pub meta: Meta,
+
+    pub filename: Option<String>,
+    pub range: Range,
+}
+
 impl_source_location!(
     // blocks
     Plain,
@@ -158,7 +169,9 @@ impl_source_location!(
     HorizontalRule,
     Table,
     Figure,
-    Div
+    Div,
+    // quarto extensions
+    MetaBlock
 );
 
 fn make_block_leftover(node: &tree_sitter::Node, input_bytes: &[u8]) -> Block {

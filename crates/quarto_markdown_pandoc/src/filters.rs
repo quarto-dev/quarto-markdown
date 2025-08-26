@@ -4,6 +4,7 @@
  */
 
 use crate::pandoc::MetaValue;
+use crate::pandoc::block::MetaBlock;
 use crate::pandoc::inline::AsInline;
 use crate::pandoc::meta::Meta;
 use crate::pandoc::meta::parse_metadata_strings;
@@ -140,13 +141,21 @@ impl<'a> Filter<'a> {
         self
     }
 
-    // pub fn with_blocks<F>(mut self, f: F) -> Self
-    // where
-    //     F: Fn(Blocks) -> FilterReturn<Blocks, Blocks> + 'static,
-    // {
-    //     self.blocks = Some(Box::new(f));
-    //     self
-    // }
+    pub fn with_blocks<F>(mut self, f: F) -> Filter<'a>
+    where
+        F: FnMut(Blocks) -> FilterReturn<Blocks, Blocks> + 'a,
+    {
+        self.blocks = Some(Box::new(f));
+        self
+    }
+
+    pub fn with_meta<F>(mut self, f: F) -> Filter<'a>
+    where
+        F: FnMut(Meta) -> FilterReturn<Meta, Meta> + 'a,
+    {
+        self.meta = Some(Box::new(f));
+        self
+    }
 }
 
 macro_rules! define_filter_with_methods {
@@ -657,6 +666,34 @@ pub fn topdown_traverse_block(block: Block, filter: &mut Filter) -> Blocks {
         Block::HorizontalRule(hr) => {
             handle_block_filter!(HorizontalRule, hr, horizontal_rule, filter)
         }
+        // quarto extensions
+        Block::BlockMetadata(meta) => {
+            if let Some(f) = &mut filter.meta {
+                return match f(meta.meta) {
+                    FilterReturn::Unchanged(m) => vec![Block::BlockMetadata(MetaBlock {
+                        meta: m,
+                        filename: meta.filename,
+                        range: meta.range,
+                    })],
+                    FilterReturn::FilterResult(new_meta, recurse) => {
+                        if !recurse {
+                            vec![Block::BlockMetadata(MetaBlock {
+                                meta: new_meta,
+                                filename: meta.filename,
+                                range: meta.range,
+                            })]
+                        } else {
+                            vec![Block::BlockMetadata(MetaBlock {
+                                meta: topdown_traverse_meta(new_meta, filter),
+                                filename: meta.filename,
+                                range: meta.range,
+                            })]
+                        }
+                    }
+                };
+            }
+            vec![Block::BlockMetadata(meta)]
+        }
     }
 }
 
@@ -962,40 +999,8 @@ pub fn topdown_traverse_meta(meta: Meta, filter: &mut Filter) -> Meta {
 }
 
 pub fn topdown_traverse(doc: pandoc::Pandoc, filter: &mut Filter) -> pandoc::Pandoc {
-    let (real_blocks, meta_blocks): (Vec<Block>, Vec<Block>) = doc
-        .blocks
-        .into_iter()
-        .partition(|b| !matches!(b, Block::RawBlock(rb) if rb.format == "quarto_minus_metadata"));
-
-    let mut meta = Meta::default();
-    let mut meta_from_parses = Meta::default();
-    meta_blocks.into_iter().for_each(|b| match b {
-        Block::RawBlock(rb) if rb.format == "quarto_minus_metadata" => {
-            let Some(result) = rawblock_to_meta(rb) else {
-                return;
-            };
-            let meta_map = MetaValue::MetaMap(result);
-
-            match parse_metadata_strings(meta_map, &mut meta_from_parses) {
-                MetaValue::MetaMap(m) => {
-                    for (k, v) in m {
-                        meta.insert(k, v);
-                    }
-                }
-                _ => panic!("Expected MetaMap from parse_metadata_strings"),
-            }
-        }
-        _ => {}
-    });
-    for (k, v) in meta_from_parses {
-        if !meta.contains_key(&k) {
-            meta.insert(k, v);
-        }
-    }
-
     pandoc::Pandoc {
-        meta: topdown_traverse_meta(meta, filter),
-        blocks: topdown_traverse_blocks(real_blocks, filter),
-        // TODO: handle meta
+        meta: topdown_traverse_meta(doc.meta, filter),
+        blocks: topdown_traverse_blocks(doc.blocks, filter),
     }
 }

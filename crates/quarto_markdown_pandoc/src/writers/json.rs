@@ -5,6 +5,7 @@
 
 use crate::pandoc::{Attr, Block, Caption, CitationMode, Inline, Inlines, ListAttributes, Pandoc};
 use crate::utils::autoid;
+use crate::writers::json;
 use serde_json::{Value, json};
 
 fn write_location<T: crate::pandoc::location::SourceLocation>(item: &T) -> Value {
@@ -278,7 +279,49 @@ fn write_block(block: &Block) -> Value {
             "c": bulletlist.content.iter().map(|blocks| blocks.iter().map(write_block).collect::<Vec<_>>()).collect::<Vec<_>>(),
             "l": write_location(bulletlist),
         }),
+        Block::BlockMetadata(meta) => json!({
+            "t": "BlockMetadata",
+            "c": write_meta(&meta.meta),
+            "l": write_location(meta),
+        }),
     }
+}
+
+fn write_meta_value(value: &crate::pandoc::MetaValue) -> Value {
+    match value {
+        crate::pandoc::MetaValue::MetaString(s) => json!({
+            "t": "MetaString",
+            "c": s
+        }),
+        crate::pandoc::MetaValue::MetaInlines(inlines) => json!({
+            "t": "MetaInlines",
+            "c": write_inlines(inlines)
+        }),
+        crate::pandoc::MetaValue::MetaBlocks(blocks) => json!({
+            "t": "MetaBlocks",
+            "c": write_blocks(blocks)
+        }),
+        crate::pandoc::MetaValue::MetaList(list) => json!({
+            "t": "MetaList",
+            "c": list.iter().map(write_meta_value).collect::<Vec<_>>()
+        }),
+        crate::pandoc::MetaValue::MetaMap(map) => json!({
+            "t": "MetaMap",
+            "c": map.iter().map(|(k, v)| json!([k, write_meta_value(v)])).collect::<Vec<_>>()
+        }),
+        crate::pandoc::MetaValue::MetaBool(b) => json!({
+            "t": "MetaBool",
+            "c": b
+        }),
+    }
+}
+
+fn write_meta(meta: &crate::pandoc::Meta) -> Value {
+    let map: serde_json::Map<String, Value> = meta
+        .iter()
+        .map(|(k, v)| (k.clone(), write_meta_value(v)))
+        .collect();
+    Value::Object(map)
 }
 
 fn write_blocks(blocks: &[Block]) -> Value {
@@ -288,7 +331,7 @@ fn write_blocks(blocks: &[Block]) -> Value {
 fn write_pandoc(pandoc: &Pandoc) -> Value {
     json!({
         "pandoc-api-version": [1, 23, 1],
-        "meta": {},
+        "meta": write_meta(&pandoc.meta),
         "blocks": write_blocks(&pandoc.blocks),
     })
 }

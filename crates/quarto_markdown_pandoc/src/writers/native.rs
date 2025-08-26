@@ -563,7 +563,7 @@ fn write_block<T: std::io::Write>(block: &Block, buf: &mut T) -> std::io::Result
             write!(buf, "] ")?;
             write_native_table_foot(foot, buf)?;
         }
-        _ => panic!("Unsupported block type: {:?}", block),
+        _ => panic!("Unsupported block type in native writer: {:?}", block),
     }
     Ok(())
 }
