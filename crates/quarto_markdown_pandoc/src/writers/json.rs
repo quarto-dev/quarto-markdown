@@ -4,7 +4,6 @@
  */
 
 use crate::pandoc::{Attr, Block, Caption, CitationMode, Inline, Inlines, ListAttributes, Pandoc};
-use crate::utils::autoid;
 use serde_json::{Value, json};
 
 fn write_location<T: crate::pandoc::location::SourceLocation>(item: &T) -> Value {
