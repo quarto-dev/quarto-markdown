@@ -7,8 +7,6 @@ use crate::pandoc::MetaValue;
 use crate::pandoc::block::MetaBlock;
 use crate::pandoc::inline::AsInline;
 use crate::pandoc::meta::Meta;
-use crate::pandoc::meta::parse_metadata_strings;
-use crate::pandoc::meta::rawblock_to_meta;
 use crate::pandoc::{self, Block, Blocks, Inline, Inlines};
 
 // filters are destructive and take ownership of the input

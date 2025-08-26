@@ -33,6 +33,5 @@ pub use crate::pandoc::table::{
     Alignment, Cell, ColWidth, Row, Table, TableBody, TableFoot, TableHead,
 };
 
-pub use crate::pandoc::location::{Location, Range};
 pub use crate::pandoc::meta::{Meta, MetaValue, rawblock_to_meta};
 pub use crate::pandoc::treesitter::treesitter_to_pandoc;

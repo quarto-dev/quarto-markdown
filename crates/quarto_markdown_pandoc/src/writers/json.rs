@@ -5,7 +5,6 @@
 
 use crate::pandoc::{Attr, Block, Caption, CitationMode, Inline, Inlines, ListAttributes, Pandoc};
 use crate::utils::autoid;
-use crate::writers::json;
 use serde_json::{Value, json};
 
 fn write_location<T: crate::pandoc::location::SourceLocation>(item: &T) -> Value {
@@ -254,13 +253,9 @@ fn write_block(block: &Block) -> Value {
             "l": write_location(para),
         }),
         Block::Header(header) => {
-            let mut attr = header.attr.clone();
-            if attr.0.is_empty() {
-                attr.0 = autoid::auto_generated_id(&header.content);
-            }
             json!({
                 "t": "Header",
-                "c": [header.level, write_attr(&attr), write_inlines(&header.content)],
+                "c": [header.level, write_attr(&header.attr), write_inlines(&header.content)],
                 "l": write_location(header),
             })
         }

@@ -1,4 +1,5 @@
-use quarto_markdown_pandoc::pandoc::{Location, MetaValue, Range, RawBlock, rawblock_to_meta};
+use quarto_markdown_pandoc::pandoc::location::{Location, Range};
+use quarto_markdown_pandoc::pandoc::{MetaValue, RawBlock, rawblock_to_meta};
 use std::fs;
 
 #[test]

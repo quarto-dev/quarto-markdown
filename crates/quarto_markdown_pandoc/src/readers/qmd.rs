@@ -76,12 +76,8 @@ pub fn read<T: Write>(
     let mut result = pandoc::treesitter_to_pandoc(&mut output_stream, &tree, &input_bytes)?;
     let mut meta_from_parses = Meta::default();
 
-    eprintln!("Hello?");
-    eprintln!("{:?}", result);
-
     result = {
         let mut filter = Filter::new().with_raw_block(|rb| {
-            eprintln!("raw block: {:?}", rb);
             if rb.format != "quarto_minus_metadata" {
                 return Unchanged(rb);
             }
@@ -131,6 +127,5 @@ pub fn read<T: Write>(
     for (k, v) in meta_from_parses.into_iter() {
         result.meta.insert(k, v);
     }
-    eprintln!("result\n{:?}", result);
     Ok(result)
 }

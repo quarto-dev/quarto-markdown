@@ -24,6 +24,7 @@ use crate::pandoc::shortcode::{Shortcode, ShortcodeArg, shortcode_to_span};
 use crate::pandoc::table::{
     Alignment, Cell, ColSpec, ColWidth, Row, Table, TableBody, TableFoot, TableHead,
 };
+use crate::utils::autoid;
 use core::panic;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -1816,15 +1817,22 @@ fn desugar(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
                     .last()
                     .map_or(false, |v| matches!(v, Inline::Attr(_)));
                 if !is_last_attr {
-                    return Unchanged(header);
+                    let mut attr = header.attr.clone();
+                    if attr.0.is_empty() {
+                        attr.0 = autoid::auto_generated_id(&header.content);
+                        header.attr = attr;
+                        FilterResult(vec![Block::Header(header)], true)
+                    } else {
+                        Unchanged(header)
+                    }
+                } else {
+                    let Some(Inline::Attr(attr)) = header.content.pop() else {
+                        panic!("shouldn't happen, header should have an attribute at this point");
+                    };
+                    header.attr = attr;
+                    header.content = trim_inlines(header.content).0;
+                    FilterResult(vec![Block::Header(header)], true)
                 }
-
-                let Some(Inline::Attr(attr)) = header.content.pop() else {
-                    panic!("shouldn't happen, header should have an attribute at this point");
-                };
-                header.attr = attr;
-                header.content = trim_inlines(header.content).0;
-                FilterResult(vec![Block::Header(header)], true)
             })
             // attempt to desugar single-image paragraphs into figures
             .with_paragraph(|para| {

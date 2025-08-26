@@ -6,7 +6,7 @@
 use glob::glob;
 use quarto_markdown_pandoc::errors::parse_is_good;
 use quarto_markdown_pandoc::pandoc::treesitter_to_pandoc;
-use quarto_markdown_pandoc::writers;
+use quarto_markdown_pandoc::{readers, writers};
 use std::io::Write;
 use std::process::{Command, Stdio};
 use tree_sitter_qmd::MarkdownParser;
@@ -69,6 +69,12 @@ fn matches_canonical_pandoc_format(
     }
     let our_ast = canonicalize_pandoc_ast(ast, output_format, output_format);
     let pandoc_ast = canonicalize_pandoc_ast(markdown, pandoc_reader, output_format);
+    if our_ast != pandoc_ast {
+        eprintln!("Format: {} -> {}", pandoc_reader, output_format);
+        eprintln!("Input:\n{}", markdown);
+        eprintln!("Our AST:\n{}", our_ast);
+        eprintln!("Pandoc AST:\n{}", pandoc_ast);
+    }
     our_ast == pandoc_ast
 }
 
@@ -78,32 +84,18 @@ fn matches_pandoc_markdown_reader(input: &str) -> bool {
     }
     let mut buf1 = Vec::new();
     let mut buf2 = Vec::new();
-    writers::native::write(
-        &treesitter_to_pandoc(
-            &mut std::io::sink(),
-            &MarkdownParser::default()
-                .parse(input.as_bytes(), None)
-                .unwrap(),
-            input.as_bytes(),
-        )
-        .unwrap(),
-        &mut buf1,
-    )
-    .unwrap();
+
+    let doc = readers::qmd::read(input.as_bytes(), &mut std::io::sink()).unwrap();
+    writers::native::write(&doc, &mut buf1).unwrap();
     let native_output = String::from_utf8(buf1).expect("Invalid UTF-8 in output");
-    writers::json::write(
-        &treesitter_to_pandoc(
-            &mut std::io::sink(),
-            &MarkdownParser::default()
-                .parse(input.as_bytes(), None)
-                .unwrap(),
-            input.as_bytes(),
-        )
-        .unwrap(),
-        &mut buf2,
-    )
-    .unwrap();
+    writers::json::write(&doc, &mut buf2).unwrap();
     let json_output = String::from_utf8(buf2).expect("Invalid UTF-8 in output");
+
+    let mut our_value: serde_json::Value =
+        serde_json::from_str(&json_output).expect("Failed to parse our JSON");
+    remove_location_fields(&mut our_value);
+    let json_output = serde_json::to_string(&our_value).expect("Failed to serialize our JSON");
+
     matches_canonical_pandoc_format(input, &native_output, "markdown", "native")
         && matches_canonical_pandoc_format(input, &json_output, "markdown", "json")
 }
