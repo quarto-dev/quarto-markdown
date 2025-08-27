@@ -2025,6 +2025,18 @@ fn desugar(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
     }
 }
 
+fn as_smart_str(s: String) -> String {
+    if s == "..." {
+        "…".to_string()
+    } else if s == "--" {
+        "–".to_string()
+    } else if s == "---" {
+        "—".to_string()
+    } else {
+        s
+    }
+}
+
 fn merge_strs(pandoc: Pandoc) -> Pandoc {
     topdown_traverse(
         pandoc,
@@ -2035,11 +2047,12 @@ fn merge_strs(pandoc: Pandoc) -> Pandoc {
             for inline in inlines {
                 match inline {
                     Inline::Str(s) => {
+                        let str_text = as_smart_str(s.text);
                         if let Some(ref mut current) = current_str {
-                            current.push_str(&s.text);
+                            current.push_str(&str_text);
                             did_merge = true;
                         } else {
-                            current_str = Some(s.text);
+                            current_str = Some(str_text);
                         }
                     }
                     _ => {
