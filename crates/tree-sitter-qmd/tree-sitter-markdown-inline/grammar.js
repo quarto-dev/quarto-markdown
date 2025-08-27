@@ -405,6 +405,10 @@ module.exports = grammar(add_inline_rules({
         ))),
         _text_base: $ => prec.right(choice(
             $._word,
+            // parse en-dashes, em-dashes and ellipses into a single token
+            "--",
+            "---",
+            "...",
             common.punctuation_without($, ['[', '{', '}', ']', "@"]),
             $._whitespace,
         )),

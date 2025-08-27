@@ -3715,6 +3715,18 @@
             "name": "_word"
           },
           {
+            "type": "STRING",
+            "value": "--"
+          },
+          {
+            "type": "STRING",
+            "value": "---"
+          },
+          {
+            "type": "STRING",
+            "value": "..."
+          },
+          {
             "type": "SEQ",
             "members": [
               {

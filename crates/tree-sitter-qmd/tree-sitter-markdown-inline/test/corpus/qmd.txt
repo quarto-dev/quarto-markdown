@@ -164,3 +164,23 @@ A note[^another-note] [^2].
     (note_reference_id)
     (note_reference_delimiter))
   (text_base))
+================================================================================
+Ext_smart handling of en dashes, em dashes, and ellipses
+================================================================================
+Wait... what--really? I---mean---yes!
+--------------------------------------------------------------------------------
+(inline
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base)
+  (text_base))
