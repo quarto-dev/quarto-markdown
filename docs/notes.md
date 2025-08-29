@@ -26,7 +26,7 @@ Pandoc's `markdown` reader produces this native AST:
 The note contents are in a completely different block, and get incorporated into the actual paragraph itself.
 
 As I think about this more carefully, I think we actually have a solid opportunity here.
-I think quarto_markdown_pandoc should emit special Pandoc AST syntax that separate "footnote definitions" and "footnote references", which could then be handled correctly by Quarto's pipeline.
+I think quarto-markdown-pandoc should emit special Pandoc AST syntax that separate "footnote definitions" and "footnote references", which could then be handled correctly by Quarto's pipeline.
 
 # TODO
 

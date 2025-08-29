@@ -1,5 +1,5 @@
 [package]
-name = "quarto_markdown_pandoc"
+name = "quarto-markdown-pandoc"
 version = "0.0.0"
 publish = false
 authors.workspace = true
