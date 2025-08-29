@@ -109,3 +109,10 @@ unnested_or_patterns = "warn"
 unreadable_literal = "warn"
 verbose_bit_mask = "warn"
 verbose_file_reads = "warn"
+
+# Profiles must be set at the workspace level
+[profile.dev]
+# Tell `rustc` to optimize for small code size to
+# work around "too many locals" error from wasm-pack
+# https://github.com/wasm-bindgen/wasm-bindgen/issues/3451#issuecomment-1562982835
+opt-level = "s"

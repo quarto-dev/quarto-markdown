@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
-#include <wchar.h>
 #include <wctype.h>
 
 // For explanation of the tokens see grammar.js
@@ -200,7 +199,7 @@ static size_t roundup_32(size_t x) {
 }
 
 typedef struct {
-    unsigned own_size; 
+    unsigned own_size;
     // Size of the serialized state of the scanner.
     // This is used to determine if we're too close to hitting
     // tree-sitter's maximum serialized size limit of 1024 bytes,
@@ -452,7 +451,7 @@ static bool parse_fenced_div_marker(Scanner *s, TSLexer *lexer,
     //
     // otherwise, it can only be a valid marker for the end of a fenced div
 
-    while (!lexer->eof(lexer) && 
+    while (!lexer->eof(lexer) &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t')) {
         advance(s, lexer);
     }
@@ -831,7 +830,7 @@ static bool parse_ordered_list_marker(Scanner *s, TSLexer *lexer,
         size_t digits = 1;
         bool dont_interrupt = lexer->lookahead != '1';
         advance(s, lexer);
-        while (isdigit(lexer->lookahead)) {
+        while (iswdigit(lexer->lookahead)) {
             dont_interrupt = true;
             digits++;
             advance(s, lexer);
@@ -1145,7 +1144,8 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
         if (next_symbol_valid) {
             // try block 1 names
             for (size_t i = 0; i < NUM_HTML_TAG_NAMES_RULE_1; i++) {
-                if (strcmp(name, HTML_TAG_NAMES_RULE_1[i]) == 0) {
+                // FIXME: I'm guessing on the size here
+                if (strncmp(name, HTML_TAG_NAMES_RULE_1[i], name_length) == 0) {
                     if (starting_slash) {
                         if (valid_symbols[HTML_BLOCK_1_END]) {
                             lexer->result_symbol = HTML_BLOCK_1_END;
@@ -1174,7 +1174,8 @@ static bool parse_html_block(Scanner *s, TSLexer *lexer,
         if (next_symbol_valid || tag_closed) {
             // try block 2 names
             for (size_t i = 0; i < NUM_HTML_TAG_NAMES_RULE_7; i++) {
-                if (strcmp(name, HTML_TAG_NAMES_RULE_7[i]) == 0 &&
+                // FIXME: I'm guessing on the size here
+                if (strncmp(name, HTML_TAG_NAMES_RULE_7[i], name_length) == 0 &&
                     valid_symbols[HTML_BLOCK_6_START]) {
                     lexer->result_symbol = HTML_BLOCK_6_START;
                     if (!s->simulate) {
