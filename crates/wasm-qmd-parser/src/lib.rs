@@ -12,7 +12,7 @@ pub mod c_shim;
 
 mod utils;
 
-use std::io;
+use std::{io, panic};
 
 use quarto_markdown_pandoc::readers::qmd;
 use quarto_markdown_pandoc::utils::output::VerboseOutput;
@@ -29,11 +29,43 @@ pub fn greet() {
     alert("Hello, wasm-qmd-parser!");
 }
 
+#[wasm_bindgen(start)]
+pub fn run() {
+    // Set a panic hook on program start that prints panics to the console
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+}
+
 #[wasm_bindgen]
-pub fn parse_qmd(input: &str) -> String {
+pub fn parse_qmd(input: JsValue) -> JsValue {
     let mut output = VerboseOutput::Sink(io::sink());
-    let result = qmd::read(input.as_bytes(), &mut output).unwrap();
+
+    let input = match input.as_string() {
+        Some(input) => input,
+        None => panic!("Unable to parse `input` as a `String`."),
+    };
+
+    let result = match qmd::read(input.as_bytes(), &mut output) {
+        Ok(result) => result,
+        Err(err) => panic!("Unable to read as a qmd:\n{}", err.join("\n")),
+    };
+
     let mut buf = Vec::new();
-    let _ = json::write(&result, &mut buf).unwrap();
-    String::from_utf8(buf).unwrap()
+
+    match json::write(&result, &mut buf) {
+        Ok(_) => {
+            // Nothing to do
+        }
+        Err(err) => {
+            panic!("Unable to write as json: {:?}", err)
+        }
+    }
+
+    let json = match String::from_utf8(buf) {
+        Ok(json) => json,
+        Err(err) => {
+            panic!("Unable to convert json to string: {:?}", err)
+        }
+    };
+
+    JsValue::from_str(&json)
 }
