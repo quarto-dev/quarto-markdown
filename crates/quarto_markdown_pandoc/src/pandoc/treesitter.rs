@@ -1820,8 +1820,12 @@ fn desugar(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
                     let mut attr = header.attr.clone();
                     if attr.0.is_empty() {
                         attr.0 = autoid::auto_generated_id(&header.content);
-                        header.attr = attr;
-                        FilterResult(vec![Block::Header(header)], true)
+                        if !is_empty_attr(&attr) {
+                            header.attr = attr;
+                            FilterResult(vec![Block::Header(header)], true)
+                        } else {
+                            Unchanged(header)
+                        }
                     } else {
                         Unchanged(header)
                     }
