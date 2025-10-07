@@ -1,1 +1,6 @@
 markdown-inline.dylib
+
+# windows
+*.obj
+*.lib
+*.exp
