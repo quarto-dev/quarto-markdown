@@ -54,7 +54,7 @@ jobs:
 
       # build and run tests
       - name: Build
-        run: cargo build
+        run: cargo build --workspace --exclude quarto-markdown-pandoc-fuzz
         shell: bash
 
       - name: Test inline tree-sitter grammar
