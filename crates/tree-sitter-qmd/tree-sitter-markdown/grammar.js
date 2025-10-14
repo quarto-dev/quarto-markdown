@@ -465,6 +465,17 @@ module.exports = grammar({
                 $._code_span_close,
             ),
 
+            // Latex span within pipe table cells - simplified version that only handles dollar signs
+            _pipe_table_latex_span: $ => seq(
+                $._latex_span_start,
+                repeat(choice(
+                    $._word,
+                    $._whitespace,
+                    common.punctuation_without($, []),
+                )),
+                $._latex_span_close,
+            ),
+
             _pipe_table_cell_contents: $ => prec.right(
                 seq(
                     choice(
@@ -473,6 +484,7 @@ module.exports = grammar({
                         $._inline_math_state_track_marker,
                         $._backslash_escape,
                         $._pipe_table_code_span,
+                        $._pipe_table_latex_span,
                         common.punctuation_without($, ['|']),
                     ),
                     repeat(choice(
@@ -482,6 +494,7 @@ module.exports = grammar({
                         $._whitespace,
                         $._backslash_escape,
                         $._pipe_table_code_span,
+                        $._pipe_table_latex_span,
                         common.punctuation_without($, ['|']),
                     )))),
 
@@ -586,6 +599,10 @@ module.exports = grammar({
         // code span delimiters for parsing pipe table cells
         $._code_span_start,
         $._code_span_close,
+
+        // latex span delimiters for parsing pipe table cells
+        $._latex_span_start,
+        $._latex_span_close,
     ],
     precedences: $ => [
         [$._setext_heading1, $._block],
