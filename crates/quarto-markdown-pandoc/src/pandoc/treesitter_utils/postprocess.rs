@@ -542,57 +542,6 @@ fn as_smart_str(s: String) -> String {
     }
 }
 
-/// Re-split Cite content strings after merge_strs to match Pandoc's behavior
-/// Pandoc breaks up citation suffix text by spaces
-pub fn split_cite_content_strings(pandoc: Pandoc) -> Pandoc {
-    topdown_traverse(
-        pandoc,
-        &mut Filter::new().with_cite(|mut cite| {
-            // Split any merged strings in the cite content back into separate Str/Space inlines
-            // Only split if the content contains spaces (i.e., hasn't been split yet)
-            let mut needs_split = false;
-            for inline in &cite.content {
-                if let Inline::Str(s) = inline {
-                    // Check for regular space or non-breaking space (U+00A0)
-                    if s.text.contains(' ') || s.text.contains('\u{00A0}') {
-                        needs_split = true;
-                        break;
-                    }
-                }
-            }
-
-            if !needs_split {
-                return Unchanged(cite);
-            }
-
-            let mut new_content: Vec<Inline> = vec![];
-            for inline in cite.content {
-                if let Inline::Str(s) = inline {
-                    // Split by regular spaces and non-breaking spaces
-                    let words: Vec<&str> = s.text.split(|c| c == ' ' || c == '\u{00A0}').collect();
-                    for (i, word) in words.iter().enumerate() {
-                        if i > 0 {
-                            new_content.push(Inline::Space(Space {
-                                source_info: SourceInfo::with_range(empty_range()),
-                            }));
-                        }
-                        if !word.is_empty() {
-                            new_content.push(Inline::Str(Str {
-                                text: word.to_string(),
-                                source_info: s.source_info.clone(),
-                            }));
-                        }
-                    }
-                } else {
-                    new_content.push(inline);
-                }
-            }
-            cite.content = new_content;
-            FilterResult(vec![Inline::Cite(cite)], true)
-        }),
-    )
-}
-
 /// Merge consecutive Str inlines and apply smart typography
 pub fn merge_strs(pandoc: Pandoc) -> Pandoc {
     topdown_traverse(
