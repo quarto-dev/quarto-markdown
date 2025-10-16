@@ -105,7 +105,7 @@ When fixing ANY bug:
 
 ## General Instructions
 
-- in this repository, "qmd" means "quarto markdown", the dialect of markdown we are developing. Although we aim to be largely compatible with Pandoc, discrepancies in the behavior might not bugs.
+- in this repository, "qmd" means "quarto markdown", the dialect of markdown we are developing. Although we aim to be largely compatible with Pandoc, discrepancies in the behavior might not be bugs.
 - the qmd format only supports the inline syntax for a link [link](./target.html), and not the reference-style syntax [link][1].
 - Always strive for test documents as small as possible. Prefer a large number of small test documents instead of small number of large documents.
 - When fixing bugs, always try to isolate and fix one bug at a time.

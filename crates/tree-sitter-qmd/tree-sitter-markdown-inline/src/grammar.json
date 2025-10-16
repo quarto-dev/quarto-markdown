@@ -4002,10 +4002,6 @@
                   },
                   {
                     "type": "STRING",
-                    "value": "*"
-                  },
-                  {
-                    "type": "STRING",
                     "value": "+"
                   },
                   {
@@ -4303,14 +4299,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_emphasis_open_star"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_underscore"
-        },
-        {
-          "type": "SYMBOL",
           "name": "inline_link"
         }
       ]
@@ -4364,10 +4352,6 @@
           },
           "named": true,
           "value": "strong_emphasis"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_underscore"
         },
         {
           "type": "SYMBOL",
@@ -4427,10 +4411,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_emphasis_open_star"
-        },
-        {
-          "type": "SYMBOL",
           "name": "inline_link"
         }
       ]
@@ -4484,14 +4464,6 @@
           },
           "named": true,
           "value": "strong_emphasis"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_star"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_underscore"
         },
         {
           "type": "SYMBOL",
@@ -4696,14 +4668,6 @@
           },
           "named": true,
           "value": "strong_emphasis"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_star"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_underscore"
         }
       ]
     },
@@ -4756,10 +4720,6 @@
           },
           "named": true,
           "value": "strong_emphasis"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_underscore"
         }
       ]
     },
@@ -4812,10 +4772,6 @@
           },
           "named": true,
           "value": "strong_emphasis"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_star"
         }
       ]
     },
@@ -4868,14 +4824,6 @@
           },
           "named": true,
           "value": "strong_emphasis"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_star"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_emphasis_open_underscore"
         }
       ]
     },

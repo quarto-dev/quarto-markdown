@@ -19,22 +19,6 @@ The opening bracket is followed by two marker characters, then a space, and then
 
 Editorial marks can also include attributes (IDs, classes, and key-value pairs) immediately after the closing bracket, like spans: `[!! text]{#my-id}`, `[++ text]{.my-class}`, etc.
 
-## Conversion to Pandoc AST
-
-When converted to Pandoc AST, editorial marks become `Span` elements with specific CSS classes:
-
-- `[!! ...]` → `Span ("", ["quarto-highlight"], []) [...]`
-- `[++ ...]` → `Span ("", ["quarto-insert"], []) [...]`
-- `[-- ...]` → `Span ("", ["quarto-delete"], []) [...]`
-- `[>> ...]` → `Span ("", ["quarto-edit-comment"], []) [...]`
-
-When attributes are present, they are preserved in the resulting Span:
-
-- `[!! text]{#my-id .extra}` → `Span ("my-id", ["quarto-highlight", "extra"], []) [...]`
-- `[++ text]{key="val"}` → `Span ("", ["quarto-insert"], [("key", "val")]) [...]`
-
-These classes and attributes can be used to apply styling in HTML output or to process the marks with Pandoc filters.
-
 ## Examples
 
 ### Highlight
