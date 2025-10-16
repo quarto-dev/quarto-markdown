@@ -395,12 +395,14 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
             })
             .with_insert(|insert| {
                 let (content, _changed) = trim_inlines(insert.content);
+                let mut classes = vec!["quarto-insert".to_string()];
+                classes.extend(insert.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
                         attr: (
-                            "".to_string(),
-                            vec!["quarto-insert".to_string()],
-                            HashMap::new(),
+                            insert.attr.0,
+                            classes,
+                            insert.attr.2,
                         ),
                         content,
                         source_info: empty_source_info(),
@@ -410,12 +412,14 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
             })
             .with_delete(|delete| {
                 let (content, _changed) = trim_inlines(delete.content);
+                let mut classes = vec!["quarto-delete".to_string()];
+                classes.extend(delete.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
                         attr: (
-                            "".to_string(),
-                            vec!["quarto-delete".to_string()],
-                            HashMap::new(),
+                            delete.attr.0,
+                            classes,
+                            delete.attr.2,
                         ),
                         content,
                         source_info: empty_source_info(),
@@ -425,12 +429,14 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
             })
             .with_highlight(|highlight| {
                 let (content, _changed) = trim_inlines(highlight.content);
+                let mut classes = vec!["quarto-highlight".to_string()];
+                classes.extend(highlight.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
                         attr: (
-                            "".to_string(),
-                            vec!["quarto-highlight".to_string()],
-                            HashMap::new(),
+                            highlight.attr.0,
+                            classes,
+                            highlight.attr.2,
                         ),
                         content,
                         source_info: empty_source_info(),
@@ -440,12 +446,14 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
             })
             .with_edit_comment(|edit_comment| {
                 let (content, _changed) = trim_inlines(edit_comment.content);
+                let mut classes = vec!["quarto-edit-comment".to_string()];
+                classes.extend(edit_comment.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
                         attr: (
-                            "".to_string(),
-                            vec!["quarto-edit-comment".to_string()],
-                            HashMap::new(),
+                            edit_comment.attr.0,
+                            classes,
+                            edit_comment.attr.2,
                         ),
                         content,
                         source_info: empty_source_info(),
