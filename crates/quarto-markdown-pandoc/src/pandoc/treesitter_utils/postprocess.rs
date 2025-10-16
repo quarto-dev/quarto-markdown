@@ -399,11 +399,7 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
                 classes.extend(insert.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
-                        attr: (
-                            insert.attr.0,
-                            classes,
-                            insert.attr.2,
-                        ),
+                        attr: (insert.attr.0, classes, insert.attr.2),
                         content,
                         source_info: empty_source_info(),
                     })],
@@ -416,11 +412,7 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
                 classes.extend(delete.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
-                        attr: (
-                            delete.attr.0,
-                            classes,
-                            delete.attr.2,
-                        ),
+                        attr: (delete.attr.0, classes, delete.attr.2),
                         content,
                         source_info: empty_source_info(),
                     })],
@@ -433,11 +425,7 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
                 classes.extend(highlight.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
-                        attr: (
-                            highlight.attr.0,
-                            classes,
-                            highlight.attr.2,
-                        ),
+                        attr: (highlight.attr.0, classes, highlight.attr.2),
                         content,
                         source_info: empty_source_info(),
                     })],
@@ -450,11 +438,7 @@ pub fn postprocess(doc: Pandoc) -> Result<Pandoc, Vec<String>> {
                 classes.extend(edit_comment.attr.1);
                 FilterResult(
                     vec![Inline::Span(Span {
-                        attr: (
-                            edit_comment.attr.0,
-                            classes,
-                            edit_comment.attr.2,
-                        ),
+                        attr: (edit_comment.attr.0, classes, edit_comment.attr.2),
                         content,
                         source_info: empty_source_info(),
                     })],

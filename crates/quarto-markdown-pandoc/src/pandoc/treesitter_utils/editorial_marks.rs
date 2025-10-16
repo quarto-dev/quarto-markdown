@@ -7,12 +7,15 @@
  */
 
 use crate::pandoc::ast_context::ASTContext;
-use crate::pandoc::inline::{Delete, EditComment, Highlight, Inline, Insert, Inlines};
-use crate::pandoc::location::node_source_info_with_context;
+use crate::pandoc::inline::{Delete, EditComment, Highlight, Inline, Inlines, Insert, Space, Str};
+use crate::pandoc::location::{SourceInfo, node_source_info_with_context};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use std::collections::HashMap;
 use std::io::Write;
 
 use super::pandocnativeintermediate::PandocNativeIntermediate;
+use super::text_helpers::apply_smart_quotes;
 
 macro_rules! process_editorial_mark {
     ($struct_name:ident) => {
@@ -23,6 +26,7 @@ macro_rules! process_editorial_mark {
                 children: Vec<(String, PandocNativeIntermediate)>,
                 context: &ASTContext,
             ) -> PandocNativeIntermediate {
+                let whitespace_re: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
                 let mut attr = ("".to_string(), vec![], HashMap::new());
                 let mut content: Inlines = vec![];
 
@@ -36,6 +40,32 @@ macro_rules! process_editorial_mark {
                         }
                         PandocNativeIntermediate::IntermediateInlines(mut inlines) => {
                             content.append(&mut inlines);
+                        }
+                        PandocNativeIntermediate::IntermediateBaseText(text, range) => {
+                            if let Some(_) = whitespace_re.find(&text) {
+                                content.push(Inline::Space(Space {
+                                    source_info: SourceInfo::new(
+                                        if context.filenames.is_empty() {
+                                            None
+                                        } else {
+                                            Some(0)
+                                        },
+                                        range,
+                                    ),
+                                }))
+                            } else {
+                                content.push(Inline::Str(Str {
+                                    text: apply_smart_quotes(text),
+                                    source_info: SourceInfo::new(
+                                        if context.filenames.is_empty() {
+                                            None
+                                        } else {
+                                            Some(0)
+                                        },
+                                        range,
+                                    ),
+                                }))
+                            }
                         }
                         PandocNativeIntermediate::IntermediateUnknown(_) => {
                             // Skip unknown nodes (delimiters, etc.)
