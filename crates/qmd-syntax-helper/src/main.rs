@@ -96,10 +96,12 @@ fn main() -> Result<()> {
 
                 for rule in &rules {
                     match rule.check(&file_path, verbose && !json) {
-                        Ok(result) => {
-                            all_results.push(result.clone());
-                            if !json && result.has_issue {
-                                println!("  {} {}", "✗".red(), result.message.unwrap_or_default());
+                        Ok(results) => {
+                            for result in results {
+                                all_results.push(result.clone());
+                                if !json && result.has_issue {
+                                    println!("  {} {}", "✗".red(), result.message.unwrap_or_default());
+                                }
                             }
                         }
                         Err(e) => {
@@ -109,6 +111,11 @@ fn main() -> Result<()> {
                         }
                     }
                 }
+            }
+
+            // Print summary if not in JSON mode
+            if !json && !all_results.is_empty() {
+                print_check_summary(&all_results);
             }
 
             // Output handling
@@ -200,5 +207,75 @@ fn resolve_rules(
             rules.push(registry.get(name)?);
         }
         Ok(rules)
+    }
+}
+
+fn print_check_summary(results: &[rule::CheckResult]) {
+    use std::collections::{HashMap, HashSet};
+
+    // Get unique files checked
+    let unique_files: HashSet<&str> = results.iter().map(|r| r.file_path.as_str()).collect();
+    let total_files = unique_files.len();
+
+    // Count files with issues (at least one result with has_issue=true)
+    let mut files_with_issues = HashSet::new();
+    let mut total_issues = 0;
+
+    // Track issues by rule type
+    let mut issues_by_rule: HashMap<String, usize> = HashMap::new();
+    let mut files_by_rule: HashMap<String, HashSet<String>> = HashMap::new();
+
+    for result in results {
+        if result.has_issue {
+            files_with_issues.insert(&result.file_path);
+            total_issues += result.issue_count;
+
+            // Track by rule
+            *issues_by_rule.entry(result.rule_name.clone()).or_insert(0) += result.issue_count;
+            files_by_rule
+                .entry(result.rule_name.clone())
+                .or_insert_with(HashSet::new)
+                .insert(result.file_path.clone());
+        }
+    }
+
+    let files_with_issues_count = files_with_issues.len();
+    let files_clean = total_files - files_with_issues_count;
+
+    println!("\n{}", "=== Summary ===".bold());
+    println!("Total files:         {}", total_files);
+    println!(
+        "Files with issues:   {} {}",
+        files_with_issues_count,
+        if files_with_issues_count > 0 {
+            "✗".red()
+        } else {
+            "✓".green()
+        }
+    );
+    println!("Clean files:         {} {}", files_clean, "✓".green());
+
+    if !issues_by_rule.is_empty() {
+        println!("\n{}", "Issues by rule:".bold());
+        let mut rule_names: Vec<_> = issues_by_rule.keys().collect();
+        rule_names.sort();
+
+        for rule_name in rule_names {
+            let count = issues_by_rule[rule_name];
+            let file_count = files_by_rule[rule_name].len();
+            println!(
+                "  {}: {} issue(s) in {} file(s)",
+                rule_name.cyan(),
+                count,
+                file_count
+            );
+        }
+    }
+
+    println!("\nTotal issues found:  {}", total_issues);
+
+    if total_files > 0 {
+        let success_rate = (files_clean as f64 / total_files as f64) * 100.0;
+        println!("Success rate:        {:.1}%", success_rate);
     }
 }

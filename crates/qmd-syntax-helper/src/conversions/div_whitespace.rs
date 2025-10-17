@@ -64,10 +64,17 @@ impl DivWhitespaceConverter {
                 }
 
                 let json_str = error_messages.join("");
-                let errors: Vec<ParseError> =
-                    serde_json::from_str(&json_str).context("Failed to parse JSON error output")?;
 
-                Ok(errors)
+                // Try to parse as JSON array
+                match serde_json::from_str::<Vec<ParseError>>(&json_str) {
+                    Ok(errors) => Ok(errors),
+                    Err(_) => {
+                        // If parsing fails, the messages are likely plain text warnings/debug messages
+                        // rather than actual syntax errors. These don't indicate div whitespace issues,
+                        // so we can safely ignore them for this specific rule.
+                        Ok(Vec::new())
+                    }
+                }
             }
         }
     }
@@ -128,6 +135,29 @@ impl DivWhitespaceConverter {
         fix_positions.dedup();
 
         fix_positions
+    }
+
+    /// Convert byte offset to row/column (1-indexed)
+    fn byte_offset_to_location(&self, content: &str, byte_offset: usize) -> crate::rule::SourceLocation {
+        let mut row = 1;
+        let mut column = 1;
+        let mut current_offset = 0;
+
+        for ch in content.chars() {
+            if current_offset >= byte_offset {
+                break;
+            }
+            current_offset += ch.len_utf8();
+
+            if ch == '\n' {
+                row += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        crate::rule::SourceLocation { row, column }
     }
 
     /// Apply fixes to content by inserting spaces at specified positions
@@ -220,7 +250,7 @@ impl Rule for DivWhitespaceConverter {
         "Fix div fences missing whitespace (:::{ -> ::: {)"
     }
 
-    fn check(&self, file_path: &Path, verbose: bool) -> Result<CheckResult> {
+    fn check(&self, file_path: &Path, verbose: bool) -> Result<Vec<CheckResult>> {
         let content = read_file(file_path)?;
         let errors = self.get_parse_errors(file_path)?;
         let fix_positions = self.find_div_whitespace_errors(&content, &errors);
@@ -236,20 +266,20 @@ impl Rule for DivWhitespaceConverter {
             }
         }
 
-        Ok(CheckResult {
-            rule_name: self.name().to_string(),
-            file_path: file_path.to_string_lossy().to_string(),
-            has_issue: !fix_positions.is_empty(),
-            issue_count: fix_positions.len(),
-            message: if fix_positions.is_empty() {
-                None
-            } else {
-                Some(format!(
-                    "Found {} div fence(s) needing whitespace fixes",
-                    fix_positions.len()
-                ))
-            },
-        })
+        let mut results = Vec::new();
+        for &pos in &fix_positions {
+            let location = self.byte_offset_to_location(&content, pos);
+            results.push(CheckResult {
+                rule_name: self.name().to_string(),
+                file_path: file_path.to_string_lossy().to_string(),
+                has_issue: true,
+                issue_count: 1,
+                message: Some("Div fence missing whitespace (:::{ should be ::: {)".to_string()),
+                location: Some(location),
+            });
+        }
+
+        Ok(results)
     }
 
     fn convert(

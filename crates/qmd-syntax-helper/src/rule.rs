@@ -5,14 +5,24 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+/// Location information for a violation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SourceLocation {
+    pub row: usize,
+    pub column: usize,
+}
+
 /// Result of checking a file for a specific rule
+/// Each CheckResult represents a single violation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckResult {
     pub rule_name: String,
     pub file_path: String,
     pub has_issue: bool,
-    pub issue_count: usize,
+    pub issue_count: usize, // Kept for backwards compatibility, always 1 when has_issue=true
     pub message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location: Option<SourceLocation>,
 }
 
 /// Result of converting/fixing a file
@@ -33,7 +43,8 @@ pub trait Rule {
     fn description(&self) -> &str;
 
     /// Check if a file violates this rule
-    fn check(&self, file_path: &Path, verbose: bool) -> Result<CheckResult>;
+    /// Returns a vector of CheckResults, one per violation found
+    fn check(&self, file_path: &Path, verbose: bool) -> Result<Vec<CheckResult>>;
 
     /// Convert/fix rule violations in a file
     /// If in_place is false, returns the converted content as a string in the message field
@@ -58,7 +69,12 @@ impl RuleRegistry {
             rules: HashMap::new(),
         };
 
-        // Register all rules
+        // Register diagnostic rules first (parse check should run before conversion rules)
+        registry.register(Arc::new(
+            crate::diagnostics::parse_check::ParseChecker::new()?,
+        ));
+
+        // Register conversion rules
         registry.register(Arc::new(
             crate::conversions::grid_tables::GridTableConverter::new()?,
         ));

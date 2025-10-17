@@ -153,7 +153,7 @@ impl Rule for GridTableConverter {
         "Convert grid tables to list-table format"
     }
 
-    fn check(&self, file_path: &Path, verbose: bool) -> Result<CheckResult> {
+    fn check(&self, file_path: &Path, verbose: bool) -> Result<Vec<CheckResult>> {
         let content = read_file(file_path)?;
         let tables = self.find_grid_tables(&content);
 
@@ -165,17 +165,22 @@ impl Rule for GridTableConverter {
             }
         }
 
-        Ok(CheckResult {
-            rule_name: self.name().to_string(),
-            file_path: file_path.to_string_lossy().to_string(),
-            has_issue: !tables.is_empty(),
-            issue_count: tables.len(),
-            message: if tables.is_empty() {
-                None
-            } else {
-                Some(format!("Found {} grid table(s)", tables.len()))
-            },
-        })
+        let mut results = Vec::new();
+        for table in tables {
+            results.push(CheckResult {
+                rule_name: self.name().to_string(),
+                file_path: file_path.to_string_lossy().to_string(),
+                has_issue: true,
+                issue_count: 1,
+                message: Some("Grid table found".to_string()),
+                location: Some(crate::rule::SourceLocation {
+                    row: table.start_line + 1, // Convert 0-indexed to 1-indexed
+                    column: 1,
+                }),
+            });
+        }
+
+        Ok(results)
     }
 
     fn convert(

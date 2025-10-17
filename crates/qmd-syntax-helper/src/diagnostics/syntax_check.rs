@@ -71,13 +71,14 @@ impl SyntaxChecker {
             false, // not loose mode
             &filename,
             &mut sink,
-            None::<
-                fn(
-                    &[u8],
-                    &quarto_markdown_pandoc::utils::tree_sitter_log_observer::TreeSitterLogObserver,
-                    &str,
-                ) -> Vec<String>,
-            >, // no custom error formatter
+            Some(
+                quarto_markdown_pandoc::readers::qmd_error_messages::produce_json_error_messages
+                    as fn(
+                        &[u8],
+                        &quarto_markdown_pandoc::utils::tree_sitter_log_observer::TreeSitterLogObserver,
+                        &str,
+                    ) -> Vec<String>,
+            ), // Use JSON error formatter for machine-readable errors
         );
 
         match result {

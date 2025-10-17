@@ -192,7 +192,7 @@ impl Rule for DefinitionListConverter {
         "Convert definition lists to div-based format"
     }
 
-    fn check(&self, file_path: &Path, verbose: bool) -> Result<CheckResult> {
+    fn check(&self, file_path: &Path, verbose: bool) -> Result<Vec<CheckResult>> {
         let content = read_file(file_path)?;
         let lists = self.find_definition_lists(&content);
 
@@ -204,17 +204,22 @@ impl Rule for DefinitionListConverter {
             }
         }
 
-        Ok(CheckResult {
-            rule_name: self.name().to_string(),
-            file_path: file_path.to_string_lossy().to_string(),
-            has_issue: !lists.is_empty(),
-            issue_count: lists.len(),
-            message: if lists.is_empty() {
-                None
-            } else {
-                Some(format!("Found {} definition list(s)", lists.len()))
-            },
-        })
+        let mut results = Vec::new();
+        for list in lists {
+            results.push(CheckResult {
+                rule_name: self.name().to_string(),
+                file_path: file_path.to_string_lossy().to_string(),
+                has_issue: true,
+                issue_count: 1,
+                message: Some("Definition list found".to_string()),
+                location: Some(crate::rule::SourceLocation {
+                    row: list.start_line + 1, // Convert 0-indexed to 1-indexed
+                    column: 1,
+                }),
+            });
+        }
+
+        Ok(results)
     }
 
     fn convert(
