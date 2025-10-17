@@ -150,6 +150,7 @@ impl DivWhitespaceConverter {
     }
 
     /// Process a single file
+    #[allow(dead_code)]
     pub fn process_file(
         &self,
         file_path: &Path,
@@ -256,7 +257,7 @@ impl Rule for DivWhitespaceConverter {
         file_path: &Path,
         in_place: bool,
         check_mode: bool,
-        verbose: bool,
+        _verbose: bool,
     ) -> Result<ConvertResult> {
         let content = read_file(file_path)?;
         let errors = self.get_parse_errors(file_path)?;

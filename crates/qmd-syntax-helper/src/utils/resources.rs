@@ -54,11 +54,13 @@ impl ResourceManager {
     }
 
     /// Get the temp directory path
+    #[allow(dead_code)]
     pub fn temp_dir(&self) -> &Path {
         &self.temp_dir
     }
 
     /// List all available resources
+    #[allow(dead_code)]
     pub fn list_resources(&self) -> Vec<String> {
         let mut resources = Vec::new();
         Self::collect_files(&RESOURCES_DIR, "", &mut resources);
@@ -66,6 +68,7 @@ impl ResourceManager {
     }
 
     /// Recursively collect all file paths from a directory
+    #[allow(dead_code)]
     fn collect_files(dir: &Dir, prefix: &str, resources: &mut Vec<String>) {
         for file in dir.files() {
             let name = file.path().file_name().unwrap().to_string_lossy();
