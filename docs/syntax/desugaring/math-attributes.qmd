@@ -1,0 +1,193 @@
+---
+title: "Math with Attributes"
+---
+
+## Overview
+
+In Quarto Markdown, mathematical expressions (both inline and display) can be followed by attribute blocks to assign identifiers, classes, and key-value pairs. Since Pandoc's `Math` inline node doesn't support attributes directly, `quarto-markdown-pandoc` desugars these constructs into `Span` nodes containing the math expression, with a special class to indicate the transformation.
+
+## Syntax
+
+Math expressions with attributes follow this pattern:
+
+``` markdown
+Inline math: $E = mc^2$ {#eq-einstein}
+
+Display math:
+$$
+\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
+$$ {#eq-gaussian}
+```
+
+The attribute block may include:
+
+- **Identifiers**: `{#eq-name}` - typically used for cross-referencing equations
+- **Classes**: `{.myclass}` - additional styling or semantic classes
+- **Key-value pairs**: `{key="value"}` - arbitrary metadata
+
+## Transformation
+
+### Pattern Matching
+
+The desugaring process looks for this pattern in the inline node sequence:
+
+1. A `Math` node (inline or display)
+2. Optionally, a `Space` node
+3. An `Attr` node containing the attributes
+
+### Output Structure
+
+When this pattern is found, it is transformed into:
+
+```default
+Span {
+  attr: {
+    id: <id from Attr>,
+    classes: ["quarto-math-with-attribute", ...additional classes from Attr],
+    attributes: <key-value pairs from Attr>
+  },
+  content: [
+    Math { <original math node> }
+  ]
+}
+```
+
+### Example
+
+**Input QMD:**
+
+``` markdown
+The famous equation $E = mc^2$ {#eq-einstein} shows the relationship.
+```
+
+**Output AST (JSON):**
+
+``` json
+{
+  "t": "Para",
+  "c": [
+    {"t": "Str", "c": "The"},
+    {"t": "Space"},
+    {"t": "Str", "c": "famous"},
+    {"t": "Space"},
+    {"t": "Str", "c": "equation"},
+    {"t": "Space"},
+    {
+      "t": "Span",
+      "c": [
+        ["eq-einstein", ["quarto-math-with-attribute"], []],
+        [
+          {
+            "t": "Math",
+            "c": [
+              {"t": "InlineMath"},
+              "E = mc^2"
+            ]
+          }
+        ]
+      ]
+    },
+    {"t": "Space"},
+    {"t": "Str", "c": "shows"},
+    {"t": "Space"},
+    {"t": "Str", "c": "the"},
+    {"t": "Space"},
+    {"t": "Str", "c": "relationship."}
+  ]
+}
+```
+
+## Implementation Details
+
+### Location in Code
+
+The transformation is implemented in `src/pandoc/treesitter_utils/postprocess.rs` as part of the combined `.with_inlines()` filter (lines ~452-489).
+
+### Processing Steps
+
+1. **First Pass - Math + Attr Detection**: The filter iterates through inline nodes looking for `Math` nodes
+2. **Lookahead**: When a `Math` node is found, checks if it's followed by an optional `Space` and then an `Attr`
+3. **Wrapping**: If the pattern matches, creates a new `Span` with:
+   - The `quarto-math-with-attribute` class prepended to any existing classes
+   - The ID and key-value attributes from the `Attr` node
+   - The original `Math` node as its sole content
+4. **Skipping**: Advances the iterator past the `Math`, optional `Space`, and `Attr` nodes
+
+### Filter Chaining
+
+This transformation is part of a combined filter that also handles citation suffix patterns. The two transformations are applied sequentially:
+
+1. Math + Attr patterns are processed first
+2. The result is then passed to the citation suffix processor
+
+This ensures both patterns can coexist in the same document without interference.
+
+## Use Cases
+
+### Cross-referencing Equations
+
+The primary use case is cross-referencing equations in Quarto documents:
+
+``` markdown
+As shown in @eq-einstein, energy and mass are equivalent.
+
+Einstein's famous equation: $E = mc^2$ {#eq-einstein}
+```
+
+The `#eq-` prefix is significant - it signals to Quarto's rendering pipeline that this is an equation reference.
+
+### Styling Math Blocks
+
+Additional classes can be used for custom styling:
+
+``` markdown
+$\sum_{i=1}^n i = \frac{n(n+1)}{2}$ {#eq-sum .theorem}
+```
+
+### Metadata Attachment
+
+Key-value attributes can attach metadata to equations:
+
+``` markdown
+$$
+F = ma
+$$ {#eq-newton author="Newton" year="1687"}
+```
+
+## Recognition in Downstream Tools
+
+Downstream tools (Lua filters, Quarto extensions, etc.) can recognize desugared math expressions by checking for the `quarto-math-with-attribute` class on `Span` nodes:
+
+``` lua
+if span.classes:includes("quarto-math-with-attribute") then
+  -- This span contains a math expression that originally had attributes
+  local math = span.content[1]  -- The Math node
+  local id = span.identifier      -- The equation ID
+  -- Process accordingly...
+end
+```
+
+## Design Rationale
+
+### Why Use a Span?
+
+1. **Pandoc Compatibility**: `Span` is a standard Pandoc node that all tools understand
+2. **Attribute Support**: Spans naturally support the id/classes/attributes triple
+3. **Transparency**: Most renderers will pass through the span and render the contained math normally
+4. **Extensibility**: The special class allows tools to opt-in to special handling
+
+### Why Not Extend Math?
+
+We could have extended Pandoc's `Math` node to include attributes, but this would:
+
+- Break compatibility with standard Pandoc
+- Require changes to all downstream tools
+- Make the AST diverge significantly from Pandoc's design
+
+### The Special Class Marker
+
+The `quarto-math-with-attribute` class serves as a marker that distinguishes desugared math from regular spans that happen to contain math. This allows tools to:
+
+- Distinguish intentional math-with-attributes from coincidental nesting
+- Reconstruct the original syntax when round-tripping through QMD
+- Apply equation-specific processing (numbering, cross-references, etc.)
