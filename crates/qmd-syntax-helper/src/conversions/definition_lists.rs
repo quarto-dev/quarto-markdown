@@ -78,7 +78,8 @@ impl DefinitionListConverter {
 
                         // Not a definition line, might be next term
                         if !self.def_item_regex.is_match(potential_term)
-                            || potential_term.starts_with("::") {
+                            || potential_term.starts_with("::")
+                        {
                             // Look ahead for a definition line
                             let mut j = i + 1;
                             while j < lines.len() && lines[j].trim().is_empty() {
@@ -87,7 +88,8 @@ impl DefinitionListConverter {
 
                             if j < lines.len()
                                 && self.def_item_regex.is_match(lines[j])
-                                && !lines[j].starts_with("::") {
+                                && !lines[j].starts_with("::")
+                            {
                                 // Found another term-definition pair
                                 end_idx = j;
                                 i = j + 1;
@@ -165,12 +167,11 @@ impl DefinitionListConverter {
 
         // Step 2: Use library to convert JSON to markdown
         let mut json_reader = std::io::Cursor::new(&pandoc_output.stdout);
-        let (pandoc_ast, _ctx) = json::read(&mut json_reader)
-            .context("Failed to parse JSON output from pandoc")?;
+        let (pandoc_ast, _ctx) =
+            json::read(&mut json_reader).context("Failed to parse JSON output from pandoc")?;
 
         let mut output = Vec::new();
-        qmd::write(&pandoc_ast, &mut output)
-            .context("Failed to write markdown output")?;
+        qmd::write(&pandoc_ast, &mut output).context("Failed to write markdown output")?;
 
         let result = String::from_utf8(output)
             .context("Failed to parse output as UTF-8")?

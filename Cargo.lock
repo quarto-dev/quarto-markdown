@@ -391,9 +391,12 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
+ "glob",
  "include_dir",
  "quarto-markdown-pandoc",
  "regex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

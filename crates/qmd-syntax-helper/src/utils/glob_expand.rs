@@ -16,7 +16,8 @@ pub fn expand_globs(patterns: &[String]) -> Result<Vec<PathBuf>> {
                 .with_context(|| format!("Invalid glob pattern: {}", pattern))?;
 
             for path in paths {
-                let path = path.with_context(|| format!("Failed to read glob match for: {}", pattern))?;
+                let path =
+                    path.with_context(|| format!("Failed to read glob match for: {}", pattern))?;
                 files.push(path);
             }
         } else {

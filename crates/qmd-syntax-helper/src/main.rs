@@ -7,6 +7,7 @@ mod diagnostics;
 mod utils;
 
 use conversions::definition_lists::DefinitionListConverter;
+use conversions::div_whitespace::DivWhitespaceConverter;
 use conversions::grid_tables::GridTableConverter;
 use diagnostics::syntax_check::SyntaxChecker;
 use utils::glob_expand::expand_globs;
@@ -43,6 +44,25 @@ enum Commands {
 
     /// Convert definition lists to div-based format
     UndefLists {
+        /// Input files (can be multiple files or glob patterns like "docs/**/*.qmd")
+        #[arg(required = true)]
+        files: Vec<String>,
+
+        /// Edit files in place
+        #[arg(short, long)]
+        in_place: bool,
+
+        /// Check mode: show what would be changed without modifying files
+        #[arg(short, long)]
+        check: bool,
+
+        /// Show verbose output
+        #[arg(short, long)]
+        verbose: bool,
+    },
+
+    /// Fix div fences missing whitespace (:::{ -> ::: {)
+    FixDivWhitespace {
         /// Input files (can be multiple files or glob patterns like "docs/**/*.qmd")
         #[arg(required = true)]
         files: Vec<String>,
@@ -110,6 +130,25 @@ fn main() -> Result<()> {
             verbose,
         } => {
             let converter = DefinitionListConverter::new()?;
+            let file_paths = expand_globs(&files)?;
+
+            for file_path in file_paths {
+                if verbose {
+                    println!("Processing: {}", file_path.display());
+                }
+
+                converter.process_file(&file_path, in_place, check, verbose)?;
+            }
+
+            Ok(())
+        }
+        Commands::FixDivWhitespace {
+            files,
+            in_place,
+            check,
+            verbose,
+        } => {
+            let converter = DivWhitespaceConverter::new()?;
             let file_paths = expand_globs(&files)?;
 
             for file_path in file_paths {

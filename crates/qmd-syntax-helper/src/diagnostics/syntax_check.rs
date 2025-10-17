@@ -71,7 +71,13 @@ impl SyntaxChecker {
             false, // not loose mode
             &filename,
             &mut sink,
-            None::<fn(&[u8], &quarto_markdown_pandoc::utils::tree_sitter_log_observer::TreeSitterLogObserver, &str) -> Vec<String>>, // no custom error formatter
+            None::<
+                fn(
+                    &[u8],
+                    &quarto_markdown_pandoc::utils::tree_sitter_log_observer::TreeSitterLogObserver,
+                    &str,
+                ) -> Vec<String>,
+            >, // no custom error formatter
         );
 
         match result {
@@ -93,7 +99,15 @@ impl SyntaxChecker {
         println!("\n{}", "=== Summary ===".bold());
         println!("Total files:    {}", total);
         println!("Successful:     {} {}", successes, "✓".green());
-        println!("Failed:         {} {}", failures, if failures > 0 { "✗".red() } else { "✓".green() });
+        println!(
+            "Failed:         {} {}",
+            failures,
+            if failures > 0 {
+                "✗".red()
+            } else {
+                "✓".green()
+            }
+        );
 
         if failures > 0 {
             let success_rate = (successes as f64 / total as f64) * 100.0;

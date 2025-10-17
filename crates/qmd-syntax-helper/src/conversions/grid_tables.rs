@@ -128,12 +128,11 @@ impl GridTableConverter {
 
         // Step 2: Use library to convert JSON to markdown
         let mut json_reader = std::io::Cursor::new(&pandoc_output.stdout);
-        let (pandoc_ast, _ctx) = json::read(&mut json_reader)
-            .context("Failed to parse JSON output from pandoc")?;
+        let (pandoc_ast, _ctx) =
+            json::read(&mut json_reader).context("Failed to parse JSON output from pandoc")?;
 
         let mut output = Vec::new();
-        qmd::write(&pandoc_ast, &mut output)
-            .context("Failed to write markdown output")?;
+        qmd::write(&pandoc_ast, &mut output).context("Failed to write markdown output")?;
 
         let result = String::from_utf8(output)
             .context("Failed to parse output as UTF-8")?
