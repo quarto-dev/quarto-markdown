@@ -4,6 +4,7 @@ use regex::Regex;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
+use crate::rule::{CheckResult, ConvertResult, Rule};
 use crate::utils::file_io::{read_file, write_file};
 use crate::utils::resources::ResourceManager;
 use quarto_markdown_pandoc::readers::json;
@@ -226,5 +227,116 @@ impl GridTableConverter {
         }
 
         Ok(())
+    }
+}
+
+impl Rule for GridTableConverter {
+    fn name(&self) -> &str {
+        "grid-tables"
+    }
+
+    fn description(&self) -> &str {
+        "Convert grid tables to list-table format"
+    }
+
+    fn check(&self, file_path: &Path, verbose: bool) -> Result<CheckResult> {
+        let content = read_file(file_path)?;
+        let tables = self.find_grid_tables(&content);
+
+        if verbose {
+            if tables.is_empty() {
+                println!("  No grid tables found");
+            } else {
+                println!("  Found {} grid table(s)", tables.len());
+            }
+        }
+
+        Ok(CheckResult {
+            rule_name: self.name().to_string(),
+            file_path: file_path.to_string_lossy().to_string(),
+            has_issue: !tables.is_empty(),
+            issue_count: tables.len(),
+            message: if tables.is_empty() {
+                None
+            } else {
+                Some(format!("Found {} grid table(s)", tables.len()))
+            },
+        })
+    }
+
+    fn convert(
+        &self,
+        file_path: &Path,
+        in_place: bool,
+        check_mode: bool,
+        verbose: bool,
+    ) -> Result<ConvertResult> {
+        let content = read_file(file_path)?;
+        let tables = self.find_grid_tables(&content);
+
+        if tables.is_empty() {
+            return Ok(ConvertResult {
+                rule_name: self.name().to_string(),
+                file_path: file_path.to_string_lossy().to_string(),
+                fixes_applied: 0,
+                message: None,
+            });
+        }
+
+        // Convert each table and build new content
+        let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+        let mut offset: isize = 0;
+
+        for (idx, table) in tables.iter().enumerate() {
+            if verbose {
+                println!("  Converting table {}...", idx + 1);
+            }
+
+            let converted = self.convert_table(&table.text)?;
+            let start = (table.start_line as isize + offset) as usize;
+            let end = (table.end_line as isize + offset) as usize;
+
+            if check_mode && verbose {
+                println!(
+                    "  Table {} at lines {}-{}:",
+                    idx + 1,
+                    table.start_line,
+                    table.end_line
+                );
+                println!(
+                    "    {} {} lines -> {} {} lines",
+                    "Original:".red(),
+                    table.end_line - table.start_line + 1,
+                    "Converted:".green(),
+                    converted.lines().count()
+                );
+            }
+
+            let converted_lines: Vec<String> = converted.lines().map(|s| s.to_string()).collect();
+            let new_len = converted_lines.len();
+            let old_len = end - start + 1;
+
+            lines.splice(start..=end, converted_lines);
+            offset += new_len as isize - old_len as isize;
+        }
+
+        let new_content = lines.join("\n") + "\n";
+
+        if !check_mode {
+            if in_place {
+                write_file(file_path, &new_content)?;
+            }
+        }
+
+        Ok(ConvertResult {
+            rule_name: self.name().to_string(),
+            file_path: file_path.to_string_lossy().to_string(),
+            fixes_applied: tables.len(),
+            message: if in_place {
+                Some(format!("Converted {} table(s)", tables.len()))
+            } else {
+                Some(new_content)
+            },
+        })
     }
 }

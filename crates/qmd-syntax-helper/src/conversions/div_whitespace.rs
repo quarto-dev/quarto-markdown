@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+use crate::rule::{CheckResult, ConvertResult, Rule};
 use crate::utils::file_io::{read_file, write_file};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -206,5 +207,87 @@ impl DivWhitespaceConverter {
         }
 
         Ok(())
+    }
+}
+
+impl Rule for DivWhitespaceConverter {
+    fn name(&self) -> &str {
+        "div-whitespace"
+    }
+
+    fn description(&self) -> &str {
+        "Fix div fences missing whitespace (:::{ -> ::: {)"
+    }
+
+    fn check(&self, file_path: &Path, verbose: bool) -> Result<CheckResult> {
+        let content = read_file(file_path)?;
+        let errors = self.get_parse_errors(file_path)?;
+        let fix_positions = self.find_div_whitespace_errors(&content, &errors);
+
+        if verbose {
+            if fix_positions.is_empty() {
+                println!("  No div whitespace issues found");
+            } else {
+                println!(
+                    "  Found {} div fence(s) needing whitespace fixes",
+                    fix_positions.len()
+                );
+            }
+        }
+
+        Ok(CheckResult {
+            rule_name: self.name().to_string(),
+            file_path: file_path.to_string_lossy().to_string(),
+            has_issue: !fix_positions.is_empty(),
+            issue_count: fix_positions.len(),
+            message: if fix_positions.is_empty() {
+                None
+            } else {
+                Some(format!(
+                    "Found {} div fence(s) needing whitespace fixes",
+                    fix_positions.len()
+                ))
+            },
+        })
+    }
+
+    fn convert(
+        &self,
+        file_path: &Path,
+        in_place: bool,
+        check_mode: bool,
+        verbose: bool,
+    ) -> Result<ConvertResult> {
+        let content = read_file(file_path)?;
+        let errors = self.get_parse_errors(file_path)?;
+        let fix_positions = self.find_div_whitespace_errors(&content, &errors);
+
+        if fix_positions.is_empty() {
+            return Ok(ConvertResult {
+                rule_name: self.name().to_string(),
+                file_path: file_path.to_string_lossy().to_string(),
+                fixes_applied: 0,
+                message: None,
+            });
+        }
+
+        let new_content = self.apply_fixes(&content, &fix_positions);
+
+        if !check_mode {
+            if in_place {
+                write_file(file_path, &new_content)?;
+            }
+        }
+
+        Ok(ConvertResult {
+            rule_name: self.name().to_string(),
+            file_path: file_path.to_string_lossy().to_string(),
+            fixes_applied: fix_positions.len(),
+            message: if in_place {
+                Some(format!("Fixed {} div fence(s)", fix_positions.len()))
+            } else {
+                Some(new_content)
+            },
+        })
     }
 }
