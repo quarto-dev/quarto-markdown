@@ -24,6 +24,9 @@ regex = "1.10"
 colored = "2.1"
 quarto-markdown-pandoc.workspace = true
 include_dir = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+glob = "0.3"
 
 [lints]
 workspace = true
