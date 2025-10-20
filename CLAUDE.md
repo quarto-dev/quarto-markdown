@@ -113,13 +113,6 @@ When fixing ANY bug:
 - `crates/tree-sitter-qmd`: tree-sitter grammars for block and inline parsers
 - `crates/wasm-qmd-parser`: A WASM module with some entry points from `crates/quarto-markdown-pandoc`
 
-### `private-crates` - private crates we are not going to release yet
-
-- `private-crates/quarto-yaml-validation`: A library to validate YAML objects using schemas
-- `private-crates/validate-yaml`: A binary to exercise `quarto-yaml-validation`
-- `private-crates/quarto`: The future main entry point for the `quarto` command line binary.
-- `private-crates/quarto-core`: supporting library for `quarto`
-
 ## General Instructions
 
 - in this repository, "qmd" means "quarto markdown", the dialect of markdown we are developing. Although we aim to be largely compatible with Pandoc, discrepancies in the behavior might not be bugs.
