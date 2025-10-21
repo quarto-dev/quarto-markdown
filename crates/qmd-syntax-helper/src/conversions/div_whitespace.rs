@@ -44,14 +44,6 @@ impl DivWhitespaceConverter {
             false, // not loose mode
             &filename,
             &mut sink,
-            Some(
-                quarto_markdown_pandoc::readers::qmd_error_messages::produce_json_error_messages
-                    as fn(
-                        &[u8],
-                        &quarto_markdown_pandoc::utils::tree_sitter_log_observer::TreeSitterLogObserver,
-                        &str,
-                    ) -> Vec<String>,
-            ),
         );
 
         match result {
