@@ -1,27 +1,10 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
 use crate::rule::{CheckResult, ConvertResult, Rule};
 use crate::utils::file_io::{read_file, write_file};
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ErrorLocation {
-    row: usize,
-    column: usize,
-    byte_offset: usize,
-    size: usize,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ParseError {
-    filename: String,
-    title: String,
-    message: String,
-    location: ErrorLocation,
-}
 
 pub struct DivWhitespaceConverter {}
 
@@ -30,8 +13,11 @@ impl DivWhitespaceConverter {
         Ok(Self {})
     }
 
-    /// Parse a file and get error locations as JSON
-    fn get_parse_errors(&self, file_path: &Path) -> Result<Vec<ParseError>> {
+    /// Parse a file and get diagnostic messages
+    fn get_parse_errors(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<quarto_error_reporting::DiagnosticMessage>> {
         let content = fs::read_to_string(file_path)
             .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
 
@@ -44,45 +30,33 @@ impl DivWhitespaceConverter {
             false, // not loose mode
             &filename,
             &mut sink,
-            Some(
-                quarto_markdown_pandoc::readers::qmd_error_messages::produce_json_error_messages
-                    as fn(
-                        &[u8],
-                        &quarto_markdown_pandoc::utils::tree_sitter_log_observer::TreeSitterLogObserver,
-                        &str,
-                    ) -> Vec<String>,
-            ),
         );
 
         match result {
             Ok(_) => Ok(Vec::new()), // No errors
-            Err(error_messages) => {
-                // Parse the JSON error output
-                // The error messages come as a single JSON array string
-                if error_messages.is_empty() {
-                    return Ok(Vec::new());
-                }
-
-                let json_str = error_messages.join("");
-
-                // Try to parse as JSON array
-                match serde_json::from_str::<Vec<ParseError>>(&json_str) {
-                    Ok(errors) => Ok(errors),
-                    Err(_) => {
-                        // If parsing fails, the messages are likely plain text warnings/debug messages
-                        // rather than actual syntax errors. These don't indicate div whitespace issues,
-                        // so we can safely ignore them for this specific rule.
-                        Ok(Vec::new())
-                    }
-                }
+            Err(diagnostics) => {
+                // Return diagnostic messages directly
+                Ok(diagnostics)
             }
         }
     }
 
     /// Find div fence errors that need whitespace fixes
-    fn find_div_whitespace_errors(&self, content: &str, errors: &[ParseError]) -> Vec<usize> {
+    fn find_div_whitespace_errors(
+        &self,
+        content: &str,
+        errors: &[quarto_error_reporting::DiagnosticMessage],
+    ) -> Vec<usize> {
         let mut fix_positions = Vec::new();
         let lines: Vec<&str> = content.lines().collect();
+
+        // Pre-compute line start offsets for O(1) lookup instead of O(N) per error
+        let mut line_starts = Vec::with_capacity(lines.len());
+        let mut offset = 0;
+        for line in &lines {
+            line_starts.push(offset);
+            offset += line.len() + 1; // +1 for newline
+        }
 
         for error in errors {
             // Skip errors that are not about div fences
@@ -93,12 +67,20 @@ impl DivWhitespaceConverter {
                 continue;
             }
 
+            // Extract row from location (if available)
+            // SourceInfo uses 0-indexed rows, div_whitespace uses them too
+            let error_row = error
+                .location
+                .as_ref()
+                .map(|loc| loc.range.start.row)
+                .unwrap_or(0);
+
             // The error might be on the line itself or the line before (for div fences)
             // Check both the current line and the previous line
-            let lines_to_check = if error.location.row > 0 {
-                vec![error.location.row - 1, error.location.row]
+            let lines_to_check = if error_row > 0 {
+                vec![error_row - 1, error_row]
             } else {
-                vec![error.location.row]
+                vec![error_row]
             };
 
             for &line_idx in &lines_to_check {
@@ -114,11 +96,8 @@ impl DivWhitespaceConverter {
                     if after_colon.starts_with('{') {
                         // Calculate the position right after :::
                         // We need byte offset, not char offset
-                        let line_start = content
-                            .lines()
-                            .take(line_idx)
-                            .map(|l| l.len() + 1) // +1 for newline
-                            .sum::<usize>();
+                        // Use pre-computed offset for O(1) lookup
+                        let line_start = line_starts[line_idx];
 
                         let indent_bytes = line.len() - trimmed.len();
                         let fix_pos = line_start + indent_bytes + 3; // +3 for ":::"
