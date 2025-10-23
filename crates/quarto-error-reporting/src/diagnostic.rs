@@ -296,17 +296,20 @@ impl DiagnosticMessage {
 
         // Check if we have any location info that could be displayed with ariadne
         // This includes the main diagnostic location OR any detail with a location
-        let has_any_location = self.location.is_some()
-            || self.details.iter().any(|d| d.location.is_some());
+        let has_any_location =
+            self.location.is_some() || self.details.iter().any(|d| d.location.is_some());
 
         // If we have location info and source context, render ariadne source display
         let has_ariadne = if has_any_location && ctx.is_some() {
             // Use main location if available, otherwise use first detail location
-            let location = self.location.as_ref()
+            let location = self
+                .location
+                .as_ref()
                 .or_else(|| self.details.iter().find_map(|d| d.location.as_ref()));
 
             if let Some(loc) = location {
-                if let Some(ariadne_output) = self.render_ariadne_source_context(loc, ctx.unwrap()) {
+                if let Some(ariadne_output) = self.render_ariadne_source_context(loc, ctx.unwrap())
+                {
                     result.push_str(&ariadne_output);
                     true
                 } else {
@@ -342,7 +345,7 @@ impl DiagnosticMessage {
             if let Some(loc) = &self.location {
                 // Try to map with context if available
                 if let Some(ctx) = ctx {
-                    if let Some(mapped) = loc.map_offset(loc.range.start.offset, ctx) {
+                    if let Some(mapped) = loc.map_offset(loc.start_offset(), ctx) {
                         if let Some(file) = ctx.get_file(mapped.file_id) {
                             write!(
                                 result,
@@ -356,13 +359,9 @@ impl DiagnosticMessage {
                     }
                 } else {
                     // No context: show immediate location (1-indexed for display)
-                    write!(
-                        result,
-                        "  at {}:{}\n",
-                        loc.range.start.row + 1,
-                        loc.range.start.column + 1
-                    )
-                    .unwrap();
+                    // Note: Without context, we can't get row/column from offsets
+                    // We could map_offset with ctx to get Location, but ctx is None here
+                    write!(result, "  at offset {}\n", loc.start_offset()).unwrap();
                 }
             }
 
@@ -494,14 +493,19 @@ impl DiagnosticMessage {
     }
 
     /// Extract the original file_id from a SourceInfo by traversing the mapping chain
-    fn extract_file_id(source_info: &quarto_source_map::SourceInfo) -> Option<quarto_source_map::FileId> {
-        match &source_info.mapping {
-            quarto_source_map::SourceMapping::Original { file_id } => Some(*file_id),
-            quarto_source_map::SourceMapping::Substring { parent, .. } => Self::extract_file_id(parent),
-            quarto_source_map::SourceMapping::Transformed { parent, .. } => Self::extract_file_id(parent),
-            quarto_source_map::SourceMapping::Concat { pieces } => {
+    fn extract_file_id(
+        source_info: &quarto_source_map::SourceInfo,
+    ) -> Option<quarto_source_map::FileId> {
+        match source_info {
+            quarto_source_map::SourceInfo::Original { file_id, .. } => Some(*file_id),
+            quarto_source_map::SourceInfo::Substring { parent, .. } => {
+                Self::extract_file_id(parent)
+            }
+            quarto_source_map::SourceInfo::Concat { pieces } => {
                 // For concatenated sources, use the first piece's file_id
-                pieces.first().and_then(|p| Self::extract_file_id(&p.source_info))
+                pieces
+                    .first()
+                    .and_then(|p| Self::extract_file_id(&p.source_info))
             }
         }
     }
@@ -533,8 +537,9 @@ impl DiagnosticMessage {
         };
 
         // Map the location offsets back to original file positions
-        let start_mapped = main_location.map_offset(main_location.range.start.offset, ctx)?;
-        let end_mapped = main_location.map_offset(main_location.range.end.offset, ctx)?;
+        // map_offset expects relative offsets (0 = start of this SourceInfo's range)
+        let start_mapped = main_location.map_offset(0, ctx)?;
+        let end_mapped = main_location.map_offset(main_location.length(), ctx)?;
 
         // Determine report kind and color
         let (report_kind, main_color) = match self.kind {
@@ -545,11 +550,8 @@ impl DiagnosticMessage {
         };
 
         // Build the report using the mapped offset for proper line:column display
-        let mut report = Report::build(
-            report_kind,
-            file.path.clone(),
-            start_mapped.location.offset,
-        );
+        let mut report =
+            Report::build(report_kind, file.path.clone(), start_mapped.location.offset);
 
         // Add title with error code
         if let Some(code) = &self.code {
@@ -583,9 +585,10 @@ impl DiagnosticMessage {
 
                 if detail_file_id == file_id {
                     // Map detail offsets to original file positions
+                    // map_offset expects relative offsets (0 = start of SourceInfo's range)
                     if let (Some(detail_start), Some(detail_end)) = (
-                        detail_loc.map_offset(detail_loc.range.start.offset, ctx),
-                        detail_loc.map_offset(detail_loc.range.end.offset, ctx),
+                        detail_loc.map_offset(0, ctx),
+                        detail_loc.map_offset(detail_loc.length(), ctx),
                     ) {
                         let detail_span = detail_start.location.offset..detail_end.location.offset;
                         let detail_color = match detail.kind {
@@ -608,7 +611,10 @@ impl DiagnosticMessage {
         let report = report.finish();
         let mut output = Vec::new();
         report
-            .write((file.path.clone(), Source::from(content.as_str())), &mut output)
+            .write(
+                (file.path.clone(), Source::from(content.as_str())),
+                &mut output,
+            )
             .ok()?;
 
         String::from_utf8(output).ok()
@@ -776,22 +782,9 @@ mod tests {
     fn test_location_in_to_text_without_context() {
         use crate::builder::DiagnosticMessageBuilder;
 
-        // Create a location at row 10, column 5
-        let location = quarto_source_map::SourceInfo::original(
-            quarto_source_map::FileId(0),
-            quarto_source_map::Range {
-                start: quarto_source_map::Location {
-                    offset: 100,
-                    row: 10,
-                    column: 5,
-                },
-                end: quarto_source_map::Location {
-                    offset: 110,
-                    row: 10,
-                    column: 15,
-                },
-            },
-        );
+        // Create a location at offsets 100-110
+        let location =
+            quarto_source_map::SourceInfo::original(quarto_source_map::FileId(0), 100, 110);
 
         let msg = DiagnosticMessageBuilder::error("Invalid syntax")
             .with_location(location)
@@ -799,9 +792,9 @@ mod tests {
 
         let text = msg.to_text(None);
 
-        // Without context, should show immediate location (1-indexed)
+        // Without context, should show offset (we can't get row/column without context)
         assert!(text.contains("Invalid syntax"));
-        assert!(text.contains("at 11:6")); // row 10 + 1, column 5 + 1
+        assert!(text.contains("at offset 100"));
     }
 
     #[test]
@@ -815,21 +808,10 @@ mod tests {
             Some("line 1\nline 2\nline 3\nline 4".to_string()),
         );
 
-        // Create a location in that file
+        // Create a location in that file (offset 7 is start of "line 2")
         let location = quarto_source_map::SourceInfo::original(
-            file_id,
-            quarto_source_map::Range {
-                start: quarto_source_map::Location {
-                    offset: 7, // Start of "line 2"
-                    row: 1,
-                    column: 0,
-                },
-                end: quarto_source_map::Location {
-                    offset: 13,
-                    row: 1,
-                    column: 6,
-                },
-            },
+            file_id, 7,  // Start of "line 2"
+            13, // End of "line 2"
         );
 
         let msg = DiagnosticMessageBuilder::error("Invalid syntax")
@@ -848,21 +830,8 @@ mod tests {
     fn test_location_in_to_json() {
         use crate::builder::DiagnosticMessageBuilder;
 
-        let location = quarto_source_map::SourceInfo::original(
-            quarto_source_map::FileId(0),
-            quarto_source_map::Range {
-                start: quarto_source_map::Location {
-                    offset: 100,
-                    row: 10,
-                    column: 5,
-                },
-                end: quarto_source_map::Location {
-                    offset: 110,
-                    row: 10,
-                    column: 15,
-                },
-            },
-        );
+        let location =
+            quarto_source_map::SourceInfo::original(quarto_source_map::FileId(0), 100, 110);
 
         let msg = DiagnosticMessageBuilder::error("Invalid syntax")
             .with_location(location)
@@ -870,19 +839,16 @@ mod tests {
 
         let json = msg.to_json();
 
-        // Should have location field with range info
+        // Should have location field with Original variant
         assert!(json.get("location").is_some());
         let loc = &json["location"];
-        assert!(loc.get("range").is_some());
 
-        // Verify the range is serialized correctly
-        let range = &loc["range"];
-        assert_eq!(range["start"]["row"], 10);
-        assert_eq!(range["start"]["column"], 5);
-        assert_eq!(range["start"]["offset"], 100);
-        assert_eq!(range["end"]["row"], 10);
-        assert_eq!(range["end"]["column"], 15);
-        assert_eq!(range["end"]["offset"], 110);
+        // Verify the SourceInfo is serialized correctly (as Original enum variant)
+        assert!(loc.get("Original").is_some());
+        let original = &loc["Original"];
+        assert_eq!(original["file_id"], 0);
+        assert_eq!(original["start_offset"], 100);
+        assert_eq!(original["end_offset"], 110);
     }
 
     #[test]
