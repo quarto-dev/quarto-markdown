@@ -4,6 +4,7 @@
  */
 
 use crate::pandoc::ast_context::ASTContext;
+use crate::pandoc::attr::AttrSourceInfo;
 use crate::pandoc::block::MetaBlock;
 use crate::pandoc::location::{Location, Range};
 use crate::pandoc::meta::MetaMapEntry;
@@ -392,6 +393,93 @@ fn read_attr(value: &Value) -> Result<Attr> {
     Ok((id, classes, kvs_map))
 }
 
+/// Read AttrSourceInfo from JSON, returning empty if not present or null.
+///
+/// Format: {
+///   "id": <source_info_ref or null>,
+///   "classes": [<source_info_ref or null>, ...],
+///   "kvs": [[<key_ref or null>, <val_ref or null>], ...]
+/// }
+fn read_attr_source(
+    value: Option<&Value>,
+    deserializer: &SourceInfoDeserializer,
+) -> Result<AttrSourceInfo> {
+    // If attrS field is missing or null, return empty
+    let Some(obj) = value.and_then(|v| v.as_object()) else {
+        return Ok(AttrSourceInfo::empty());
+    };
+
+    // Read id (optional SourceInfo ref or null)
+    let id = obj
+        .get("id")
+        .and_then(|v| {
+            if v.is_null() {
+                None
+            } else {
+                Some(deserializer.from_json_ref(v).ok())
+            }
+        })
+        .flatten();
+
+    // Read classes (array of optional SourceInfo refs)
+    let classes = obj
+        .get("classes")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .map(|v| {
+                    if v.is_null() {
+                        Ok(None)
+                    } else {
+                        deserializer.from_json_ref(v).map(Some)
+                    }
+                })
+                .collect::<Result<Vec<_>>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
+
+    // Read kvs (array of [key_ref, val_ref] pairs)
+    let attributes = obj
+        .get("kvs")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .map(|v| {
+                    let pair = v.as_array().ok_or_else(|| {
+                        JsonReadError::InvalidType(
+                            "AttrSourceInfo kvs entry must be array".to_string(),
+                        )
+                    })?;
+                    if pair.len() != 2 {
+                        return Err(JsonReadError::InvalidType(
+                            "AttrSourceInfo kvs entry must have 2 elements".to_string(),
+                        ));
+                    }
+                    let key = if pair[0].is_null() {
+                        None
+                    } else {
+                        Some(deserializer.from_json_ref(&pair[0])?)
+                    };
+                    let val = if pair[1].is_null() {
+                        None
+                    } else {
+                        Some(deserializer.from_json_ref(&pair[1])?)
+                    };
+                    Ok((key, val))
+                })
+                .collect::<Result<Vec<_>>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
+
+    Ok(AttrSourceInfo {
+        id,
+        classes,
+        attributes,
+    })
+}
+
 fn read_citation_mode(value: &Value) -> Result<CitationMode> {
     let obj = value.as_object().ok_or_else(|| {
         JsonReadError::InvalidType("Expected object for CitationMode".to_string())
@@ -489,10 +577,12 @@ fn read_inline(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<I
                 .as_str()
                 .ok_or_else(|| JsonReadError::InvalidType("Code text must be string".to_string()))?
                 .to_string();
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Inline::Code(Code {
                 attr,
                 text,
                 source_info,
+                attr_source,
             }))
         }
         "Math" => {
@@ -657,12 +747,15 @@ fn read_inline(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<I
                 .ok_or_else(|| JsonReadError::InvalidType("Link title must be string".to_string()))?
                 .to_string();
             let target = (url, title);
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
 
             Ok(Inline::Link(Link {
                 attr,
                 content,
                 target,
                 source_info,
+                attr_source,
+                target_source: crate::pandoc::attr::TargetSourceInfo::empty(),
             }))
         }
         "RawInline" => {
@@ -730,12 +823,15 @@ fn read_inline(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<I
                 })?
                 .to_string();
             let target = (url, title);
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
 
             Ok(Inline::Image(Image {
                 attr,
                 content,
                 target,
                 source_info,
+                attr_source,
+                target_source: crate::pandoc::attr::TargetSourceInfo::empty(),
             }))
         }
         "Span" => {
@@ -753,10 +849,12 @@ fn read_inline(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<I
 
             let attr = read_attr(&arr[0])?;
             let content = read_inlines(&arr[1], deserializer)?;
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Inline::Span(Span {
                 attr,
                 content,
                 source_info,
+                attr_source,
             }))
         }
         "Note" => {
@@ -838,6 +936,7 @@ fn read_inline(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<I
                         mode,
                         hash,
                         note_num,
+                        id_source: None,
                     })
                 })
                 .collect::<Result<Vec<_>>>()?;
@@ -1192,6 +1291,7 @@ fn read_cell(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Cel
         row_span,
         col_span,
         content,
+        attr_source: crate::pandoc::attr::AttrSourceInfo::empty(),
     })
 }
 
@@ -1215,7 +1315,11 @@ fn read_row(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Row>
         .map(|v| read_cell(v, deserializer))
         .collect::<Result<Vec<_>>>()?;
 
-    Ok(Row { attr, cells })
+    Ok(Row {
+        attr,
+        cells,
+        attr_source: crate::pandoc::attr::AttrSourceInfo::empty(),
+    })
 }
 
 fn read_table_head(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<TableHead> {
@@ -1238,7 +1342,11 @@ fn read_table_head(value: &Value, deserializer: &SourceInfoDeserializer) -> Resu
         .map(|v| read_row(v, deserializer))
         .collect::<Result<Vec<_>>>()?;
 
-    Ok(TableHead { attr, rows })
+    Ok(TableHead {
+        attr,
+        rows,
+        attr_source: crate::pandoc::attr::AttrSourceInfo::empty(),
+    })
 }
 
 fn read_table_body(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<TableBody> {
@@ -1276,6 +1384,7 @@ fn read_table_body(value: &Value, deserializer: &SourceInfoDeserializer) -> Resu
         rowhead_columns,
         head,
         body,
+        attr_source: crate::pandoc::attr::AttrSourceInfo::empty(),
     })
 }
 
@@ -1299,7 +1408,11 @@ fn read_table_foot(value: &Value, deserializer: &SourceInfoDeserializer) -> Resu
         .map(|v| read_row(v, deserializer))
         .collect::<Result<Vec<_>>>()?;
 
-    Ok(TableFoot { attr, rows })
+    Ok(TableFoot {
+        attr,
+        rows,
+        attr_source: crate::pandoc::attr::AttrSourceInfo::empty(),
+    })
 }
 
 fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Block> {
@@ -1380,10 +1493,12 @@ fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Bl
                     JsonReadError::InvalidType("CodeBlock text must be string".to_string())
                 })?
                 .to_string();
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Block::CodeBlock(CodeBlock {
                 attr,
                 text,
                 source_info,
+                attr_source,
             }))
         }
         "RawBlock" => {
@@ -1501,11 +1616,13 @@ fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Bl
             })? as usize;
             let attr = read_attr(&arr[1])?;
             let content = read_inlines(&arr[2], deserializer)?;
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Block::Header(Header {
                 level,
                 attr,
                 content,
                 source_info,
+                attr_source,
             }))
         }
         "HorizontalRule" => Ok(Block::HorizontalRule(HorizontalRule { source_info })),
@@ -1524,11 +1641,13 @@ fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Bl
             let attr = read_attr(&arr[0])?;
             let caption = read_caption(&arr[1], deserializer)?;
             let content = read_blocks(&arr[2], deserializer)?;
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Block::Figure(Figure {
                 attr,
                 caption,
                 content,
                 source_info,
+                attr_source,
             }))
         }
         "Table" => {
@@ -1561,6 +1680,7 @@ fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Bl
                 .map(|v| read_table_body(v, deserializer))
                 .collect::<Result<Vec<_>>>()?;
             let foot = read_table_foot(&arr[5], deserializer)?;
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Block::Table(Table {
                 attr,
                 caption,
@@ -1569,6 +1689,7 @@ fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Bl
                 bodies,
                 foot,
                 source_info,
+                attr_source,
             }))
         }
         "Div" => {
@@ -1585,10 +1706,12 @@ fn read_block(value: &Value, deserializer: &SourceInfoDeserializer) -> Result<Bl
             }
             let attr = read_attr(&arr[0])?;
             let content = read_blocks(&arr[1], deserializer)?;
+            let attr_source = read_attr_source(obj.get("attrS"), deserializer)?;
             Ok(Block::Div(Div {
                 attr,
                 content,
                 source_info,
+                attr_source,
             }))
         }
         "BlockMetadata" => {
