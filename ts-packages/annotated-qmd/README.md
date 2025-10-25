@@ -17,11 +17,10 @@ npm install @quarto/annotated-qmd
 ## Quick Start
 
 ```typescript
-import { parseRustQmdDocument } from '@quarto/annotated-qmd';
+import { parseRustQmdMetadata } from '@quarto/annotated-qmd';
 import type { RustQmdJson } from '@quarto/annotated-qmd';
 
-// Get JSON from quarto-markdown-pandoc
-// $ quarto-markdown-pandoc -t json -i document.qmd
+// JSON from quarto-markdown-pandoc
 const json: RustQmdJson = {
   meta: {
     title: { t: 'MetaString', c: 'My Document', s: 0 }
