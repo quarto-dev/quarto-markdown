@@ -488,6 +488,39 @@ fn test_code_block_with_classes_has_attr_source() {
     assert_source_matches(input, numberlines_source, ".numberLines");
 }
 
+#[test]
+fn test_code_block_with_bare_language_has_attr_source() {
+    // Test the common ``` python syntax (bare language specifier)
+    let input = "```python\nprint(\"hello\")\n```";
+    let pandoc = parse_qmd(input);
+
+    let Block::CodeBlock(code_block) = &pandoc.blocks[0] else {
+        panic!("Expected CodeBlock");
+    };
+
+    // Verify that "python" is in the classes
+    assert_eq!(code_block.attr.1.len(), 1);
+    assert_eq!(code_block.attr.1[0], "python");
+
+    // BUG: The attr_source.classes should also have length 1 with source tracking
+    // for the "python" language specifier
+    assert_eq!(
+        code_block.attr_source.classes.len(),
+        1,
+        "attr_source.classes should have same length as attr.1 (classes)"
+    );
+    assert!(
+        code_block.attr_source.classes[0].is_some(),
+        "Language specifier should have source tracking"
+    );
+
+    // Verify the source location
+    // Input layout: "```python\nprint(\"hello\")\n```"
+    // python is at bytes 3-9
+    let python_source = code_block.attr_source.classes[0].as_ref().unwrap();
+    assert_source_matches(input, python_source, "python");
+}
+
 // ============================================================================
 // Header with Attributes Tests
 // ============================================================================
@@ -1011,7 +1044,9 @@ fn test_link_target_source_json_serialization() {
     );
 
     // Verify targetS has the expected array structure [url_source, title_source]
-    let target_s = link["targetS"].as_array().expect("targetS should be an array");
+    let target_s = link["targetS"]
+        .as_array()
+        .expect("targetS should be an array");
     assert_eq!(target_s.len(), 2, "targetS should have 2 elements");
 
     // Verify URL source is not null
@@ -1047,7 +1082,9 @@ fn test_link_target_source_without_title() {
     let inlines = para["c"].as_array().expect("c should be array");
     let link = &inlines[0];
 
-    let target_s = link["targetS"].as_array().expect("targetS should be an array");
+    let target_s = link["targetS"]
+        .as_array()
+        .expect("targetS should be an array");
 
     // URL should have source
     assert!(
@@ -1083,7 +1120,9 @@ fn test_image_target_source_json_serialization() {
     let figure = &blocks[0];
     assert_eq!(figure["t"], "Figure", "Should be a Figure block");
 
-    let figure_content = figure["c"][2].as_array().expect("figure content should be array");
+    let figure_content = figure["c"][2]
+        .as_array()
+        .expect("figure content should be array");
     let plain = &figure_content[0];
     assert_eq!(plain["t"], "Plain", "Should be a Plain block");
 
@@ -1097,7 +1136,9 @@ fn test_image_target_source_json_serialization() {
         "Image should have targetS field in JSON output"
     );
 
-    let target_s = image["targetS"].as_array().expect("targetS should be an array");
+    let target_s = image["targetS"]
+        .as_array()
+        .expect("targetS should be an array");
     assert_eq!(target_s.len(), 2, "targetS should have 2 elements");
 
     // Both URL and title should have sources
@@ -1139,7 +1180,9 @@ fn test_citation_id_source_json_serialization() {
     assert_eq!(cite["t"], "Cite", "Should be a Cite");
 
     // Get the citations array
-    let citations = cite["c"][0].as_array().expect("citations should be an array");
+    let citations = cite["c"][0]
+        .as_array()
+        .expect("citations should be an array");
     assert!(!citations.is_empty(), "Should have at least one citation");
 
     let citation = &citations[0];
