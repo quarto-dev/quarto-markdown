@@ -395,6 +395,10 @@
         {
           "type": "block_continuation",
           "named": true
+        },
+        {
+          "type": "raw_specifier",
+          "named": true
         }
       ]
     }
@@ -462,6 +466,10 @@
       "types": [
         {
           "type": "language",
+          "named": true
+        },
+        {
+          "type": "language_attribute",
           "named": true
         }
       ]
@@ -1036,6 +1044,10 @@
   },
   {
     "type": "[",
+    "named": false
+  },
+  {
+    "type": "[>>",
     "named": false
   },
   {
