@@ -4,19 +4,19 @@ expression: json_string
 ---
 [
   {
-    "code": "Q-2-3",
+    "code": "Q-2-10",
     "details": [
       {
         "content": {
-          "content": "This key-value pair cannot appear before the class specifier.",
+          "content": "This is the opening quote. If you need an apostrophe, escape it with a backslash.",
           "type": "markdown"
         },
         "kind": "info",
         "location": {
           "Original": {
-            "end_offset": 19,
+            "end_offset": 2,
             "file_id": 0,
-            "start_offset": 10
+            "start_offset": 1
           }
         }
       }
@@ -24,15 +24,15 @@ expression: json_string
     "kind": "error",
     "location": {
       "Original": {
-        "end_offset": 21,
+        "end_offset": 3,
         "file_id": 0,
-        "start_offset": 20
+        "start_offset": 2
       }
     },
     "problem": {
-      "content": "This class specifier appears after the key-value pair.",
+      "content": "A space is causing a quote mark to be interpreted as a quotation close.",
       "type": "markdown"
     },
-    "title": "Key-value Pair Before Class Specifier in Attribute"
+    "title": "Closed Quote Without Matching Open Quote"
   }
 ]
