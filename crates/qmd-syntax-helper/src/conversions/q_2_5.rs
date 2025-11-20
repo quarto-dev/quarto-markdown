@@ -1,16 +1,16 @@
-// Q-2-18: Unclosed Strikeout
+// Q-2-5: Unclosed Underscore Emphasis
 //
-// This conversion rule fixes Q-2-18 errors by adding closing strikeout marks
+// This conversion rule fixes Q-2-5 errors by adding closing '_' marks
 // where they are missing at the end of blocks.
 //
 // Error catalog entry: crates/quarto-error-reporting/error_catalog.json
-// Error code: Q-2-18
-// Title: "Unclosed Strikeout"
-// Message: "I reached the end of the block before finding a closing '~~' for the strikeout."
+// Error code: Q-2-5
+// Title: "Unclosed Underscore Emphasis"
+// Message: "I reached the end of the block before finding a closing '_' for the emphasis."
 //
 // Example:
-//   Input:  ~~This is deleted text
-//   Output: ~~This is deleted text~~
+//   Input:  _This is an unclosed emphasis
+//   Output: _This is an unclosed emphasis_
 //
 
 use anyhow::{Context, Result};
@@ -20,31 +20,29 @@ use std::path::Path;
 use crate::rule::{CheckResult, ConvertResult, Rule, SourceLocation};
 use crate::utils::file_io::read_file;
 
-pub struct Q218Converter {}
+pub struct Q25Converter {}
 
 #[derive(Debug, Clone)]
-struct Q218Violation {
-    offset: usize,                          // Offset where closing ~~ should be added
-    error_location: Option<SourceLocation>, // For reporting
+struct Q25Violation {
+    offset: usize,
+    error_location: Option<SourceLocation>,
 }
 
-impl Q218Converter {
+impl Q25Converter {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
 
-    /// Get parse errors and extract Q-2-18 unclosed strikeout violations
-    fn get_violations(&self, file_path: &Path) -> Result<Vec<Q218Violation>> {
+    fn get_violations(&self, file_path: &Path) -> Result<Vec<Q25Violation>> {
         let content = fs::read_to_string(file_path)
             .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
 
-        // Parse with quarto-markdown-pandoc to get diagnostics
         let mut sink = std::io::sink();
         let filename = file_path.to_string_lossy();
 
         let result = quarto_markdown_pandoc::readers::qmd::read(
             content.as_bytes(),
-            false, // not loose mode
+            false,
             &filename,
             &mut sink,
             true,
@@ -52,19 +50,17 @@ impl Q218Converter {
         );
 
         let diagnostics = match result {
-            Ok(_) => return Ok(Vec::new()), // No errors
+            Ok(_) => return Ok(Vec::new()),
             Err(diagnostics) => diagnostics,
         };
 
         let mut violations = Vec::new();
 
         for diagnostic in diagnostics {
-            // Check if this is a Q-2-18 error
-            if diagnostic.code.as_deref() != Some("Q-2-18") {
+            if diagnostic.code.as_deref() != Some("Q-2-5") {
                 continue;
             }
 
-            // Extract location - this points to the end of the block
             let location = diagnostic.location.as_ref();
             if location.is_none() {
                 continue;
@@ -72,7 +68,7 @@ impl Q218Converter {
 
             let offset = location.as_ref().unwrap().start_offset();
 
-            violations.push(Q218Violation {
+            violations.push(Q25Violation {
                 offset,
                 error_location: Some(SourceLocation {
                     row: self.offset_to_row(&content, offset),
@@ -84,31 +80,26 @@ impl Q218Converter {
         Ok(violations)
     }
 
-    /// Apply fixes to the content by adding closing strikeout marks
-    fn apply_fixes(&self, content: &str, mut violations: Vec<Q218Violation>) -> Result<String> {
+    fn apply_fixes(&self, content: &str, mut violations: Vec<Q25Violation>) -> Result<String> {
         if violations.is_empty() {
             return Ok(content.to_string());
         }
 
-        // Sort violations in reverse order to avoid offset invalidation
         violations.sort_by_key(|v| std::cmp::Reverse(v.offset));
 
         let mut result = content.to_string();
 
         for violation in violations {
-            // Insert closing ~~ at the error location (end of block)
-            result.insert_str(violation.offset, "~~");
+            result.insert(violation.offset, '_');
         }
 
         Ok(result)
     }
 
-    /// Convert byte offset to row number (0-indexed)
     fn offset_to_row(&self, content: &str, offset: usize) -> usize {
         content[..offset].matches('\n').count()
     }
 
-    /// Convert byte offset to column number (0-indexed)
     fn offset_to_column(&self, content: &str, offset: usize) -> usize {
         let line_start = content[..offset]
             .rfind('\n')
@@ -118,13 +109,13 @@ impl Q218Converter {
     }
 }
 
-impl Rule for Q218Converter {
+impl Rule for Q25Converter {
     fn name(&self) -> &str {
-        "q-2-18"
+        "q-2-5"
     }
 
     fn description(&self) -> &str {
-        "Fix Q-2-18: Add closing strikeout marks for unclosed strikeouts"
+        "Fix Q-2-5: Add closing '_' for unclosed underscore emphasis"
     }
 
     fn check(&self, file_path: &Path, _verbose: bool) -> Result<Vec<CheckResult>> {
@@ -137,9 +128,12 @@ impl Rule for Q218Converter {
                 file_path: file_path.to_string_lossy().to_string(),
                 has_issue: true,
                 issue_count: 1,
-                message: Some(format!("Q-2-18 unclosed strikeout at offset {}", v.offset)),
+                message: Some(format!(
+                    "Q-2-5 unclosed underscore emphasis at offset {}",
+                    v.offset
+                )),
                 location: v.error_location,
-                error_code: Some("Q-2-18".to_string()),
+                error_code: Some("Q-2-5".to_string()),
                 error_codes: None,
             })
             .collect();
@@ -162,39 +156,36 @@ impl Rule for Q218Converter {
                 rule_name: self.name().to_string(),
                 file_path: file_path.to_string_lossy().to_string(),
                 fixes_applied: 0,
-                message: Some("No Q-2-18 unclosed strikeout issues found".to_string()),
+                message: Some("No Q-2-5 unclosed underscore emphasis issues found".to_string()),
             });
         }
 
         let fixed_content = self.apply_fixes(&content, violations.clone())?;
 
         if check_mode {
-            // Just report what would be done
             return Ok(ConvertResult {
                 rule_name: self.name().to_string(),
                 file_path: file_path.to_string_lossy().to_string(),
                 fixes_applied: violations.len(),
                 message: Some(format!(
-                    "Would fix {} Q-2-18 unclosed strikeout violation(s)",
+                    "Would fix {} Q-2-5 unclosed underscore emphasis violation(s)",
                     violations.len()
                 )),
             });
         }
 
         if in_place {
-            // Write back to file
             crate::utils::file_io::write_file(file_path, &fixed_content)?;
             Ok(ConvertResult {
                 rule_name: self.name().to_string(),
                 file_path: file_path.to_string_lossy().to_string(),
                 fixes_applied: violations.len(),
                 message: Some(format!(
-                    "Fixed {} Q-2-18 unclosed strikeout violation(s)",
+                    "Fixed {} Q-2-5 unclosed underscore emphasis violation(s)",
                     violations.len()
                 )),
             })
         } else {
-            // Return the converted content in message
             Ok(ConvertResult {
                 rule_name: self.name().to_string(),
                 file_path: file_path.to_string_lossy().to_string(),
