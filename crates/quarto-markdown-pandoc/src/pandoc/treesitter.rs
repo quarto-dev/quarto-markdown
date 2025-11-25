@@ -710,18 +710,16 @@ fn native_visitor<T: Write>(
             let extract_quoted_text = || {
                 if let Some(child) = node.child(0) {
                     let text = child.utf8_text(input_bytes).unwrap().to_string();
-                    let range =
-                        crate::pandoc::location::source_info_to_qsm_range_or_fallback(
-                            &node_source_info_with_context(&child, context),
-                            context,
-                        );
+                    let range = crate::pandoc::location::source_info_to_qsm_range_or_fallback(
+                        &node_source_info_with_context(&child, context),
+                        context,
+                    );
                     PandocNativeIntermediate::IntermediateBaseText(text, range)
                 } else {
-                    let range =
-                        crate::pandoc::location::source_info_to_qsm_range_or_fallback(
-                            &node_source_info_with_context(node, context),
-                            context,
-                        );
+                    let range = crate::pandoc::location::source_info_to_qsm_range_or_fallback(
+                        &node_source_info_with_context(node, context),
+                        context,
+                    );
                     PandocNativeIntermediate::IntermediateBaseText(String::new(), range)
                 }
             };
@@ -1078,10 +1076,15 @@ fn native_visitor<T: Write>(
             let raw_text = node.utf8_text(input_bytes).unwrap();
             let text = raw_text.trim().to_string();
 
+            // Get the source info with whitespace trimming for the warning
+            use crate::pandoc::location::{SourceInfoOptions, node_source_info_with_options};
+            let trimmed_source_info =
+                node_source_info_with_options(node, context, &SourceInfoOptions::trim_all());
+
             // Create a warning (not error) about the auto-conversion
             let msg = DiagnosticMessageBuilder::warning("HTML element converted to raw HTML")
                 .with_code("Q-2-9")
-                .with_location(node_source_info_with_context(node, context))
+                .with_location(trimmed_source_info)
                 .add_info("HTML elements are automatically converted to RawInline nodes with format 'html'")
                 .add_hint("To be explicit, use: `<element>`{=html}")
                 .build();

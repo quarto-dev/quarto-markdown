@@ -124,6 +124,8 @@ typedef enum {
     PIPE_TABLE_DELIMITER, // to allow naked '|' in markdown
 
     PANDOC_LINE_BREAK,
+
+    TRIPLE_STAR, // simply for good error reporting
 } TokenType;
 
 #ifdef SCAN_DEBUG
@@ -222,6 +224,10 @@ static char* token_names[] = {
     "HTML_ELEMENT", // simply for good error reporting
 
     "PIPE_TABLE_DELIMITER",
+
+    "PANDOC_LINE_BREAK",
+
+    "TRIPLE_STAR", // simply for good error reporting
 };
 
 #endif
@@ -254,7 +260,7 @@ typedef enum {
     LIST_ITEM_MAX_INDENTATION,
     FENCED_CODE_BLOCK,
     ANONYMOUS,
-    FENCED_DIV,
+    FENCED_DIV
 } Block;
 
 static void print_valid_symbols(const bool *valid_symbols)
@@ -290,6 +296,8 @@ static uint8_t list_item_indentation(Block block) {
 static const uint8_t STATE_MATCHING = 0x1 << 0;
 // Last line break was inside a paragraph
 static const uint8_t STATE_WAS_SOFT_LINE_BREAK = 0x1 << 1;
+// We're inside an ATX heading where soft line endings are disallowed; track that
+static const uint8_t STATE_INSIDE_ATX = 0x1 << 2;
 // Block should be closed after next line break
 static const uint8_t STATE_CLOSE_BLOCK = 0x1 << 4;
 
@@ -682,6 +690,7 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
         EMIT_TOKEN(EMPHASIS_CLOSE_STAR);
     }
     bool could_be_close_strong_emphasis = valid_symbols[STRONG_EMPHASIS_CLOSE_STAR];
+    bool no_spaces = true;
     for (;;) {
         if (lexer->lookahead == '*') {
             if (star_count == 1 && extra_indentation >= 1 &&
@@ -698,6 +707,7 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                 EMIT_TOKEN(STRONG_EMPHASIS_CLOSE_STAR);
             }
         } else if (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            no_spaces = false;
             could_be_close_strong_emphasis = false;
             if (star_count == 1) {
                 extra_indentation += advance(s, lexer);
@@ -714,6 +724,10 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
         extra_indentation = 1;
         // line is empty so don't interrupt paragraphs if this is a list marker
         dont_interrupt = s->matched == s->open_blocks.size;
+    }
+    if (star_count == 3 && !line_end && no_spaces) {
+        mark_end(s, lexer);
+        EMIT_TOKEN(TRIPLE_STAR);
     }
     // If there were at least 3 stars then this could be a thematic break
     bool thematic_break = star_count >= 3 && line_end;
@@ -858,6 +872,7 @@ static bool parse_atx_heading(Scanner *s, TSLexer *lexer,
              lexer->lookahead == '\n' || lexer->lookahead == '\r')) {
             s->indentation = 0;
             mark_end(s, lexer);
+            s->state = s->state | STATE_INSIDE_ATX;
             EMIT_TOKEN(ATX_H1_MARKER + (level - 1));
         }
     }
@@ -1942,7 +1957,7 @@ static int match_line(Scanner *s, TSLexer *lexer) {
     // DEBUG_PRINT("in match_line\n");
     // DEBUG_EXP("%d", (int)s->indentation);
     // DEBUG_EXP("%d", (int)s->open_blocks.size);
-    bool might_be_soft_break = true;
+    bool might_be_soft_break = !(s->state & STATE_INSIDE_ATX);
     bool partial_success = false;
     while (s->matched < (uint8_t)s->open_blocks.size) {
         if (s->matched == (uint8_t)s->open_blocks.size - 1 &&
@@ -2241,7 +2256,8 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                 EMIT_TOKEN(LINE_ENDING);
             }
 
-            if (lexer->lookahead != '*' && lexer->lookahead != '-' && 
+            if ((!(s->state & STATE_INSIDE_ATX)) && 
+                lexer->lookahead != '*' && lexer->lookahead != '-' && 
                 lexer->lookahead != '+' && lexer->lookahead != '>' && 
                 lexer->lookahead != ':' && lexer->lookahead != '#' && lexer->lookahead != '`' &&
                 lexer->lookahead > ' ' && !(lexer->lookahead >= '0' && lexer->lookahead <= '9')) {
@@ -2311,10 +2327,13 @@ static bool scan(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
             }
             DEBUG_PRINT("reset STATE_WAS_SOFT_LINE_BREAK\n");
             s->state &= (~STATE_WAS_SOFT_LINE_BREAK);
+            DEBUG_PRINT("reset STATE_INSIDE_ATX\n");
+            s->state &= (~STATE_INSIDE_ATX);
             print_valid_symbols(valid_symbols);
             EMIT_TOKEN(LINE_ENDING);
         }
     }
+    DEBUG_PRINT("Fell through external scanner => return false;\n");
     return false;
 }
 
